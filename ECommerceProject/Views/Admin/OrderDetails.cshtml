@@ -1,0 +1,168 @@
+@model ECommerceProject.Models.Entities.Order
+@{
+    ViewData["Title"] = $"Order #{Model.Id} Details";
+    var orderItems = ViewBag.OrderItems as List<(ECommerceProject.Models.Entities.OrderItem Item,
+ECommerceProject.Models.Entities.Product Product)>;
+    var user = ViewBag.User as ECommerceProject.Models.Entities.ApplicationUser;
+    var payment = ViewBag.Payment as ECommerceProject.Models.Entities.Payment;
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Order #@Model.Id</h2>
+        <a asp-action="Orders" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Orders
+        </a>
+    </div>
+
+    <!-- Update Status Form -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-warning">
+            <h5 class="mb-0">Update Order Status</h5>
+        </div>
+        <div class="card-body">
+            <form asp-action="UpdateOrderStatus" method="post" class="row g-3">
+                <input type="hidden" name="orderId" value="@Model.Id" />
+
+                <div class="col-md-6">
+                    <label class="form-label">Current Status</label>
+                    <h4>
+                        @{
+                            var statusClass = Model.Status switch
+                            {
+                                ECommerceProject.Models.Enums.OrderStatus.Pending => "bg-warning",
+                                ECommerceProject.Models.Enums.OrderStatus.Delivered => "bg-success",
+                                _ => "bg-primary"
+                            };
+                        }
+                        <span class="badge @statusClass">@Model.Status</span>
+                    </h4>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">New Status</label>
+                    <select name="status" class="form-select" required>
+                        <option value="1"
+                                selected="@(Model.Status == ECommerceProject.Models.Enums.OrderStatus.Pending)">Pending
+                        </option>
+                        <option value="2" selected="@(Model.Status == ECommerceProject.Models.Enums.OrderStatus.Paid)">
+                            Paid</option>
+                            <option value="3"
+                                    selected="@(Model.Status == ECommerceProject.Models.Enums.OrderStatus.Processing)">
+                                Processing</option>
+                                <option value="4"
+                                        selected="@(Model.Status == ECommerceProject.Models.Enums.OrderStatus.Shipped)">Shipped
+                                </option>
+                                <option value="5"
+                                        selected="@(Model.Status == ECommerceProject.Models.Enums.OrderStatus.Delivered)">Delivered
+                                </option>
+                                <option value="6"
+                                        selected="@(Model.Status == ECommerceProject.Models.Enums.OrderStatus.Cancelled)">Cancelled
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-check"></i> Update
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Customer & Order Info -->
+                <div class="col-lg-6">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Customer Information</h5>
+                        </div>
+                        <div class="card-body">
+                            @if (user != null)
+                            {
+                                <p><strong>Name:</strong> @user.FullName</p>
+                                <p><strong>Email:</strong> @user.Email</p>
+                                <p><strong>Phone:</strong> @user.PhoneNumber</p>
+                            }
+                            <hr>
+                            <p><strong>Shipping Address:</strong><br>
+                                @Model.ShippingAddress<br>
+                                @Model.City, @Model.Country</p>
+                                <p><strong>Order Date:</strong> @Model.OrderDate.ToString("dd MMMM yyyy, hh:mm tt")</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Info -->
+                    <div class="col-lg-6">
+                        @if (payment != null)
+                        {
+                            <div class="card shadow-sm mb-4">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">Payment Information</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Method:</strong> @payment.PaymentMethod</p>
+                                    <p><strong>Status:</strong>
+                                        <span
+                                            class="badge bg-@(payment.Status == ECommerceProject.Models.Enums.PaymentStatus.Completed ? "success" : "warning")">
+                                            @payment.Status
+                                        </span>
+                                    </p>
+                                    <p><strong>Transaction ID:</strong><br><small>@payment.TransactionId</small></p>
+                                    <p><strong>Amount:</strong> <strong class="text-success">@payment.Amount.ToString("C")</strong></p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Order Items -->
+                @if (orderItems != null && orderItems.Any())
+                {
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0">Order Items</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Image</th>
+                                            <th>Product</th>
+                                            <th>Price</th>
+                                            <th>Quantity</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in orderItems)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <img src="@(string.IsNullOrEmpty(item.Product.ImageUrl) ? "https://via.placeholder.com/50" : item.Product.ImageUrl)"
+                                                         alt="@item.Product.Name"
+                                                         style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;">
+                                                </td>
+                                                <td>@item.Product.Name</td>
+                                                <td>@item.Item.UnitPrice.ToString("C")</td>
+                                                <td>@item.Item.Quantity</td>
+                                                <td><strong>@item.Item.TotalPrice.ToString("C")</strong></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                                            <td><strong class="text-primary h5">@Model.TotalAmount.ToString("C")</strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>

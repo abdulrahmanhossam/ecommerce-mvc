@@ -1,0 +1,203 @@
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">
+        <i class="bi bi-speedometer2"></i> Admin Dashboard
+    </h2>
+
+    <!-- Statistics Cards -->
+    <div class="row g-4 mb-4">
+        <!-- Total Products -->
+        <div class="col-md-3">
+            <div class="card text-white bg-primary h-100 shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Total Products</h6>
+                            <h2 class="mb-0">@ViewBag.TotalProducts</h2>
+                        </div>
+                        <i class="bi bi-box-seam" style="font-size: 3rem; opacity: 0.3;"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a asp-action="Products"
+                           class="text-white text-decoration-none d-flex justify-content-between align-items-center">
+                        <span>View Details</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Categories -->
+        <div class="col-md-3">
+            <div class="card text-white bg-success h-100 shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Categories</h6>
+                            <h2 class="mb-0">@ViewBag.TotalCategories</h2>
+                        </div>
+                        <i class="bi bi-grid-3x3-gap" style="font-size: 3rem; opacity: 0.3;"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a asp-action="Categories"
+                           class="text-white text-decoration-none d-flex justify-content-between align-items-center">
+                        <span>View Details</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Orders -->
+        <div class="col-md-3">
+            <div class="card text-white bg-warning h-100 shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Total Orders</h6>
+                            <h2 class="mb-0">@ViewBag.TotalOrders</h2>
+                        </div>
+                        <i class="bi bi-cart-check" style="font-size: 3rem; opacity: 0.3;"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a asp-action="Orders"
+                           class="text-white text-decoration-none d-flex justify-content-between align-items-center">
+                        <span>View Details</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Users -->
+        <div class="col-md-3">
+            <div class="card text-white bg-danger h-100 shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Total Users</h6>
+                            <h2 class="mb-0">@ViewBag.TotalUsers</h2>
+                        </div>
+                        <i class="bi bi-people" style="font-size: 3rem; opacity: 0.3;"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a asp-action="Users"
+                           class="text-white text-decoration-none d-flex justify-content-between align-items-center">
+                        <span>View Details</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <a asp-action="CreateProduct" class="btn btn-primary w-100">
+                                <i class="bi bi-plus-circle"></i> Add New Product
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-action="CreateCategory" class="btn btn-success w-100">
+                                <i class="bi bi-plus-circle"></i> Add New Category
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-action="Orders" class="btn btn-warning w-100">
+                                <i class="bi bi-cart-check"></i> Manage Orders
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-action="Users" class="btn btn-danger w-100">
+                                <i class="bi bi-people"></i> Manage Users
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Orders -->
+    @if (ViewBag.RecentOrders != null)
+    {
+        var recentOrders = ViewBag.RecentOrders as List<ECommerceProject.Models.Entities.Order>;
+
+        if (recentOrders != null && recentOrders.Any())
+        {
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Orders</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Order #</th>
+                                            <th>Date</th>
+                                            <th>Customer</th>
+                                            <th>Total</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var order in recentOrders.Take(5))
+                                        {
+                                            <tr>
+                                                <td><strong>#@order.Id</strong></td>
+                                                <td>@order.OrderDate.ToString("dd MMM yyyy")</td>
+                                                <td>@order.UserId.Substring(0, 8)...</td>
+                                                <td><strong>@order.TotalAmount.ToString("C")</strong></td>
+                                                <td>
+                                                    @{
+                                                        var statusClass = order.Status switch
+                                                        {
+                                                            ECommerceProject.Models.Enums.OrderStatus.Pending => "bg-warning",
+                                                            ECommerceProject.Models.Enums.OrderStatus.Delivered => "bg-success",
+                                                            _ => "bg-primary"
+                                                        };
+                                                    }
+                                                    <span class="badge @statusClass">@order.Status</span>
+                                                </td>
+                                                <td>
+                                                    <a asp-action="OrderDetails" asp-route-id="@order.Id"
+                                                           class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-eye"></i> View
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="text-center mt-3">
+                                <a asp-action="Orders" class="btn btn-outline-primary">
+                                    View All Orders <i class="bi bi-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>

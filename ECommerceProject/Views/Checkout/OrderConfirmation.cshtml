@@ -1,0 +1,146 @@
+@model ECommerceProject.Models.Entities.Order
+@{
+    ViewData["Title"] = "Order Confirmation";
+    var orderItems = ViewBag.OrderItems as List<ECommerceProject.Models.Entities.OrderItem>;
+    var payment = ViewBag.Payment as ECommerceProject.Models.Entities.Payment;
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Success Message -->
+            <div class="text-center mb-4">
+                <div class="mb-3">
+                    <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
+                </div>
+                <h2 class="text-success">Order Placed Successfully!</h2>
+                <p class="text-muted">Thank you for your order. We'll send you a confirmation email shortly.</p>
+            </div>
+
+            <!-- Order Details -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Order Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Order Number:</strong><br>
+                            <span class="text-muted">#@Model.Id</span>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <strong>Order Date:</strong><br>
+                            <span class="text-muted">@Model.OrderDate.ToString("dd MMM yyyy, hh:mm tt")</span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Status:</strong><br>
+                            <span class="badge bg-warning">@Model.Status</span>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <strong>Payment Method:</strong><br>
+                            <span class="text-muted">@Model.PaymentMethod</span>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <strong>Shipping Address:</strong><br>
+                        <span class="text-muted">
+                            @Model.ShippingAddress<br>
+                            @Model.City, @Model.Country<br>
+                            Phone: @Model.PhoneNumber
+                        </span>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <div class="mb-3">
+                            <strong>Notes:</strong><br>
+                            <span class="text-muted">@Model.Notes</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Order Items -->
+            @if (orderItems != null && orderItems.Any())
+            {
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">Order Items</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Quantity</th>
+                                        <th>Price</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in orderItems)
+                                    {
+                                        <tr>
+                                            <td>Product #@item.ProductId</td>
+                                            <td>@item.Quantity</td>
+                                            <td>@item.UnitPrice.ToString("C")</td>
+                                            <td><strong>@item.TotalPrice.ToString("C")</strong></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="text-end"><strong>Total Amount:</strong></td>
+                                        <td><strong class="text-primary h5">@Model.TotalAmount.ToString("C")</strong></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Payment Info -->
+            @if (payment != null)
+            {
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Payment Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Transaction ID:</strong><br>
+                                <span class="text-muted">@payment.TransactionId</span>
+                            </div>
+                            <div class="col-md-6 text-md-end">
+                                <strong>Status:</strong><br>
+                                <span
+                                    class="badge bg-@(payment.Status == ECommerceProject.Models.Enums.PaymentStatus.Completed ? "success" : "warning")">
+                                    @payment.Status
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Action Buttons -->
+            <div class="text-center">
+                <a asp-controller="Orders" asp-action="MyOrders" class="btn btn-primary">
+                    <i class="bi bi-list-ul"></i> View My Orders
+                </a>
+                <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-house"></i> Back to Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

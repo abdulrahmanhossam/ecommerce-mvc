@@ -1,0 +1,135 @@
+@model IEnumerable<ECommerceProject.Models.Entities.Product>
+@{
+    ViewData["Title"] = "Products";
+    var categories = ViewBag.Categories as List<ECommerceProject.Models.Entities.Category>;
+    var selectedCategoryId = ViewBag.SelectedCategoryId as int?;
+    var searchTerm = ViewBag.SearchTerm as string;
+    var minPrice = ViewBag.MinPrice as decimal?;
+    var maxPrice = ViewBag.MaxPrice as decimal?;
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">
+        <i class="bi bi-bag"></i> Our Products
+    </h2>
+
+    <!-- Filters Section -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <form asp-action="Index" method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Search</label>
+                            <input type="text" name="searchTerm" class="form-control" 
+                                   placeholder="Search products..." value="@searchTerm">
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">Category</label>
+                            <select name="categoryId" class="form-select">
+                                <option value="">All Categories</option>
+                                @if (categories != null)
+                                {
+                                    foreach (var category in categories)
+                                    {
+                                        <option value="@category.Id" selected="@(selectedCategoryId == category.Id)">
+                                            @category.Name
+                                        </option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <label class="form-label">Min Price</label>
+                            <input type="number" name="minPrice" class="form-control" 
+                                   placeholder="Min" value="@minPrice" step="0.01">
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <label class="form-label">Max Price</label>
+                            <input type="number" name="maxPrice" class="form-control" 
+                                   placeholder="Max" value="@maxPrice" step="0.01">
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-filter"></i> Filter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products Grid -->
+    @if (Model != null && Model.Any())
+    {
+        <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+            @foreach (var product in Model)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm product-card">
+                        @if (product.IsFeatured)
+                        {
+                            <span class="badge bg-danger position-absolute top-0 end-0 m-2">
+                                Featured
+                            </span>
+                        }
+                        
+                        <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400" : product.ImageUrl)" 
+                             class="card-img-top" alt="@product.Name" style="height: 200px; object-fit: cover;">
+                        
+                        <div class="card-body">
+                            <h5 class="card-title">@product.Name</h5>
+                            <p class="card-text text-muted small">
+                                @(product.Description?.Length > 60 ? product.Description.Substring(0, 60) + "..." : product.Description)
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="h5 text-primary mb-0">@product.Price.ToString("C")</span>
+                                @if (product.Stock > 0)
+                                {
+                                    <span class="badge bg-success">In Stock</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Out of Stock</span>
+                                }
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer bg-transparent">
+                            <div class="d-grid gap-2">
+                                <a asp-action="Details" asp-route-id="@product.Id" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye"></i> View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info text-center">
+            <i class="bi bi-info-circle"></i> No products found matching your criteria.
+        </div>
+    }
+</div>
+
+@section Styles {
+    <style>
+        .product-card {
+            transition: transform 0.2s;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+        }
+    </style>
+}
