@@ -1,0 +1,105 @@
+@model ECommerceProject.Models.Entities.Product
+@{
+    ViewData["Title"] = "Edit Product";
+    var categories = ViewBag.Categories as List<ECommerceProject.Models.Entities.Category>;
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-warning">
+                    <h4 class="mb-0">
+                        <i class="bi bi-pencil"></i> Edit Product
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="EditProduct" method="post">
+                        <input type="hidden" asp-for="Id" />
+                        <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label"></label>
+                            <input asp-for="Name" class="form-control" required />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label"></label>
+                            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Price" class="form-label"></label>
+                                <input asp-for="Price" class="form-control" type="number" step="0.01" required />
+                                <span asp-validation-for="Price" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Stock" class="form-label"></label>
+                                <input asp-for="Stock" class="form-control" type="number" required />
+                                <span asp-validation-for="Stock" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Category</label>
+                            <select name="CategoryId" id="CategoryId" class="form-select" required>
+                                <option value="">-- Select Category --</option>
+                                @if (categories != null)
+                                {
+                                    foreach (var category in categories)
+                                    {
+                                        <option value="@category.Id" selected="@(Model.CategoryId == category.Id)">
+                                            @category.Name
+                                        </option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ImageUrl" class="form-label">Image URL</label>
+                            <input asp-for="ImageUrl" class="form-control" />
+                            <span asp-validation-for="ImageUrl" class="text-danger"></span>
+                            
+                            @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                            {
+                                <div class="mt-2">
+                                    <small class="text-muted">Current Image:</small><br>
+                                    <img src="@Model.ImageUrl" alt="@Model.Name" 
+                                         class="img-thumbnail mt-1" style="max-height: 150px;">
+                                </div>
+                            }
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input asp-for="IsFeatured" class="form-check-input" />
+                            <label asp-for="IsFeatured" class="form-check-label">Featured Product</label>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input asp-for="IsActive" class="form-check-input" />
+                            <label asp-for="IsActive" class="form-check-label">Active</label>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-check-circle"></i> Update Product
+                            </button>
+                            <a asp-action="Products" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

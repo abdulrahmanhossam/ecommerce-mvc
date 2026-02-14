@@ -237,35 +237,75 @@ namespace ECommerceProject.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditProduct(Product product)
         {
+            // إزالة Navigation Properties من الـ Validation
             ModelState.Remove("Category");
             ModelState.Remove("OrderItems");
             ModelState.Remove("ShoppingCarts");
             ModelState.Remove("ProductVariants");
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                _unitOfWork.Products.Update(product);
+                var categories = await _unitOfWork.Categories.GetAsync(c => c.IsActive);
+                ViewBag.Categories = categories.ToList();
+                return View(product);
+            }
+
+            try
+            {
+                var existingProduct = await _unitOfWork.Products.GetByIdAsync(product.Id);
+
+                if (existingProduct == null)
+                    return NotFound();
+
+                // تحديث البيانات
+                existingProduct.Name = product.Name;
+                existingProduct.Description = product.Description;
+                existingProduct.Price = product.Price;
+                existingProduct.Stock = product.Stock;
+                existingProduct.CategoryId = product.CategoryId;
+                existingProduct.ImageUrl = product.ImageUrl;
+                existingProduct.IsFeatured = product.IsFeatured;
+                existingProduct.IsActive = product.IsActive;
+
+                _unitOfWork.Products.Update(existingProduct);
                 await _unitOfWork.SaveAsync();
 
                 TempData["SuccessMessage"] = "Product updated successfully!";
                 return RedirectToAction(nameof(Products));
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                ModelState.AddModelError("", "Error updating product");
 
-            var categories = await _unitOfWork.Categories.GetAsync(c => c.IsActive);
-            ViewBag.Categories = categories.ToList();
-            return View(product);
+                var categories = await _unitOfWork.Categories.GetAsync(c => c.IsActive);
+                ViewBag.Categories = categories.ToList();
+                return View(product);
+            }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteProduct(int id)
         {
-            var product = await _unitOfWork.Products.GetByIdAsync(id);
-            if (product != null)
+            try
             {
-                _unitOfWork.Products.Delete(product);
-                await _unitOfWork.SaveAsync();
-                TempData["SuccessMessage"] = "Product deleted successfully!";
+                var product = await _unitOfWork.Products.GetByIdAsync(id);
+                if (product != null)
+                {
+                    _unitOfWork.Products.Delete(product);
+                    await _unitOfWork.SaveAsync();
+                    TempData["SuccessMessage"] = "Product deleted successfully!";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Product not found.";
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                TempData["ErrorMessage"] = "Error deleting product. Make sure there are no orders associated with it.";
             }
 
             return RedirectToAction(nameof(Products));
