@@ -1,0 +1,57 @@
+# Top-most EditorConfig file
+root = true
+
+# All files
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+end_of_line = crlf
+
+# C# files
+[*.cs]
+#### Core Formatting Rules ####
+indent_size = 4
+indent_style = space
+csharp_style_namespace_declarations = file_scoped:suggestion
+
+# New line preferences (Fixes the formatting mess)
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_anonymous_types = true
+csharp_new_line_between_query_expression_clauses = true
+
+# Indentation preferences (Fixes LINQ indentation)
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_indent_labels = one_less_than_current
+
+#### Clean Code & Simplification (Fixes System.Console) ####
+# Prefer simple names (removes unnecessary "System.")
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_property = false:warning
+dotnet_style_qualification_for_method = false:warning
+dotnet_style_qualification_for_event = false:warning
+
+# Organize Usings
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
+#### Naming Conventions (Underscore for private fields) ####
+# 1. Define the 'private_field' symbol
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+# 2. Define the '_camelCase' style
+dotnet_naming_style.underscore_camel_case.capitalization = camel_case
+dotnet_naming_style.underscore_camel_case.required_prefix = _
+
+# 3. Bind symbol to style
+dotnet_naming_rule.private_fields_should_be_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_should_be_underscore.style = underscore_camel_case
+dotnet_naming_rule.private_fields_should_be_underscore.severity = suggestion

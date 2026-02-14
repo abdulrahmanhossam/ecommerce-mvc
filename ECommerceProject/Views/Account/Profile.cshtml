@@ -1,0 +1,162 @@
+@model ECommerceProject.Models.ViewModels.ProfileViewModel
+@{
+    ViewData["Title"] = "My Profile";
+    var totalOrders = ViewBag.TotalOrders as int? ?? 0;
+    var totalSpent = ViewBag.TotalSpent as decimal? ?? 0;
+    var pendingOrders = ViewBag.PendingOrders as int? ?? 0;
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">
+        <i class="bi bi-person-circle"></i> My Profile
+    </h2>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="bi bi-cart-check text-primary" style="font-size: 3rem;"></i>
+                    <h3 class="mt-2">@totalOrders</h3>
+                    <p class="text-muted mb-0">Total Orders</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="bi bi-cash-stack text-success" style="font-size: 3rem;"></i>
+                    <h3 class="mt-2">@totalSpent.ToString("C")</h3>
+                    <p class="text-muted mb-0">Total Spent</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="bi bi-hourglass-split text-warning" style="font-size: 3rem;"></i>
+                    <h3 class="mt-2">@pendingOrders</h3>
+                    <p class="text-muted mb-0">Pending Orders</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Profile Form -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Profile Information</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Profile" method="post">
+                        <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="FullName" class="form-label"></label>
+                            <input asp-for="FullName" class="form-control" />
+                            <span asp-validation-for="FullName" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label"></label>
+                            <input asp-for="Email" class="form-control" readonly />
+                            <small class="form-text text-muted">Email cannot be changed</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="PhoneNumber" class="form-label"></label>
+                            <input asp-for="PhoneNumber" class="form-control" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Address" class="form-label"></label>
+                            <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+                            <span asp-validation-for="Address" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="City" class="form-label"></label>
+                                <input asp-for="City" class="form-control" />
+                                <span asp-validation-for="City" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Country" class="form-label"></label>
+                                <input asp-for="Country" class="form-control" />
+                                <span asp-validation-for="Country" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        @if (Model.MemberSince.HasValue)
+                        {
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                Member since @Model.MemberSince.Value.ToString("dd MMMM yyyy")
+                            </div>
+                        }
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Update Profile
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-lg-4">
+            <!-- Change Password -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-warning">
+                    <h6 class="mb-0">Security</h6>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Keep your account secure by updating your password regularly.</p>
+                    <a asp-action="ChangePassword" class="btn btn-warning w-100">
+                        <i class="bi bi-key"></i> Change Password
+                    </a>
+                </div>
+            </div>
+
+            <!-- My Orders -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">Orders</h6>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">View and track all your orders.</p>
+                    <a asp-controller="Orders" asp-action="MyOrders" class="btn btn-success w-100">
+                        <i class="bi bi-box-seam"></i> My Orders
+                    </a>
+                </div>
+            </div>
+
+            <!-- Delete Account -->
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0">Danger Zone</h6>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Permanently delete your account and all data.</p>
+                    <a asp-action="DeleteAccount" class="btn btn-outline-danger w-100">
+                        <i class="bi bi-trash"></i> Delete Account
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

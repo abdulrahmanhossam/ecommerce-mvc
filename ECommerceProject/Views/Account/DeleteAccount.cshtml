@@ -1,0 +1,54 @@
+@{
+    ViewData["Title"] = "Delete Account";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Delete Account
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h5><i class="bi bi-exclamation-circle"></i> Warning!</h5>
+                        <p class="mb-0">
+                            This action is <strong>permanent</strong> and <strong>cannot be undone</strong>.
+                        </p>
+                    </div>
+
+                    <h6>What will be deleted:</h6>
+                    <ul class="text-muted">
+                        <li>Your profile information</li>
+                        <li>Your shopping cart</li>
+                        <li>Your account data</li>
+                    </ul>
+
+                    <h6>What will NOT be deleted:</h6>
+                    <ul class="text-muted mb-4">
+                        <li>Your order history (for legal reasons)</li>
+                        <li>Payment records</li>
+                    </ul>
+
+                    <p class="text-danger fw-bold">
+                        Are you absolutely sure you want to delete your account?
+                    </p>
+
+                    <form asp-action="DeleteAccountConfirmed" method="post"
+                          onsubmit="return confirm('Are you absolutely sure? This cannot be undone!');">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Yes, Delete My Account
+                            </button>
+                            <a asp-action="Profile" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> No, Keep My Account
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

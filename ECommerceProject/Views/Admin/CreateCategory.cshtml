@@ -1,0 +1,80 @@
+@model ECommerceProject.Models.ViewModels.CategoryViewModel
+@{
+    ViewData["Title"] = "Create Category";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-plus-circle"></i> Add New Category
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="CreateCategory" method="post">
+                        <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label"></label>
+                            <input asp-for="Name" class="form-control" placeholder="e.g., Electronics" autofocus />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label"></label>
+                            <textarea asp-for="Description" class="form-control" rows="3"
+                                      placeholder="Brief description of the category"></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ImageUrl" class="form-label"></label>
+                            <input asp-for="ImageUrl" class="form-control"
+                                   placeholder="https://images.unsplash.com/photo-..." />
+                            <span asp-validation-for="ImageUrl" class="text-danger"></span>
+                            <small class="form-text text-muted">
+                                Paste image URL from Unsplash or any image hosting service
+                            </small>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input asp-for="IsActive" class="form-check-input" checked />
+                            <label asp-for="IsActive" class="form-check-label"></label>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Create Category
+                            </button>
+                            <a asp-action="Categories" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Category Image Examples -->
+            <div class="card shadow-sm mt-3">
+                <div class="card-body">
+                    <h6><i class="bi bi-lightbulb"></i> Image URL Examples:</h6>
+                    <ul class="small text-muted mb-0">
+                        <li>Electronics: <code>https://images.unsplash.com/photo-1498049794561-7780e7231661?w=500</code>
+                        </li>
+                        <li>Clothing: <code>https://images.unsplash.com/photo-1445205170230-053b83016050?w=500</code>
+                        </li>
+                        <li>Books: <code>https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=500</code></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

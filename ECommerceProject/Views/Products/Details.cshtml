@@ -1,0 +1,159 @@
+@model ECommerceProject.Models.Entities.Product
+@{
+    ViewData["Title"] = Model.Name;
+    var variants = ViewBag.ProductVariants as List<ECommerceProject.Models.Entities.ProductVariant>;
+    var relatedProducts = ViewBag.RelatedProducts as List<ECommerceProject.Models.Entities.Product>;
+}
+
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index">Products</a></li>
+            <li class="breadcrumb-item active">@Model.Name</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Product Image -->
+        <div class="col-md-5">
+            <div class="card">
+                <img src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/no-image.jpg" : Model.ImageUrl)" 
+                     class="card-img-top" alt="@Model.Name">
+            </div>
+        </div>
+
+        <!-- Product Info -->
+        <div class="col-md-7">
+            <h2>@Model.Name</h2>
+            
+            @if (Model.IsFeatured)
+            {
+                <span class="badge bg-danger mb-2">Featured Product</span>
+            }
+            
+            <div class="mb-3">
+                <span class="text-muted">Category: </span>
+                <a asp-action="ByCategory" asp-route-id="@Model.CategoryId" class="text-decoration-none">
+                    @Model.Category?.Name
+                </a>
+            </div>
+
+            <h3 class="text-primary mb-3">@Model.Price.ToString("C")</h3>
+
+            <div class="mb-4">
+                <h5>Description</h5>
+                <p>@Model.Description</p>
+            </div>
+
+            <div class="mb-3">
+                <strong>Availability: </strong>
+                @if (Model.Stock > 0)
+                {
+                    <span class="badge bg-success">In Stock (@Model.Stock units available)</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger">Out of Stock</span>
+                }
+            </div>
+
+            <!-- Product Variants -->
+            @if (variants != null && variants.Any())
+            {
+                <div class="mb-3">
+                    <h5>Available Options</h5>
+                    <div class="row">
+                        @foreach (var variant in variants)
+                        {
+                            <div class="col-md-6 mb-2">
+                                <div class="card">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrEmpty(variant.Size))
+                                        {
+                                            <div><strong>Size:</strong> @variant.Size</div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(variant.Color))
+                                        {
+                                            <div><strong>Color:</strong> @variant.Color</div>
+                                        }
+                                        @if (variant.AdditionalPrice > 0)
+                                        {
+                                            <div><strong>Additional Price:</strong> +@variant.AdditionalPrice.ToString("C")</div>
+                                        }
+                                        <div><strong>Stock:</strong> @variant.Stock units</div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Add to Cart Form -->
+            @if (User.Identity?.IsAuthenticated == true && Model.Stock > 0)
+            {
+                <form asp-controller="Cart" asp-action="AddToCart" method="post">
+                    <input type="hidden" name="productId" value="@Model.Id" />
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Quantity</label>
+                            <input type="number" name="quantity" class="form-control" 
+                                   value="1" min="1" max="@Model.Stock" required>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-cart-plus"></i> Add to Cart
+                        </button>
+                    </div>
+                </form>
+            }
+            else if (User.Identity?.IsAuthenticated != true)
+            {
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> 
+                    Please <a asp-controller="Account" asp-action="Login" class="alert-link">login</a> 
+                    to add products to cart.
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-danger">
+                    <i class="bi bi-x-circle"></i> This product is currently out of stock.
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    @if (relatedProducts != null && relatedProducts.Any())
+    {
+        <div class="mt-5">
+            <h4 class="mb-3">Related Products</h4>
+            <div class="row row-cols-1 row-cols-md-4 g-4">
+                @foreach (var relatedProduct in relatedProducts)
+                {
+                    <div class="col">
+                        <div class="card h-100">
+                            <img src="@(string.IsNullOrEmpty(relatedProduct.ImageUrl) ? "/images/no-image.jpg" : relatedProduct.ImageUrl)" 
+                                 class="card-img-top" alt="@relatedProduct.Name" style="height: 150px; object-fit: cover;">
+                            <div class="card-body">
+                                <h6 class="card-title">@relatedProduct.Name</h6>
+                                <p class="text-primary">@relatedProduct.Price.ToString("C")</p>
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <a asp-action="Details" asp-route-id="@relatedProduct.Id" 
+                                   class="btn btn-sm btn-outline-primary w-100">
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
