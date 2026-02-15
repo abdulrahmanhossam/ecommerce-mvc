@@ -42,6 +42,9 @@ builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Emai
 // Email Service
 builder.Services.AddScoped<IEmailService, EmailService>();
 
+// Stripe Payment Service
+builder.Services.AddScoped<IPaymentService, StripePaymentService>();
+
 // Cookie
 builder.Services.ConfigureApplicationCookie(options =>
 {
