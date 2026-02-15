@@ -1,6 +1,7 @@
 using ECommerceProject.Data.Context;
 using ECommerceProject.Data.Interfaces;
 using ECommerceProject.Models.Entities;
+using Microsoft.AspNetCore.Identity;
 
 namespace ECommerceProject.Data.Repositories
 {
@@ -17,10 +18,11 @@ namespace ECommerceProject.Data.Repositories
         public IRepository<Payment> Payments { get; private set; }
         public IRepository<ApplicationUser> Users { get; private set; }
 
-        public UnitOfWork(ApplicationDbContext context)
+        public IRepository<ProductReview> ProductReviews { get; private set; }
+
+        public UnitOfWork(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
-
             Categories = new Repository<Category>(_context);
             Products = new Repository<Product>(_context);
             ProductVariants = new Repository<ProductVariant>(_context);
@@ -28,9 +30,9 @@ namespace ECommerceProject.Data.Repositories
             OrderItems = new Repository<OrderItem>(_context);
             ShoppingCarts = new Repository<ShoppingCart>(_context);
             Payments = new Repository<Payment>(_context);
+            ProductReviews = new Repository<ProductReview>(_context);
             Users = new Repository<ApplicationUser>(_context);
         }
-
         public async Task<int> SaveAsync()
         {
             return await _context.SaveChangesAsync();

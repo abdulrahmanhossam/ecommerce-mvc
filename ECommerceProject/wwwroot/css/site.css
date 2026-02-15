@@ -335,3 +335,28 @@ a {
 ::-webkit-scrollbar-thumb:hover {
     background: #764ba2;
 }
+
+/* Star Rating Input */
+.rating-input {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    gap: 5px;
+}
+
+.rating-input input[type="radio"] {
+    display: none;
+}
+
+.rating-input label {
+    cursor: pointer;
+    font-size: 2rem;
+    color: #ddd;
+    transition: color 0.3s;
+}
+
+.rating-input input[type="radio"]:checked~label,
+.rating-input label:hover,
+.rating-input label:hover~label {
+    color: #ffc107;
+}

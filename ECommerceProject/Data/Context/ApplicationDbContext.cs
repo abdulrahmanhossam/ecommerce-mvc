@@ -18,6 +18,7 @@ namespace ECommerceProject.Data.Context
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<ShoppingCart> ShoppingCarts { get; set; }
         public DbSet<Payment> Payments { get; set; }
+        public DbSet<ProductReview> ProductReviews { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -98,6 +99,24 @@ namespace ECommerceProject.Data.Context
             modelBuilder.Entity<Payment>()
                 .Property(p => p.Amount)
                 .HasPrecision(18, 2);
+
+            // Product Reviews Configuration
+            modelBuilder.Entity<ProductReview>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+
+                entity.HasOne(r => r.Product)
+                      .WithMany()
+                      .HasForeignKey(r => r.ProductId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(r => r.User)
+                      .WithMany()
+                      .HasForeignKey(r => r.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(r => new { r.ProductId, r.UserId });
+            });
         }
     }
 }
