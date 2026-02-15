@@ -12,6 +12,7 @@ namespace ECommerceProject.Data.Interfaces
         IRepository<ShoppingCart> ShoppingCarts { get; }
         IRepository<Payment> Payments { get; }
         IRepository<ApplicationUser> Users { get; }
+        IRepository<ProductReview> ProductReviews { get; }
 
         Task<int> SaveAsync();
     }
