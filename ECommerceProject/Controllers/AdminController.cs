@@ -6,6 +6,7 @@ using ECommerceProject.Models.Enums;
 using ECommerceProject.Models.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
+using ECommerceProject.Services.Interfaces;
 
 namespace ECommerceProject.Controllers;
 
@@ -16,10 +17,16 @@ public class AdminController : Controller
 
     private readonly UserManager<ApplicationUser> _userManager;
 
-    public AdminController(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager)
+    private readonly IAnalyticsService _analyticsService;
+
+    public AdminController(
+        IUnitOfWork unitOfWork,
+        UserManager<ApplicationUser> userManager,
+        IAnalyticsService analyticsService)
     {
         _unitOfWork = unitOfWork;
         _userManager = userManager;
+        _analyticsService = analyticsService;
     }
 
     // Dashboard
@@ -577,5 +584,13 @@ public class AdminController : Controller
 
         TempData["SuccessMessage"] = $"Order status updated to {status}";
         return RedirectToAction(nameof(OrderDetails), new { id = orderId });
+    }
+
+    // ==================== Analytics ====================
+
+    public async Task<IActionResult> Analytics()
+    {
+        var model = await _analyticsService.GetSalesAnalyticsAsync();
+        return View(model);
     }
 }
