@@ -45,6 +45,9 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 // Stripe Payment Service
 builder.Services.AddScoped<IPaymentService, StripePaymentService>();
 
+// Analytics Service
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+
 // Cookie
 builder.Services.ConfigureApplicationCookie(options =>
 {
