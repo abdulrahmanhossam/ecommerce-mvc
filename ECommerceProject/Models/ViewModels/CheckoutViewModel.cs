@@ -40,7 +40,11 @@ namespace ECommerceProject.Models.ViewModels
         public PaymentMethod PaymentMethod { get; set; }
 
         [StringLength(1000)]
-        [Display(Name = "Order Notes (Optional)")]
+        [Display(Name = "Order Notes")]
         public string? Notes { get; set; }
+
+        [StringLength(50)]
+        [Display(Name = "Promo Code")]
+        public string? PromoCode { get; set; }
     }
 }
