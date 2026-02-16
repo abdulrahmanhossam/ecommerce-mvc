@@ -19,6 +19,7 @@ namespace ECommerceProject.Data.Context
         public DbSet<ShoppingCart> ShoppingCarts { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<ProductReview> ProductReviews { get; set; }
+        public DbSet<PromoCode> PromoCodes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -116,6 +117,34 @@ namespace ECommerceProject.Data.Context
                       .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasIndex(r => new { r.ProductId, r.UserId });
+            });
+
+            // PromoCode Configuration
+            modelBuilder.Entity<PromoCode>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.HasIndex(p => p.Code).IsUnique();
+
+                entity.Property(p => p.DiscountValue)
+                      .HasColumnType("decimal(18,2)");
+
+                entity.Property(p => p.MinimumPurchase)
+                      .HasColumnType("decimal(18,2)");
+
+                entity.Property(p => p.MaximumDiscount)
+                      .HasColumnType("decimal(18,2)");
+            });
+
+            // Order - PromoCode Relationship
+            modelBuilder.Entity<Order>(entity =>
+            {
+                entity.Property(o => o.DiscountAmount)
+                      .HasColumnType("decimal(18,2)");
+
+                entity.HasOne(o => o.PromoCode)
+                      .WithMany(p => p.Orders)
+                      .HasForeignKey(o => o.PromoCodeId)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
         }
     }

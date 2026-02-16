@@ -593,4 +593,110 @@ public class AdminController : Controller
         var model = await _analyticsService.GetSalesAnalyticsAsync();
         return View(model);
     }
+
+    // ==================== Promo Codes Management ====================
+
+    public async Task<IActionResult> PromoCodes()
+    {
+        var promoCodes = await _unitOfWork.PromoCodes.GetAllAsync();
+        var promoCodesList = promoCodes.OrderByDescending(p => p.CreatedDate).ToList();
+        return View(promoCodesList);
+    }
+
+    [HttpGet]
+    public IActionResult CreatePromoCode()
+    {
+        return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreatePromoCode(PromoCode promoCode)
+    {
+        ModelState.Remove("Orders");
+
+        if (!ModelState.IsValid)
+        {
+            return View(promoCode);
+        }
+
+        try
+        {
+            // التأكد من عدم تكرار الكود
+            var existing = await _unitOfWork.PromoCodes.GetFirstOrDefaultAsync(
+                p => p.Code.ToUpper() == promoCode.Code.ToUpper());
+
+            if (existing != null)
+            {
+                ModelState.AddModelError("Code", "This promo code already exists.");
+                return View(promoCode);
+            }
+
+            promoCode.Code = promoCode.Code.ToUpper();
+            promoCode.CreatedDate = DateTime.Now;
+            promoCode.UsageCount = 0;
+
+            await _unitOfWork.PromoCodes.AddAsync(promoCode);
+            await _unitOfWork.SaveAsync();
+
+            TempData["SuccessMessage"] = "Promo code created successfully!";
+            return RedirectToAction(nameof(PromoCodes));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            ModelState.AddModelError("", "Error creating promo code");
+            return View(promoCode);
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> TogglePromoCodeStatus(int id)
+    {
+        try
+        {
+            var promoCode = await _unitOfWork.PromoCodes.GetByIdAsync(id);
+
+            if (promoCode != null)
+            {
+                promoCode.IsActive = !promoCode.IsActive;
+                _unitOfWork.PromoCodes.Update(promoCode);
+                await _unitOfWork.SaveAsync();
+
+                TempData["SuccessMessage"] = $"Promo code {(promoCode.IsActive ? "activated" : "deactivated")} successfully!";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            TempData["ErrorMessage"] = "Error updating promo code status.";
+        }
+
+        return RedirectToAction(nameof(PromoCodes));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeletePromoCode(int id)
+    {
+        try
+        {
+            var promoCode = await _unitOfWork.PromoCodes.GetByIdAsync(id);
+
+            if (promoCode != null)
+            {
+                _unitOfWork.PromoCodes.Delete(promoCode);
+                await _unitOfWork.SaveAsync();
+                TempData["SuccessMessage"] = "Promo code deleted successfully!";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            TempData["ErrorMessage"] = "Error deleting promo code.";
+        }
+
+        return RedirectToAction(nameof(PromoCodes));
+    }
 }

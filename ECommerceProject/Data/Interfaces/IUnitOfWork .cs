@@ -13,7 +13,7 @@ namespace ECommerceProject.Data.Interfaces
         IRepository<Payment> Payments { get; }
         IRepository<ApplicationUser> Users { get; }
         IRepository<ProductReview> ProductReviews { get; }
-
+        IRepository<PromoCode> PromoCodes { get; }
         Task<int> SaveAsync();
     }
 }

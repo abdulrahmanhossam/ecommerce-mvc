@@ -19,7 +19,7 @@ namespace ECommerceProject.Models.Entities
         public decimal TotalAmount { get; set; }
 
         [Required]
-        public OrderStatus Status { get; set; } = OrderStatus.Pending;
+        public OrderStatus Status { get; set; }
 
         [Required]
         public PaymentMethod PaymentMethod { get; set; }
@@ -28,23 +28,35 @@ namespace ECommerceProject.Models.Entities
         [StringLength(500)]
         public string ShippingAddress { get; set; } = string.Empty;
 
+        [Required]
         [StringLength(100)]
-        public string? City { get; set; }
+        public string City { get; set; } = string.Empty;
 
+        [Required]
         [StringLength(100)]
-        public string? Country { get; set; }
+        public string Country { get; set; } = string.Empty;
 
-        [StringLength(20)]
-        public string? PhoneNumber { get; set; }
+        [Required]
+        [Phone]
+        public string PhoneNumber { get; set; } = string.Empty;
+
+        [StringLength(1000)]
+        public string Notes { get; set; } = string.Empty;
 
         public DateTime? DeliveredDate { get; set; }
 
-        [StringLength(1000)]
-        public string? Notes { get; set; }
+        // PromoCode Properties
+        public int? PromoCodeId { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal DiscountAmount { get; set; } = 0;
 
         // Navigation Properties
         [ForeignKey("UserId")]
-        public virtual ApplicationUser User { get; set; } = null!;
+        public virtual ApplicationUser? User { get; set; }
+
+        [ForeignKey("PromoCodeId")]
+        public virtual PromoCode? PromoCode { get; set; }
 
         public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public virtual Payment? Payment { get; set; }
