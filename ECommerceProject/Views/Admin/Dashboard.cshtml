@@ -99,7 +99,7 @@
     </div>
 
     <!-- Quick Actions -->
-    <div class="row">
+    <div class="row mt-4">
         <div class="col-md-12">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
@@ -127,9 +127,28 @@
                                 <i class="bi bi-people"></i> Manage Users
                             </a>
                         </div>
+                    </div>
+
+                    <!-- ✅ صف تاني للأزرار الإضافية -->
+                    <div class="row g-3 mt-2">
                         <div class="col-md-3">
                             <a asp-action="Analytics" class="btn btn-info w-100">
                                 <i class="bi bi-graph-up"></i> Sales Analytics
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-action="PromoCodes" class="btn btn-secondary w-100">
+                                <i class="bi bi-ticket-perforated"></i> Promo Codes
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-action="Products" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-box-seam"></i> All Products
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-action="Categories" class="btn btn-outline-success w-100">
+                                <i class="bi bi-grid-3x3-gap"></i> All Categories
                             </a>
                         </div>
                     </div>
