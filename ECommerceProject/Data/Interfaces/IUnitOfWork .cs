@@ -14,6 +14,7 @@ namespace ECommerceProject.Data.Interfaces
         IRepository<ApplicationUser> Users { get; }
         IRepository<ProductReview> ProductReviews { get; }
         IRepository<PromoCode> PromoCodes { get; }
+        IRepository<Wishlist> Wishlists { get; }
         Task<int> SaveAsync();
     }
 }

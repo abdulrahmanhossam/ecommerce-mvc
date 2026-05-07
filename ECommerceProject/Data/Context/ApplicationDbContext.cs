@@ -20,6 +20,7 @@ namespace ECommerceProject.Data.Context
         public DbSet<Payment> Payments { get; set; }
         public DbSet<ProductReview> ProductReviews { get; set; }
         public DbSet<PromoCode> PromoCodes { get; set; }
+        public DbSet<Wishlist> Wishlists { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -145,6 +146,24 @@ namespace ECommerceProject.Data.Context
                       .WithMany(p => p.Orders)
                       .HasForeignKey(o => o.PromoCodeId)
                       .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // Wishlist Configuration
+            modelBuilder.Entity<Wishlist>(entity =>
+            {
+                entity.HasKey(w => w.Id);
+
+                entity.HasOne(w => w.User)
+                      .WithMany()
+                      .HasForeignKey(w => w.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(w => w.Product)
+                      .WithMany()
+                      .HasForeignKey(w => w.ProductId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(w => new { w.UserId, w.ProductId }).IsUnique();
             });
         }
     }

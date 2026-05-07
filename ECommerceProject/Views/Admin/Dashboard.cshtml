@@ -7,9 +7,8 @@
         <i class="bi bi-speedometer2"></i> Admin Dashboard
     </h2>
 
-    <!-- Statistics Cards -->
+    <!-- Statistics Cards Row 1 -->
     <div class="row g-4 mb-4">
-        <!-- Total Products -->
         <div class="col-md-3">
             <div class="card text-white bg-primary h-100 shadow">
                 <div class="card-body">
@@ -22,8 +21,7 @@
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a asp-action="Products"
-                           class="text-white text-decoration-none d-flex justify-content-between align-items-center">
+                    <a asp-action="Products" class="text-white text-decoration-none d-flex justify-content-between align-items-center">
                         <span>View Details</span>
                         <i class="bi bi-arrow-right"></i>
                     </a>
@@ -31,7 +29,6 @@
             </div>
         </div>
 
-        <!-- Total Categories -->
         <div class="col-md-3">
             <div class="card text-white bg-success h-100 shadow">
                 <div class="card-body">
@@ -44,8 +41,7 @@
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a asp-action="Categories"
-                           class="text-white text-decoration-none d-flex justify-content-between align-items-center">
+                    <a asp-action="Categories" class="text-white text-decoration-none d-flex justify-content-between align-items-center">
                         <span>View Details</span>
                         <i class="bi bi-arrow-right"></i>
                     </a>
@@ -53,7 +49,6 @@
             </div>
         </div>
 
-        <!-- Total Orders -->
         <div class="col-md-3">
             <div class="card text-white bg-warning h-100 shadow">
                 <div class="card-body">
@@ -66,8 +61,7 @@
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a asp-action="Orders"
-                           class="text-white text-decoration-none d-flex justify-content-between align-items-center">
+                    <a asp-action="Orders" class="text-white text-decoration-none d-flex justify-content-between align-items-center">
                         <span>View Details</span>
                         <i class="bi bi-arrow-right"></i>
                     </a>
@@ -75,7 +69,6 @@
             </div>
         </div>
 
-        <!-- Total Users -->
         <div class="col-md-3">
             <div class="card text-white bg-danger h-100 shadow">
                 <div class="card-body">
@@ -88,11 +81,144 @@
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a asp-action="Users"
-                           class="text-white text-decoration-none d-flex justify-content-between align-items-center">
+                    <a asp-action="Users" class="text-white text-decoration-none d-flex justify-content-between align-items-center">
                         <span>View Details</span>
                         <i class="bi bi-arrow-right"></i>
                     </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards Row 2 -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-info h-100 shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Total Revenue</h6>
+                            <h2 class="mb-0">@String.Format("{0:C}", ViewBag.TotalRevenue ?? 0)</h2>
+                        </div>
+                        <i class="bi bi-currency-dollar" style="font-size: 3rem; opacity: 0.3;"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a asp-action="Analytics" class="text-white text-decoration-none d-flex justify-content-between align-items-center">
+                        <span>View Details</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-white bg-secondary h-100 shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Pending Orders</h6>
+                            <h2 class="mb-0">@ViewBag.PendingOrders</h2>
+                        </div>
+                        <i class="bi bi-hourglass-split" style="font-size: 3rem; opacity: 0.3;"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a asp-action="Orders" class="text-white text-decoration-none d-flex justify-content-between align-items-center">
+                        <span>View Details</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-white" style="background: linear-gradient(135deg, #20c997, #198754);" h-100 shadow>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Completed Orders</h6>
+                            <h2 class="mb-0">@ViewBag.CompletedOrders</h2>
+                        </div>
+                        <i class="bi bi-check-circle" style="font-size: 3rem; opacity: 0.3;"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a asp-action="Orders" class="text-white text-decoration-none d-flex justify-content-between align-items-center">
+                        <span>View Details</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-white" style="background: linear-gradient(135deg, #6f42c1, #5a3d8a);" h-100 shadow>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Low Stock Products</h6>
+                            <h2 class="mb-0">@ViewBag.LowStockProducts</h2>
+                        </div>
+                        <i class="bi bi-exclamation-triangle" style="font-size: 3rem; opacity: 0.3;"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a asp-action="Products" class="text-white text-decoration-none d-flex justify-content-between align-items-center">
+                        <span>View Details</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <!-- Sales by Status Chart -->
+        <div class="col-md-6">
+            <div class="card shadow h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Orders by Status</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Products -->
+        <div class="col-md-6">
+            <div class="card shadow h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-star"></i> Top Selling Products</h5>
+                </div>
+                <div class="card-body">
+                    @if (ViewBag.TopProducts != null)
+                    {
+                        var topProducts = ViewBag.TopProducts as List<(int ProductId, string Name, int Quantity, decimal Sales)>;
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Qty Sold</th>
+                                        <th>Revenue</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var product in topProducts)
+                                    {
+                                        <tr>
+                                            <td><strong>@product.Name</strong></td>
+                                            <td><span class="badge bg-primary">@product.Quantity</span></td>
+                                            <td>@product.Sales.ToString("C")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -128,8 +254,6 @@
                             </a>
                         </div>
                     </div>
-
-                    <!-- ✅ صف تاني للأزرار الإضافية -->
                     <div class="row g-3 mt-2">
                         <div class="col-md-3">
                             <a asp-action="Analytics" class="btn btn-info w-100">
@@ -177,34 +301,37 @@
                                         <tr>
                                             <th>Order #</th>
                                             <th>Date</th>
-                                            <th>Customer</th>
                                             <th>Total</th>
+                                            <th>Payment</th>
                                             <th>Status</th>
                                             <th>Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach (var order in recentOrders.Take(5))
+                                        @foreach (var order in recentOrders)
                                         {
                                             <tr>
                                                 <td><strong>#@order.Id</strong></td>
-                                                <td>@order.OrderDate.ToString("dd MMM yyyy")</td>
-                                                <td>@order.UserId.Substring(0, 8)...</td>
+                                                <td>@order.OrderDate.ToString("dd MMM yyyy HH:mm")</td>
                                                 <td><strong>@order.TotalAmount.ToString("C")</strong></td>
+                                                <td>@order.PaymentMethod</td>
                                                 <td>
                                                     @{
                                                         var statusClass = order.Status switch
                                                         {
                                                             ECommerceProject.Models.Enums.OrderStatus.Pending => "bg-warning",
+                                                            ECommerceProject.Models.Enums.OrderStatus.Paid => "bg-info",
+                                                            ECommerceProject.Models.Enums.OrderStatus.Processing => "bg-primary",
+                                                            ECommerceProject.Models.Enums.OrderStatus.Shipped => "bg-secondary",
                                                             ECommerceProject.Models.Enums.OrderStatus.Delivered => "bg-success",
+                                                            ECommerceProject.Models.Enums.OrderStatus.Cancelled => "bg-danger",
                                                             _ => "bg-primary"
                                                         };
                                                     }
                                                     <span class="badge @statusClass">@order.Status</span>
                                                 </td>
                                                 <td>
-                                                    <a asp-action="OrderDetails" asp-route-id="@order.Id"
-                                                           class="btn btn-sm btn-outline-primary">
+                                                    <a asp-action="OrderDetails" asp-route-id="@order.Id" class="btn btn-sm btn-outline-primary">
                                                         <i class="bi bi-eye"></i> View
                                                     </a>
                                                 </td>
@@ -225,3 +352,43 @@
         }
     }
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Orders by Status Chart
+        var salesByStatus = @Html.Raw(Json.Serialize(ViewBag.SalesByStatus));
+        
+        if (salesByStatus && salesByStatus.length > 0) {
+            var ctx = document.getElementById('statusChart').getContext('2d');
+            var statusData = {
+                labels: salesByStatus.map(function(s) { return s.Status; }),
+                datasets: [{
+                    data: salesByStatus.map(function(s) { return s.Count; }),
+                    backgroundColor: [
+                        '#ffc107', // Pending - yellow
+                        '#0dcaf0', // Paid - cyan
+                        '#0d6efd', // Processing - blue
+                        '#6c757d', // Shipped - gray
+                        '#198754', // Delivered - green
+                        '#dc3545'  // Cancelled - red
+                    ],
+                    borderWidth: 1
+                }]
+            };
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: statusData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+}

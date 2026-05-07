@@ -12,10 +12,10 @@
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-gradient border-bottom box-shadow mb-3" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
-                    <i class="bi bi-shop"></i> ECommerce Store
+                <a class="navbar-brand fw-bold" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="bi bi-bag-check"></i> ShopHub
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse">
                     <span class="navbar-toggler-icon"></span>
@@ -23,39 +23,51 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link" asp-controller="Home" asp-action="Index"><i class="bi bi-house"></i> Home</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Products" asp-action="Index">Products</a>
+                            <a class="nav-link" asp-controller="Products" asp-action="Index"><i class="bi bi-grid"></i> Products</a>
                         </li>
                     </ul>
-                    <ul class="navbar-nav">
+                    <ul class="navbar-nav align-items-center">
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item">
-                                <a class="nav-link position-relative" asp-controller="Cart" asp-action="Index">
-                                    <i class="bi bi-cart3"></i> Cart
-                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cart-count">
+                                <a class="nav-link position-relative px-2" asp-controller="Wishlist" asp-action="Index">
+                                    <i class="bi bi-heart-fill fs-5"></i>
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="wishlist-count" style="font-size: 0.65rem;">
+                                        0
+                                    </span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link position-relative px-2" asp-controller="Cart" asp-action="Index">
+                                    <i class="bi bi-cart4 fs-5"></i>
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning" id="cart-count" style="font-size: 0.65rem;">
                                         0
                                     </span>
                                 </a>
                             </li>
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                    <i class="bi bi-person-circle"></i> @User.Identity.Name
+                                <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                                    <div class="avatar-circle bg-primary text-white me-1">
+                                        @(User.Identity.Name?.FirstOrDefault() ?? 'U')
+                                    </div>
+                                    <span class="d-none d-md-inline">@User.Identity.Name</span>
                                 </a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile">Profile</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Orders" asp-action="MyOrders">My Orders</a></li>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile"><i class="bi bi-person"></i> Profile</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Orders" asp-action="MyOrders"><i class="bi bi-box-seam"></i> My Orders</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Wishlist" asp-action="Index"><i class="bi bi-heart"></i> Wishlist</a></li>
                                     @if (User.IsInRole("Admin"))
                                     {
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" asp-controller="Admin" asp-action="Dashboard">Admin Dashboard</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Admin" asp-action="Dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
                                     }
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <form asp-controller="Account" asp-action="Logout" method="post">
-                                            <button type="submit" class="dropdown-item">
+                                            <button type="submit" class="dropdown-item text-danger">
                                                 <i class="bi bi-box-arrow-right"></i> Logout
                                             </button>
                                         </form>
@@ -66,12 +78,12 @@
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link" asp-controller="Account" asp-action="Login">
+                                <a class="nav-link btn btn-outline-light btn-sm px-3" asp-controller="Account" asp-action="Login">
                                     <i class="bi bi-box-arrow-in-right"></i> Login
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" asp-controller="Account" asp-action="Register">
+                                <a class="nav-link btn btn-primary btn-sm px-3 ms-2" asp-controller="Account" asp-action="Register">
                                     <i class="bi bi-person-plus"></i> Register
                                 </a>
                             </li>
@@ -80,6 +92,30 @@
                 </div>
             </div>
         </nav>
+        <style>
+            .avatar-circle {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+            }
+            .navbar .dropdown-menu {
+                border: none;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+                border-radius: 10px;
+            }
+            .navbar .dropdown-item {
+                padding: 10px 20px;
+                border-radius: 5px;
+                margin: 2px 5px;
+            }
+            .navbar .dropdown-item:hover {
+                background: #f8f9fa;
+            }
+        </style>
     </header>
     
     <div class="container">
@@ -132,9 +168,29 @@
             }
         }
 
-        // تحديث العدد عند تحميل الصفحة
+        // تحديث عدد المنتجات في Wishlist
+        async function updateWishlistCount() {
+            try {
+                const response = await fetch('/Wishlist/GetCount');
+                const data = await response.json();
+                const badge = document.getElementById('wishlist-count');
+                if (badge && data.count > 0) {
+                    badge.textContent = data.count;
+                    badge.style.display = 'inline';
+                } else if (badge) {
+                    badge.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error fetching wishlist count:', error);
+            }
+        }
+
+        // تحديث الأعداد عند تحميل الصفحة
         if (document.getElementById('cart-count')) {
             updateCartCount();
+        }
+        if (document.getElementById('wishlist-count')) {
+            updateWishlistCount();
         }
     </script>
 </body>

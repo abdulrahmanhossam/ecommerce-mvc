@@ -19,14 +19,18 @@ public class AdminController : Controller
 
     private readonly IAnalyticsService _analyticsService;
 
+    private readonly IImageService _imageService;
+
     public AdminController(
         IUnitOfWork unitOfWork,
         UserManager<ApplicationUser> userManager,
-        IAnalyticsService analyticsService)
+        IAnalyticsService analyticsService,
+        IImageService imageService)
     {
         _unitOfWork = unitOfWork;
         _userManager = userManager;
         _analyticsService = analyticsService;
+        _imageService = imageService;
     }
 
     // Dashboard
@@ -37,9 +41,55 @@ public class AdminController : Controller
         ViewBag.TotalOrders = await _unitOfWork.Orders.CountAsync();
         ViewBag.TotalUsers = await _unitOfWork.Users.CountAsync();
 
+        // Total Revenue
+        var allOrders = await _unitOfWork.Orders.GetAllAsync();
+        ViewBag.TotalRevenue = allOrders.Sum(o => o.TotalAmount);
+
+        // Pending Orders
+        ViewBag.PendingOrders = allOrders.Count(o => o.Status == OrderStatus.Pending);
+
+        // Completed Orders
+        ViewBag.CompletedOrders = allOrders.Count(o => o.Status == OrderStatus.Delivered);
+
+        // Low Stock Products
+        ViewBag.LowStockProducts = await _unitOfWork.Products.CountAsync(p => p.Stock < 10 && p.IsActive);
+
+        // Sales by status
+        var salesByStatus = allOrders
+            .GroupBy(o => o.Status)
+            .Select(g => new { Status = g.Key.ToString(), Count = g.Count(), Total = g.Sum(o => o.TotalAmount) })
+            .ToList();
+        ViewBag.SalesByStatus = salesByStatus;
+
+        // Top Products (by quantity sold)
+        var orderItems = await _unitOfWork.OrderItems.GetAllAsync();
+        var topProducts = orderItems
+            .GroupBy(oi => oi.ProductId)
+            .Select(g => new { ProductId = g.Key, TotalQuantity = g.Sum(oi => oi.Quantity), TotalSales = g.Sum(oi => oi.TotalPrice) })
+            .OrderByDescending(x => x.TotalQuantity)
+            .Take(5)
+            .ToList();
+
+        var topProductsWithDetails = new List<(int ProductId, string Name, int Quantity, decimal Sales)>();
+        foreach (var item in topProducts)
+        {
+            var product = await _unitOfWork.Products.GetByIdAsync(item.ProductId);
+            if (product != null)
+            {
+                topProductsWithDetails.Add((item.ProductId, product.Name, item.TotalQuantity, item.TotalSales));
+            }
+        }
+        ViewBag.TopProducts = topProductsWithDetails;
+
+        // Orders by Payment Method
+        var ordersByPayment = allOrders
+            .GroupBy(o => o.PaymentMethod)
+            .Select(g => new { Method = g.Key.ToString(), Count = g.Count(), Total = g.Sum(o => o.TotalAmount) })
+            .ToList();
+        ViewBag.OrdersByPayment = ordersByPayment;
+
         // جلب آخر 5 طلبات
-        var recentOrders = await _unitOfWork.Orders.GetAllAsync();
-        ViewBag.RecentOrders = recentOrders.OrderByDescending(o => o.OrderDate).Take(5).ToList();
+        ViewBag.RecentOrders = allOrders.OrderByDescending(o => o.OrderDate).Take(5).ToList();
 
         return View();
     }
@@ -163,9 +213,8 @@ public class AdminController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CreateProduct(Product product)
+    public async Task<IActionResult> CreateProduct(Product product, IFormFile? ImageFile)
     {
-        // إزالة Navigation Properties من الـ Validation
         ModelState.Remove("Category");
         ModelState.Remove("OrderItems");
         ModelState.Remove("ShoppingCarts");
@@ -173,19 +222,6 @@ public class AdminController : Controller
 
         if (!ModelState.IsValid)
         {
-            Console.WriteLine("=== ModelState is INVALID ===");
-            foreach (var key in ModelState.Keys)
-            {
-                var errors = ModelState[key]?.Errors;
-                if (errors != null && errors.Count > 0)
-                {
-                    foreach (var error in errors)
-                    {
-                        Console.WriteLine($"Key: {key}, Error: {error.ErrorMessage}");
-                    }
-                }
-            }
-
             var categories = await _unitOfWork.Categories.GetAsync(c => c.IsActive);
             ViewBag.Categories = categories.ToList();
             return View(product);
@@ -193,33 +229,23 @@ public class AdminController : Controller
 
         try
         {
-            Console.WriteLine("=== Creating Product ===");
-            Console.WriteLine($"Name: {product.Name}");
-            Console.WriteLine($"Price: {product.Price}");
-            Console.WriteLine($"Stock: {product.Stock}");
-            Console.WriteLine($"CategoryId: {product.CategoryId}");
+            if (ImageFile != null && ImageFile.Length > 0)
+            {
+                product.ImageUrl = await _imageService.UploadImageAsync(ImageFile, "products");
+            }
 
             product.CreatedDate = DateTime.Now;
             product.IsActive = true;
 
             await _unitOfWork.Products.AddAsync(product);
-            var result = await _unitOfWork.SaveAsync();
-
-            Console.WriteLine($"Save result: {result} rows affected");
+            await _unitOfWork.SaveAsync();
 
             TempData["SuccessMessage"] = "Product created successfully!";
             return RedirectToAction(nameof(Products));
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"=== EXCEPTION ===");
-            Console.WriteLine($"Message: {ex.Message}");
-            Console.WriteLine($"Stack Trace: {ex.StackTrace}");
-            if (ex.InnerException != null)
-            {
-                Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
-            }
-
+            Console.WriteLine($"Error: {ex.Message}");
             ModelState.AddModelError("", $"Error: {ex.Message}");
 
             var categories = await _unitOfWork.Categories.GetAsync(c => c.IsActive);
@@ -242,9 +268,8 @@ public class AdminController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> EditProduct(Product product)
+    public async Task<IActionResult> EditProduct(Product product, IFormFile? ImageFile, bool? removeImage)
     {
-        // إزالة Navigation Properties من الـ Validation
         ModelState.Remove("Category");
         ModelState.Remove("OrderItems");
         ModelState.Remove("ShoppingCarts");
@@ -264,13 +289,25 @@ public class AdminController : Controller
             if (existingProduct == null)
                 return NotFound();
 
-            // تحديث البيانات
+            if (removeImage == true && !string.IsNullOrEmpty(existingProduct.ImageUrl))
+            {
+                await _imageService.DeleteImageAsync(existingProduct.ImageUrl);
+                existingProduct.ImageUrl = null;
+            }
+            else if (ImageFile != null && ImageFile.Length > 0)
+            {
+                if (!string.IsNullOrEmpty(existingProduct.ImageUrl))
+                {
+                    await _imageService.DeleteImageAsync(existingProduct.ImageUrl);
+                }
+                existingProduct.ImageUrl = await _imageService.UploadImageAsync(ImageFile, "products");
+            }
+
             existingProduct.Name = product.Name;
             existingProduct.Description = product.Description;
             existingProduct.Price = product.Price;
             existingProduct.Stock = product.Stock;
             existingProduct.CategoryId = product.CategoryId;
-            existingProduct.ImageUrl = product.ImageUrl;
             existingProduct.IsFeatured = product.IsFeatured;
             existingProduct.IsActive = product.IsActive;
 
@@ -288,6 +325,28 @@ public class AdminController : Controller
             var categories = await _unitOfWork.Categories.GetAsync(c => c.IsActive);
             ViewBag.Categories = categories.ToList();
             return View(product);
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> RemoveProductImage(int id)
+    {
+        try
+        {
+            var product = await _unitOfWork.Products.GetByIdAsync(id);
+            if (product != null && !string.IsNullOrEmpty(product.ImageUrl))
+            {
+                await _imageService.DeleteImageAsync(product.ImageUrl);
+                product.ImageUrl = null;
+                _unitOfWork.Products.Update(product);
+                await _unitOfWork.SaveAsync();
+                return Json(new { success = true });
+            }
+            return Json(new { success = false, message = "Image not found" });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = ex.Message });
         }
     }
 
@@ -364,7 +423,7 @@ public class AdminController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CreateCategory(CategoryViewModel model)
+    public async Task<IActionResult> CreateCategory(CategoryViewModel model, IFormFile? ImageFile)
     {
         if (!ModelState.IsValid)
         {
@@ -373,6 +432,11 @@ public class AdminController : Controller
 
         try
         {
+            if (ImageFile != null && ImageFile.Length > 0)
+            {
+                model.ImageUrl = await _imageService.UploadImageAsync(ImageFile, "categories");
+            }
+
             var category = new Category
             {
                 Name = model.Name,
@@ -418,7 +482,7 @@ public class AdminController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> EditCategory(CategoryViewModel model)
+    public async Task<IActionResult> EditCategory(CategoryViewModel model, IFormFile? ImageFile, bool? removeImage)
     {
         if (!ModelState.IsValid)
         {
@@ -432,9 +496,22 @@ public class AdminController : Controller
             if (category == null)
                 return NotFound();
 
+            if (removeImage == true && !string.IsNullOrEmpty(category.ImageUrl))
+            {
+                await _imageService.DeleteImageAsync(category.ImageUrl);
+                category.ImageUrl = null;
+            }
+            else if (ImageFile != null && ImageFile.Length > 0)
+            {
+                if (!string.IsNullOrEmpty(category.ImageUrl))
+                {
+                    await _imageService.DeleteImageAsync(category.ImageUrl);
+                }
+                category.ImageUrl = await _imageService.UploadImageAsync(ImageFile, "categories");
+            }
+
             category.Name = model.Name;
             category.Description = model.Description;
-            category.ImageUrl = model.ImageUrl;
             category.IsActive = model.IsActive;
 
             _unitOfWork.Categories.Update(category);
@@ -448,6 +525,28 @@ public class AdminController : Controller
             Console.WriteLine($"Error: {ex.Message}");
             ModelState.AddModelError("", "Error updating category");
             return View(model);
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> RemoveCategoryImage(int id)
+    {
+        try
+        {
+            var category = await _unitOfWork.Categories.GetByIdAsync(id);
+            if (category != null && !string.IsNullOrEmpty(category.ImageUrl))
+            {
+                await _imageService.DeleteImageAsync(category.ImageUrl);
+                category.ImageUrl = null;
+                _unitOfWork.Categories.Update(category);
+                await _unitOfWork.SaveAsync();
+                return Json(new { success = true });
+            }
+            return Json(new { success = false, message = "Image not found" });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = ex.Message });
         }
     }
 

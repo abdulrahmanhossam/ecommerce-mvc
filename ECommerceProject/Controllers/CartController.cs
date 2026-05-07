@@ -211,5 +211,64 @@ namespace ECommerceProject.Controllers
 
             return Json(new { count });
         }
+
+        // POST: Cart/Add (JSON endpoint for AJAX)
+        [HttpPost]
+        public async Task<IActionResult> Add([FromBody] AddToCartRequest request)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+                return Json(new { success = false, message = "Please login first" });
+
+            var product = await _unitOfWork.Products.GetByIdAsync(request.ProductId);
+
+            if (product == null || !product.IsActive)
+            {
+                return Json(new { success = false, message = "Product not found" });
+            }
+
+            if (product.Stock < request.Quantity)
+            {
+                return Json(new { success = false, message = $"Only {product.Stock} units available" });
+            }
+
+            var existingCartItem = await _unitOfWork.ShoppingCarts.GetFirstOrDefaultAsync(
+                c => c.UserId == userId && c.ProductId == request.ProductId);
+
+            if (existingCartItem != null)
+            {
+                var newQuantity = existingCartItem.Quantity + request.Quantity;
+                if (newQuantity > product.Stock)
+                {
+                    return Json(new { success = false, message = $"Cannot add more than {product.Stock} units" });
+                }
+                existingCartItem.Quantity = newQuantity;
+                _unitOfWork.ShoppingCarts.Update(existingCartItem);
+            }
+            else
+            {
+                var cartItem = new ShoppingCart
+                {
+                    UserId = userId,
+                    ProductId = request.ProductId,
+                    Quantity = request.Quantity,
+                    AddedDate = DateTime.Now
+                };
+                await _unitOfWork.ShoppingCarts.AddAsync(cartItem);
+            }
+
+            await _unitOfWork.SaveAsync();
+
+            var count = await _unitOfWork.ShoppingCarts.CountAsync(c => c.UserId == userId);
+
+            return Json(new { success = true, message = $"{product.Name} added to cart", count });
+        }
+    }
+
+    public class AddToCartRequest
+    {
+        public int ProductId { get; set; }
+        public int Quantity { get; set; }
     }
 }

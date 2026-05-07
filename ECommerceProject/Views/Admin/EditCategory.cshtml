@@ -13,7 +13,7 @@
                     </h4>
                 </div>
                 <div class="card-body">
-                    <form asp-action="EditCategory" method="post">
+                    <form asp-action="EditCategory" method="post" enctype="multipart/form-data">
                         <input type="hidden" asp-for="Id" />
                         <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
@@ -30,9 +30,11 @@
                         </div>
 
                         <div class="mb-3">
-                            <label asp-for="ImageUrl" class="form-label"></label>
-                            <input asp-for="ImageUrl" class="form-control" />
-                            <span asp-validation-for="ImageUrl" class="text-danger"></span>
+                            <label class="form-label">Category Image</label>
+                            <input type="file" name="ImageFile" class="form-control" accept="image/*" />
+                            <small class="form-text text-muted">
+                                Upload new image to replace current one (JPG, PNG, GIF) - Max 5MB
+                            </small>
                             
                             @if (!string.IsNullOrEmpty(Model.ImageUrl))
                             {
@@ -40,6 +42,10 @@
                                     <small class="text-muted">Current Image:</small><br>
                                     <img src="@Model.ImageUrl" alt="Category Image" 
                                          class="img-thumbnail mt-1" style="max-height: 150px;">
+                                    <div class="mt-2">
+                                        <input type="checkbox" name="removeImage" id="removeImage" value="true" />
+                                        <label for="removeImage" class="text-danger">Remove current image</label>
+                                    </div>
                                 </div>
                             }
                         </div>

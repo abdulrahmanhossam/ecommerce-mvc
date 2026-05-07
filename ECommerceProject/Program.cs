@@ -48,6 +48,9 @@ builder.Services.AddScoped<IPaymentService, StripePaymentService>();
 // Analytics Service
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 
+// Image Service
+builder.Services.AddScoped<IImageService, ImageService>();
+
 // Cookie
 builder.Services.ConfigureApplicationCookie(options =>
 {

@@ -8,11 +8,13 @@ namespace ECommerceProject.Services
     public class StripePaymentService : IPaymentService
     {
         private readonly string _secretKey;
+        private readonly string _domain;
         private readonly ILogger<StripePaymentService> _logger;
 
         public StripePaymentService(IConfiguration configuration, ILogger<StripePaymentService> logger)
         {
             _secretKey = configuration["Stripe:SecretKey"] ?? throw new ArgumentNullException("Stripe SecretKey");
+            _domain = configuration["Stripe:Domain"] ?? throw new ArgumentNullException("Stripe Domain");
             _logger = logger;
             StripeConfiguration.ApiKey = _secretKey;
         }
@@ -60,8 +62,6 @@ namespace ECommerceProject.Services
         {
             try
             {
-                var domain = "https://localhost:7000"; // غيره لدومين موقعك
-
                 var lineItems = new List<SessionLineItemOptions>
                 {
                     new SessionLineItemOptions
@@ -85,8 +85,8 @@ namespace ECommerceProject.Services
                     PaymentMethodTypes = new List<string> { "card" },
                     LineItems = lineItems,
                     Mode = "payment",
-                    SuccessUrl = $"{domain}/Checkout/PaymentSuccess?orderId={orderId}",
-                    CancelUrl = $"{domain}/Checkout/PaymentCancelled?orderId={orderId}",
+                    SuccessUrl = $"{_domain}/Checkout/PaymentSuccess?orderId={orderId}",
+                    CancelUrl = $"{_domain}/Checkout/PaymentCancelled?orderId={orderId}",
                     Metadata = new Dictionary<string, string>
                     {
                         { "order_id", orderId.ToString() }

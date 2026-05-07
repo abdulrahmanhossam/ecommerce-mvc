@@ -104,9 +104,13 @@
                         </div>
                     </div>
                     
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg">
+                    <div class="d-flex gap-2 mb-3">
+                        <button type="submit" class="btn btn-primary btn-lg flex-fill">
                             <i class="bi bi-cart-plus"></i> Add to Cart
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-lg" 
+                                onclick="toggleWishlist(@Model.Id, this)" id="wishlistBtn">
+                            <i class="bi bi-heart"></i> Wishlist
                         </button>
                     </div>
                 </form>
@@ -392,6 +396,108 @@ function markHelpful(reviewId, helpful) {
         }
     })
     .catch(error => console.error('Error:', error));
+}
+
+// Wishlist functionality
+document.addEventListener('DOMContentLoaded', function() {
+    checkWishlistStatus(@Model.Id);
+});
+
+function checkWishlistStatus(productId) {
+    fetch('@Url.Action("CheckIsInWishlist", "Wishlist")', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+        },
+        body: JSON.stringify({ productId: productId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.isInWishlist) {
+            const btn = document.getElementById('wishlistBtn');
+            if (btn) {
+                btn.classList.remove('btn-outline-danger');
+                btn.classList.add('btn-danger');
+                btn.innerHTML = '<i class="bi bi-heart-fill"></i> In Wishlist';
+            }
+        }
+    })
+    .catch(err => console.error('Error checking wishlist:', err));
+}
+
+function toggleWishlist(productId, btn) {
+    fetch('@Url.Action("CheckIsInWishlist", "Wishlist")', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+        },
+        body: JSON.stringify({ productId: productId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.isInWishlist) {
+            removeFromWishlist(productId, btn);
+        } else {
+            addToWishlist(productId, btn);
+        }
+    })
+    .catch(err => console.error('Error:', err));
+}
+
+function addToWishlist(productId, btn) {
+    fetch('@Url.Action("Add", "Wishlist")', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+        },
+        body: JSON.stringify({ productId: productId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            btn.classList.remove('btn-outline-danger');
+            btn.classList.add('btn-danger');
+            btn.innerHTML = '<i class="bi bi-heart-fill"></i> In Wishlist';
+            updateWishlistCount(data.count);
+            alert('Added to wishlist!');
+        } else {
+            alert(data.message || 'Error adding to wishlist');
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        alert('Error adding to wishlist');
+    });
+}
+
+function removeFromWishlist(productId, btn) {
+    fetch('@Url.Action("Remove", "Wishlist")', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+        },
+        body: JSON.stringify({ productId: productId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            btn.classList.remove('btn-danger');
+            btn.classList.add('btn-outline-danger');
+            btn.innerHTML = '<i class="bi bi-heart"></i> Wishlist';
+            updateWishlistCount(data.count);
+            alert('Removed from wishlist');
+        }
+    })
+    .catch(err => console.error('Error:', err));
+}
+
+function updateWishlistCount(count) {
+    const countEl = document.getElementById('wishlist-count');
+    if (countEl) countEl.textContent = count;
 }
 </script>
 }

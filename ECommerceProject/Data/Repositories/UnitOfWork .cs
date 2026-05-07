@@ -20,6 +20,7 @@ namespace ECommerceProject.Data.Repositories
 
         public IRepository<ProductReview> ProductReviews { get; private set; }
         public IRepository<PromoCode> PromoCodes { get; private set; }
+        public IRepository<Wishlist> Wishlists { get; private set; }
 
         public UnitOfWork(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
@@ -33,6 +34,7 @@ namespace ECommerceProject.Data.Repositories
             Payments = new Repository<Payment>(_context);
             ProductReviews = new Repository<ProductReview>(_context);
             PromoCodes = new Repository<PromoCode>(_context);
+            Wishlists = new Repository<Wishlist>(_context);
             Users = new Repository<ApplicationUser>(_context);
         }
         public async Task<int> SaveAsync()

@@ -296,6 +296,17 @@ namespace ECommerceProject.Controllers
             ViewBag.TotalOrders = orders.Count();
             ViewBag.TotalSpent = orders.Sum(o => o.TotalAmount);
             ViewBag.PendingOrders = orders.Count(o => o.Status == ECommerceProject.Models.Enums.OrderStatus.Pending);
+            ViewBag.CompletedOrders = orders.Count(o => o.Status == ECommerceProject.Models.Enums.OrderStatus.Delivered);
+
+            // Wishlist count
+            ViewBag.WishlistCount = await _unitOfWork.Wishlists.CountAsync(w => w.UserId == userId);
+
+            // Cart count
+            ViewBag.CartCount = await _unitOfWork.ShoppingCarts.CountAsync(c => c.UserId == userId);
+
+            // Recent orders
+            var recentOrders = orders.OrderByDescending(o => o.OrderDate).Take(3).ToList();
+            ViewBag.RecentOrders = recentOrders;
 
             return View(model);
         }

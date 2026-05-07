@@ -10,6 +10,12 @@ using ECommerceProject.Services.Interfaces;
 
 namespace ECommerceProject.Controllers
 {
+    public class ValidatePromoCodeRequest
+    {
+        public string Code { get; set; } = string.Empty;
+        public decimal OrderTotal { get; set; }
+    }
+
     [Authorize]
     public class CheckoutController : Controller
     {
@@ -383,19 +389,103 @@ namespace ECommerceProject.Controllers
             return View(order);
         }
 
-        // POST: Checkout/ValidatePromoCode
-        [HttpPost]
-        public async Task<IActionResult> ValidatePromoCode(string code, decimal orderTotal)
+        // GET: Checkout/PaymentSuccess
+        public async Task<IActionResult> PaymentSuccess(int orderId)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(code))
+                var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
+                if (order == null)
+                {
+                    return NotFound();
+                }
+
+                var payment = await _unitOfWork.Payments.GetFirstOrDefaultAsync(p => p.OrderId == orderId);
+                if (payment != null)
+                {
+                    payment.Status = PaymentStatus.Completed;
+                    payment.PaymentDate = DateTime.Now;
+                    _unitOfWork.Payments.Update(payment);
+                    await _unitOfWork.SaveAsync();
+                }
+
+                order.Status = OrderStatus.Paid;
+                _unitOfWork.Orders.Update(order);
+                await _unitOfWork.SaveAsync();
+
+                TempData["SuccessMessage"] = "Payment successful! Your order has been confirmed.";
+
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user != null)
+                {
+                    try
+                    {
+                        await _emailService.SendOrderConfirmationEmailAsync(
+                            user.Email!,
+                            user.FullName,
+                            order.Id,
+                            order.TotalAmount);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Email Error: {ex.Message}");
+                    }
+                }
+
+                return RedirectToAction("OrderConfirmation", new { orderId = orderId });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Payment Success Error: {ex.Message}");
+                TempData["ErrorMessage"] = "An error occurred while processing your payment.";
+                return RedirectToAction("Index", "Cart");
+            }
+        }
+
+        // GET: Checkout/PaymentCancelled
+        public async Task<IActionResult> PaymentCancelled(int orderId)
+        {
+            try
+            {
+                var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
+                if (order != null)
+                {
+                    var payment = await _unitOfWork.Payments.GetFirstOrDefaultAsync(p => p.OrderId == orderId);
+                    if (payment != null)
+                    {
+                        payment.Status = PaymentStatus.Failed;
+                        _unitOfWork.Payments.Update(payment);
+                    }
+
+                    order.Status = OrderStatus.Cancelled;
+                    _unitOfWork.Orders.Update(order);
+                    await _unitOfWork.SaveAsync();
+                }
+
+                TempData["ErrorMessage"] = "Payment was cancelled. Please try again.";
+                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Payment Cancelled Error: {ex.Message}");
+                return RedirectToAction("Index", "Cart");
+            }
+        }
+
+        // POST: Checkout/ValidatePromoCode
+        [HttpPost]
+        public async Task<IActionResult> ValidatePromoCode([FromBody] ValidatePromoCodeRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.Code))
                 {
                     return Json(new { success = false, message = "Please enter a promo code." });
                 }
 
                 var promoCode = await _unitOfWork.PromoCodes.GetFirstOrDefaultAsync(
-                    p => p.Code.ToUpper() == code.ToUpper());
+                    p => p.Code.ToUpper() == request.Code.ToUpper());
 
                 if (promoCode == null)
                 {
@@ -422,7 +512,7 @@ namespace ECommerceProject.Controllers
                     return Json(new { success = false, message = "This promo code has reached its usage limit." });
                 }
 
-                if (promoCode.MinimumPurchase.HasValue && orderTotal < promoCode.MinimumPurchase.Value)
+                if (promoCode.MinimumPurchase.HasValue && request.OrderTotal < promoCode.MinimumPurchase.Value)
                 {
                     return Json(new
                     {
@@ -435,7 +525,7 @@ namespace ECommerceProject.Controllers
 
                 if (promoCode.DiscountType == DiscountType.Percentage)
                 {
-                    discountAmount = orderTotal * (promoCode.DiscountValue / 100);
+                    discountAmount = request.OrderTotal * (promoCode.DiscountValue / 100);
 
                     if (promoCode.MaximumDiscount.HasValue && discountAmount > promoCode.MaximumDiscount.Value)
                     {
@@ -447,12 +537,12 @@ namespace ECommerceProject.Controllers
                     discountAmount = promoCode.DiscountValue;
                 }
 
-                if (discountAmount > orderTotal)
+                if (discountAmount > request.OrderTotal)
                 {
-                    discountAmount = orderTotal;
+                    discountAmount = request.OrderTotal;
                 }
 
-                var newTotal = orderTotal - discountAmount;
+                var newTotal = request.OrderTotal - discountAmount;
 
                 return Json(new
                 {

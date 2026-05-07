@@ -4,43 +4,96 @@
     var totalOrders = ViewBag.TotalOrders as int? ?? 0;
     var totalSpent = ViewBag.TotalSpent as decimal? ?? 0;
     var pendingOrders = ViewBag.PendingOrders as int? ?? 0;
+    var completedOrders = ViewBag.CompletedOrders as int? ?? 0;
+    var wishlistCount = ViewBag.WishlistCount as int? ?? 0;
+    var cartCount = ViewBag.CartCount as int? ?? 0;
+    var recentOrders = ViewBag.RecentOrders as List<ECommerceProject.Models.Entities.Order>;
 }
 
 <div class="container mt-4">
     <h2 class="mb-4">
-        <i class="bi bi-person-circle"></i> My Profile
+        <i class="bi bi-person-circle"></i> My Dashboard
     </h2>
 
     <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card text-center shadow-sm">
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm border-primary">
                 <div class="card-body">
-                    <i class="bi bi-cart-check text-primary" style="font-size: 3rem;"></i>
-                    <h3 class="mt-2">@totalOrders</h3>
+                    <i class="bi bi-cart-check text-primary" style="font-size: 2rem;"></i>
+                    <h4 class="mt-2">@totalOrders</h4>
                     <p class="text-muted mb-0">Total Orders</p>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-4">
-            <div class="card text-center shadow-sm">
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm border-success">
                 <div class="card-body">
-                    <i class="bi bi-cash-stack text-success" style="font-size: 3rem;"></i>
-                    <h3 class="mt-2">@totalSpent.ToString("C")</h3>
-                    <p class="text-muted mb-0">Total Spent</p>
+                    <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                    <h4 class="mt-2">@completedOrders</h4>
+                    <p class="text-muted mb-0">Completed Orders</p>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-4">
-            <div class="card text-center shadow-sm">
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm border-danger">
                 <div class="card-body">
-                    <i class="bi bi-hourglass-split text-warning" style="font-size: 3rem;"></i>
-                    <h3 class="mt-2">@pendingOrders</h3>
-                    <p class="text-muted mb-0">Pending Orders</p>
+                    <i class="bi bi-heart text-danger" style="font-size: 2rem;"></i>
+                    <h4 class="mt-2">@wishlistCount</h4>
+                    <p class="text-muted mb-0">Wishlist Items</p>
                 </div>
             </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm border-warning">
+                <div class="card-body">
+                    <i class="bi bi-cart text-warning" style="font-size: 2rem;"></i>
+                    <h4 class="mt-2">@cartCount</h4>
+                    <p class="text-muted mb-0">Cart Items</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card text-center shadow-sm" style="background: linear-gradient(135deg, #0d6efd, #0dcaf0);">
+                <div class="card-body text-white">
+                    <i class="bi bi-cash-stack" style="font-size: 2rem;"></i>
+                    <h3 class="mt-2">@totalSpent.ToString("C")</h3>
+                    <p class="mb-0 opacity-75">Total Spent</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <a asp-controller="Wishlist" asp-action="Index" class="btn btn-outline-danger w-100 py-3">
+                <i class="bi bi-heart-fill"></i> My Wishlist
+                <span class="badge bg-danger">@wishlistCount</span>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a asp-controller="Cart" asp-action="Index" class="btn btn-outline-warning w-100 py-3">
+                <i class="bi bi-cart3"></i> My Cart
+                <span class="badge bg-warning">@cartCount</span>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a asp-controller="Orders" asp-action="MyOrders" class="btn btn-outline-success w-100 py-3">
+                <i class="bi bi-box-seam"></i> My Orders
+                <span class="badge bg-success">@totalOrders</span>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a asp-controller="Products" asp-action="Index" class="btn btn-outline-primary w-100 py-3">
+                <i class="bi bi-shop"></i> Continue Shopping
+            </a>
         </div>
     </div>
 
@@ -153,6 +206,70 @@
             </div>
         </div>
     </div>
+
+    <!-- Recent Orders -->
+    @if (recentOrders != null && recentOrders.Any())
+    {
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Orders</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Order #</th>
+                                        <th>Date</th>
+                                        <th>Total</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var order in recentOrders)
+                                    {
+                                        <tr>
+                                            <td><strong>#@order.Id</strong></td>
+                                            <td>@order.OrderDate.ToString("dd MMM yyyy")</td>
+                                            <td><strong>@order.TotalAmount.ToString("C")</strong></td>
+                                            <td>
+                                                @{
+                                                    var statusClass = order.Status switch
+                                                    {
+                                                        ECommerceProject.Models.Enums.OrderStatus.Pending => "bg-warning",
+                                                        ECommerceProject.Models.Enums.OrderStatus.Paid => "bg-info",
+                                                        ECommerceProject.Models.Enums.OrderStatus.Processing => "bg-primary",
+                                                        ECommerceProject.Models.Enums.OrderStatus.Shipped => "bg-secondary",
+                                                        ECommerceProject.Models.Enums.OrderStatus.Delivered => "bg-success",
+                                                        ECommerceProject.Models.Enums.OrderStatus.Cancelled => "bg-danger",
+                                                        _ => "bg-primary"
+                                                    };
+                                                }
+                                                <span class="badge @statusClass">@order.Status</span>
+                                            </td>
+                                            <td>
+                                                <a asp-controller="Orders" asp-action="MyOrderDetails" asp-route-id="@order.Id" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-eye"></i> View
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a asp-controller="Orders" asp-action="MyOrders" class="btn btn-outline-primary">
+                                View All Orders <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
 @section Scripts {

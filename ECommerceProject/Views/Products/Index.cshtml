@@ -68,44 +68,62 @@
     <!-- Products Grid -->
     @if (Model != null && Model.Any())
     {
-        <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
             @foreach (var product in Model)
             {
                 <div class="col">
-                    <div class="card h-100 shadow-sm product-card">
-                        @if (product.IsFeatured)
-                        {
-                            <span class="badge bg-danger position-absolute top-0 end-0 m-2">
-                                Featured
-                            </span>
-                        }
+                    <div class="card h-100 product-card border-0" style="border-radius: 15px; overflow: hidden; transition: all 0.3s ease;">
+                        <div class="position-relative" style="overflow: hidden;">
+                            @if (product.IsFeatured)
+                            {
+                                <span class="badge bg-gradient position-absolute top-0 end-0 m-2 z-3" style="background: linear-gradient(135deg, #ff6b6b, #ee5a5a); z-index: 10;">
+                                    Featured
+                                </span>
+                            }
+                            
+                            <!-- Wishlist Button - More Prominent -->
+                            <button class="btn wishlist-btn position-absolute top-0 start-0 m-2 shadow-sm z-2"
+                                    onclick="toggleWishlist(@product.Id, this)"
+                                    title="Add to Wishlist"
+                                    type="button"
+                                    style="width: 45px; height: 45px; border-radius: 50%; background: rgba(255,255,255,0.95); border: 2px solid #ff6b6b;">
+                                <i class="bi bi-heart-fill fs-5" style="color: #ff6b6b;"></i>
+                            </button>
+                            
+                            <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "/images/products/placeholder.png" : product.ImageUrl)" 
+                                 class="card-img-top" alt="@product.Name" style="height: 220px; object-fit: cover;">
+                        </div>
                         
-                        <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400" : product.ImageUrl)" 
-                             class="card-img-top" alt="@product.Name" style="height: 200px; object-fit: cover;">
-                        
-                        <div class="card-body">
-                            <h5 class="card-title">@product.Name</h5>
-                            <p class="card-text text-muted small">
-                                @(product.Description?.Length > 60 ? product.Description.Substring(0, 60) + "..." : product.Description)
+                        <div class="card-body px-3 py-3">
+                            <h6 class="card-title fw-bold text-dark mb-2" style="font-size: 1rem;">@product.Name</h6>
+                            <p class="card-text text-muted small mb-2" style="font-size: 0.85rem;">
+                                @(product.Description?.Length > 50 ? product.Description.Substring(0, 50) + "..." : product.Description)
                             </p>
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="h5 text-primary mb-0">@product.Price.ToString("C")</span>
+                                <span class="fw-bold text-primary fs-5 mb-0">@product.Price.ToString("C")</span>
                                 @if (product.Stock > 0)
                                 {
-                                    <span class="badge bg-success">In Stock</span>
+                                    <span class="badge bg-success-subtle text-success px-2 py-1" style="font-size: 0.75rem;">In Stock</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-danger">Out of Stock</span>
+                                    <span class="badge bg-danger-subtle text-danger px-2 py-1" style="font-size: 0.75rem;">Out of Stock</span>
                                 }
                             </div>
                         </div>
                         
-                        <div class="card-footer bg-transparent">
-                            <div class="d-grid gap-2">
+                        <div class="card-footer bg-white border-0 px-3 pb-3">
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-danger flex-fill fw-semibold py-2" 
+                                        onclick="toggleWishlist(@product.Id, this)"
+                                        style="border-radius: 10px;"
+                                        type="button">
+                                    <i class="bi bi-heart me-1"></i> Wishlist
+                                </button>
                                 <a asp-action="Details" asp-route-id="@product.Id" 
-                                   class="btn btn-outline-primary btn-sm">
-                                    <i class="bi bi-eye"></i> View Details
+                                   class="btn btn-primary flex-fill fw-semibold py-2"
+                                   style="border-radius: 10px;">
+                                    <i class="bi bi-eye me-1"></i> Details
                                 </a>
                             </div>
                         </div>
@@ -125,11 +143,160 @@
 @section Styles {
     <style>
         .product-card {
-            transition: transform 0.2s;
+            transition: all 0.3s ease;
         }
         .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15) !important;
+        }
+        .product-card:hover img {
+            transform: scale(1.05);
+            transition: transform 0.3s ease;
+        }
+        .product-card img {
+            transition: transform 0.3s ease;
+        }
+        .wishlist-btn {
+            background: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+        .wishlist-btn:hover {
+            transform: scale(1.1);
+            background: #ffe6e6;
+        }
+        .wishlist-btn.active {
+            background: #ff6b6b;
+            color: white;
+        }
+        .wishlist-btn.active i {
+            color: white;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
         }
     </style>
+}
+
+@section Scripts {
+    <script>
+        // Check wishlist status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const productIds = @Html.Raw(Json.Serialize(Model?.Select(p => p.Id) ?? new List<int>()));
+            productIds.forEach(function(productId) {
+                checkWishlistStatus(productId);
+            });
+        });
+
+        function checkWishlistStatus(productId) {
+            fetch('@Url.Action("CheckIsInWishlist", "Wishlist")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                },
+                body: JSON.stringify({ productId: productId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.isInWishlist) {
+                    const btn = document.querySelector(`.wishlist-btn[onclick*="${productId}"]`);
+                    if (btn) btn.classList.add('active');
+                }
+            })
+            .catch(err => console.error('Error checking wishlist:', err));
+        }
+
+        function toggleWishlist(productId, btn) {
+            fetch('@Url.Action("CheckIsInWishlist", "Wishlist")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                },
+                body: JSON.stringify({ productId: productId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.isInWishlist) {
+                    removeFromWishlist(productId, btn);
+                } else {
+                    addToWishlist(productId, btn);
+                }
+            })
+            .catch(err => console.error('Error checking wishlist:', err));
+        }
+
+        function addToWishlist(productId, btn) {
+            fetch('@Url.Action("Add", "Wishlist")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                },
+                body: JSON.stringify({ productId: productId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    btn.classList.add('active');
+                    updateWishlistCount(data.count);
+                    showToast('Added to wishlist!', 'success');
+                } else {
+                    showToast(data.message || 'Error adding to wishlist', 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Error adding to wishlist:', err);
+                showToast('Error adding to wishlist', 'error');
+            });
+        }
+
+        function removeFromWishlist(productId, btn) {
+            fetch('@Url.Action("Remove", "Wishlist")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                },
+                body: JSON.stringify({ productId: productId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    btn.classList.remove('active');
+                    updateWishlistCount(data.count);
+                    showToast('Removed from wishlist', 'success');
+                }
+            })
+            .catch(err => console.error('Error removing from wishlist:', err));
+        }
+
+        function updateWishlistCount(count) {
+            const countEl = document.getElementById('wishlist-count');
+            if (countEl) countEl.textContent = count;
+        }
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.style.cssText = 'position:fixed;top:20px;right:20px;padding:15px 20px;border-radius:5px;z-index:9999;animation:fadeIn 0.3s';
+            toast.style.background = type === 'success' ? '#28a745' : '#dc3545';
+            toast.style.color = 'white';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+    </script>
 }
