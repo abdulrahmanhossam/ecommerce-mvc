@@ -3,51 +3,57 @@
     ViewData["Title"] = "Login";
 }
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card shadow">
-                <div class="card-header bg-success text-white">
-                    <h3 class="mb-0">Login</h3>
-                </div>
-                <div class="card-body">
-                    <form asp-action="Login" method="post">
-                        <div asp-validation-summary="All" class="text-danger mb-3"></div>
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <a asp-controller="Home" asp-action="Index" class="logo" style="justify-content: center;">
+                <span class="logo-icon">
+                    <i class="bi bi-bag-check"></i>
+                </span>
+                ShopHub
+            </a>
+            <h2 style="margin-top: 1.5rem;">Welcome back</h2>
+            <p class="text-muted">Sign in to your account</p>
+        </div>
 
-                        <div class="mb-3">
-                            <label asp-for="Email" class="form-label"></label>
-                            <input asp-for="Email" class="form-control" placeholder="Enter your email" autofocus />
-                            <span asp-validation-for="Email" class="text-danger"></span>
-                        </div>
+        <form asp-action="Login" method="post">
+            <div asp-validation-summary="All" class="alert alert-danger" style="font-size: 0.85rem; padding: 0.75rem;"></div>
 
-                        <div class="mb-3">
-                            <label asp-for="Password" class="form-label"></label>
-                            <input asp-for="Password" class="form-control" placeholder="Enter your password" />
-                            <span asp-validation-for="Password" class="text-danger"></span>
-                        </div>
-
-                        <div class="form-check mb-3">
-                            <input asp-for="RememberMe" class="form-check-input" />
-                            <label asp-for="RememberMe" class="form-check-label"></label>
-                        </div>
-
-                        <button type="submit" class="btn btn-success w-100 mb-3">
-                            <i class="bi bi-box-arrow-in-right"></i> Login
-                        </button>
-
-                        <div class="text-center">
-                            <a asp-action="ForgotPassword" class="text-decoration-none">Forgot Password?</a>
-                        </div>
-
-                        <hr />
-
-                        <div class="text-center">
-                            Don't have an account?
-                            <a asp-action="Register" class="text-decoration-none">Register here</a>
-                        </div>
-                    </form>
-                </div>
+            <div class="form-group">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" placeholder="Enter your email" autofocus>
+                <span asp-validation-for="Email" class="text-danger"></span>
             </div>
+
+            <div class="form-group">
+                <label asp-for="Password" class="form-label"></label>
+                <input asp-for="Password" class="form-control" placeholder="Enter your password">
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+
+            <div class="flex justify-between items-center mb-4">
+                <div class="form-check">
+                    <input asp-for="RememberMe" class="form-check-input" style="margin-top: 0.2rem;">
+                    <label asp-for="RememberMe" class="form-check-label" style="font-size: 0.85rem; color: var(--text-muted);"></label>
+                </div>
+                <a asp-action="ForgotPassword" class="text-muted" style="font-size: 0.85rem;">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-box-arrow-in-right"></i>
+                Sign In
+            </button>
+        </form>
+
+        <div class="auth-divider">
+            <span>or continue with</span>
+        </div>
+
+        <div class="text-center">
+            <span class="text-muted" style="font-size: 0.9rem;">
+                Don't have an account?
+                <a asp-action="Register">Create one</a>
+            </span>
         </div>
     </div>
 </div>

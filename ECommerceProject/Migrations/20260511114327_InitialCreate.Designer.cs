@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ECommerceProject.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260507130127_AddWishlist")]
-    partial class AddWishlist
+    [Migration("20260511114327_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

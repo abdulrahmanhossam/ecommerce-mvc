@@ -8,125 +8,90 @@
     var maxPrice = ViewBag.MaxPrice as decimal?;
 }
 
-<div class="container mt-4">
-    <h2 class="mb-4">
-        <i class="bi bi-bag"></i> Our Products
-    </h2>
+<div class="py-4">
+    <div class="flex items-center justify-between mb-4">
+        <div>
+            <h2 style="margin-bottom: 0.25rem;">Products</h2>
+            <p class="text-muted" style="margin-bottom: 0;">Browse our collection</p>
+        </div>
+        <span class="badge badge-primary">@(Model?.Count() ?? 0) items</span>
+    </div>
 
-    <!-- Filters Section -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-body">
-                    <form asp-action="Index" method="get" class="row g-3">
-                        <div class="col-md-3">
-                            <label class="form-label">Search</label>
-                            <input type="text" name="searchTerm" class="form-control" 
-                                   placeholder="Search products..." value="@searchTerm">
-                        </div>
-                        
-                        <div class="col-md-3">
-                            <label class="form-label">Category</label>
-                            <select name="categoryId" class="form-select">
-                                <option value="">All Categories</option>
-                                @if (categories != null)
-                                {
-                                    foreach (var category in categories)
-                                    {
-                                        <option value="@category.Id" selected="@(selectedCategoryId == category.Id)">
-                                            @category.Name
-                                        </option>
-                                    }
-                                }
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-2">
-                            <label class="form-label">Min Price</label>
-                            <input type="number" name="minPrice" class="form-control" 
-                                   placeholder="Min" value="@minPrice" step="0.01">
-                        </div>
-                        
-                        <div class="col-md-2">
-                            <label class="form-label">Max Price</label>
-                            <input type="number" name="maxPrice" class="form-control" 
-                                   placeholder="Max" value="@maxPrice" step="0.01">
-                        </div>
-                        
-                        <div class="col-md-2">
-                            <label class="form-label">&nbsp;</label>
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-filter"></i> Filter
-                            </button>
-                        </div>
-                    </form>
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body" style="padding: 1rem;">
+            <form asp-action="Index" method="get" class="grid grid-4" style="gap: 1rem; align-items: end;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="searchTerm" class="form-control" placeholder="Search products..." value="@searchTerm">
                 </div>
-            </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Category</label>
+                    <select name="categoryId" class="form-select">
+                        <option value="">All Categories</option>
+                        @if (categories != null)
+                        {
+                            foreach (var category in categories)
+                            {
+                                <option value="@category.Id" selected="@(selectedCategoryId == category.Id)">@category.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Price Range</label>
+                    <div class="flex gap-sm">
+                        <input type="number" name="minPrice" class="form-control" placeholder="Min" value="@minPrice" step="0.01">
+                        <input type="number" name="maxPrice" class="form-control" placeholder="Max" value="@maxPrice" step="0.01">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-funnel"></i>
+                        Filter
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
     <!-- Products Grid -->
     @if (Model != null && Model.Any())
     {
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+        <div class="grid grid-4">
             @foreach (var product in Model)
             {
-                <div class="col">
-                    <div class="card h-100 product-card border-0" style="border-radius: 15px; overflow: hidden; transition: all 0.3s ease;">
-                        <div class="position-relative" style="overflow: hidden;">
+                <div class="product-card">
+                    <div class="image-wrapper">
+                        <div class="badges">
                             @if (product.IsFeatured)
                             {
-                                <span class="badge bg-gradient position-absolute top-0 end-0 m-2 z-3" style="background: linear-gradient(135deg, #ff6b6b, #ee5a5a); z-index: 10;">
-                                    Featured
-                                </span>
+                                <span class="badge badge-danger">Featured</span>
                             }
-                            
-                            <!-- Wishlist Button - More Prominent -->
-                            <button class="btn wishlist-btn position-absolute top-0 start-0 m-2 shadow-sm z-2"
-                                    onclick="toggleWishlist(@product.Id, this)"
-                                    title="Add to Wishlist"
-                                    type="button"
-                                    style="width: 45px; height: 45px; border-radius: 50%; background: rgba(255,255,255,0.95); border: 2px solid #ff6b6b;">
-                                <i class="bi bi-heart-fill fs-5" style="color: #ff6b6b;"></i>
-                            </button>
-                            
-                            <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "/images/products/placeholder.png" : product.ImageUrl)" 
-                                 class="card-img-top" alt="@product.Name" style="height: 220px; object-fit: cover;">
                         </div>
-                        
-                        <div class="card-body px-3 py-3">
-                            <h6 class="card-title fw-bold text-dark mb-2" style="font-size: 1rem;">@product.Name</h6>
-                            <p class="card-text text-muted small mb-2" style="font-size: 0.85rem;">
-                                @(product.Description?.Length > 50 ? product.Description.Substring(0, 50) + "..." : product.Description)
-                            </p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="fw-bold text-primary fs-5 mb-0">@product.Price.ToString("C")</span>
-                                @if (product.Stock > 0)
-                                {
-                                    <span class="badge bg-success-subtle text-success px-2 py-1" style="font-size: 0.75rem;">In Stock</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-danger-subtle text-danger px-2 py-1" style="font-size: 0.75rem;">Out of Stock</span>
-                                }
-                            </div>
+                        <button class="icon-btn" style="position: absolute; top: 0.5rem; right: 0.5rem; background: var(--bg-secondary);" 
+                                onclick="toggleWishlist(@product.Id, this)" title="Add to wishlist">
+                            <i class="bi bi-heart"></i>
+                        </button>
+                        <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : product.ImageUrl)" 
+                             alt="@product.Name"
+                             onerror="this.src='https://placehold.co/400x300?text=No+Image'">
+                    </div>
+                    <div class="card-content">
+                        <h5 class="product-title">@product.Name</h5>
+                        <p class="product-desc">@(product.Description?.Length > 60 ? product.Description.Substring(0, 60) + "..." : product.Description)</p>
+                        <div class="flex items-center justify-between">
+                            <span class="product-price">@product.Price.ToString("C")</span>
+                            <span class="badge @(product.Stock > 0 ? "badge-success" : "badge-danger")">
+                                @(product.Stock > 0 ? "In Stock" : "Out")
+                            </span>
                         </div>
-                        
-                        <div class="card-footer bg-white border-0 px-3 pb-3">
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-outline-danger flex-fill fw-semibold py-2" 
-                                        onclick="toggleWishlist(@product.Id, this)"
-                                        style="border-radius: 10px;"
-                                        type="button">
-                                    <i class="bi bi-heart me-1"></i> Wishlist
-                                </button>
-                                <a asp-action="Details" asp-route-id="@product.Id" 
-                                   class="btn btn-primary flex-fill fw-semibold py-2"
-                                   style="border-radius: 10px;">
-                                    <i class="bi bi-eye me-1"></i> Details
-                                </a>
-                            </div>
-                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <a asp-action="Details" asp-route-id="@product.Id" class="btn btn-secondary btn-sm flex-fill">
+                            <i class="bi bi-eye"></i>
+                            View
+                        </a>
                     </div>
                 </div>
             }
@@ -134,111 +99,20 @@
     }
     else
     {
-        <div class="alert alert-info text-center">
-            <i class="bi bi-info-circle"></i> No products found matching your criteria.
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <h4>No products found</h4>
+            <p>Try adjusting your filters</p>
+            <a asp-action="Index" class="btn btn-primary">
+                Clear Filters
+            </a>
         </div>
     }
 </div>
 
-@section Styles {
-    <style>
-        .product-card {
-            transition: all 0.3s ease;
-        }
-        .product-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.15) !important;
-        }
-        .product-card:hover img {
-            transform: scale(1.05);
-            transition: transform 0.3s ease;
-        }
-        .product-card img {
-            transition: transform 0.3s ease;
-        }
-        .wishlist-btn {
-            background: white;
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-            transition: all 0.3s ease;
-        }
-        .wishlist-btn:hover {
-            transform: scale(1.1);
-            background: #ffe6e6;
-        }
-        .wishlist-btn.active {
-            background: #ff6b6b;
-            color: white;
-        }
-        .wishlist-btn.active i {
-            color: white;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-        }
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
-        }
-    </style>
-}
-
 @section Scripts {
     <script>
-        // Check wishlist status on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            const productIds = @Html.Raw(Json.Serialize(Model?.Select(p => p.Id) ?? new List<int>()));
-            productIds.forEach(function(productId) {
-                checkWishlistStatus(productId);
-            });
-        });
-
-        function checkWishlistStatus(productId) {
-            fetch('@Url.Action("CheckIsInWishlist", "Wishlist")', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
-                },
-                body: JSON.stringify({ productId: productId })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.isInWishlist) {
-                    const btn = document.querySelector(`.wishlist-btn[onclick*="${productId}"]`);
-                    if (btn) btn.classList.add('active');
-                }
-            })
-            .catch(err => console.error('Error checking wishlist:', err));
-        }
-
         function toggleWishlist(productId, btn) {
-            fetch('@Url.Action("CheckIsInWishlist", "Wishlist")', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
-                },
-                body: JSON.stringify({ productId: productId })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.isInWishlist) {
-                    removeFromWishlist(productId, btn);
-                } else {
-                    addToWishlist(productId, btn);
-                }
-            })
-            .catch(err => console.error('Error checking wishlist:', err));
-        }
-
-        function addToWishlist(productId, btn) {
             fetch('@Url.Action("Add", "Wishlist")', {
                 method: 'POST',
                 headers: {
@@ -247,56 +121,35 @@
                 },
                 body: JSON.stringify({ productId: productId })
             })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    btn.classList.add('active');
-                    updateWishlistCount(data.count);
-                    showToast('Added to wishlist!', 'success');
+                    if (btn) {
+                        btn.classList.toggle('btn-outline');
+                        btn.classList.toggle('btn-primary');
+                        const icon = btn.querySelector('i');
+                        if (icon.classList.contains('bi-heart')) {
+                            icon.classList.remove('bi-heart');
+                            icon.classList.add('bi-heart-fill');
+                        } else {
+                            icon.classList.remove('bi-heart-fill');
+                            icon.classList.add('bi-heart');
+                        }
+                    }
+                    showToast(data.message, 'success');
                 } else {
-                    showToast(data.message || 'Error adding to wishlist', 'error');
+                    showToast(data.message || 'Error', 'error');
                 }
             })
-            .catch(err => {
-                console.error('Error adding to wishlist:', err);
-                showToast('Error adding to wishlist', 'error');
-            });
-        }
-
-        function removeFromWishlist(productId, btn) {
-            fetch('@Url.Action("Remove", "Wishlist")', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
-                },
-                body: JSON.stringify({ productId: productId })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    btn.classList.remove('active');
-                    updateWishlistCount(data.count);
-                    showToast('Removed from wishlist', 'success');
-                }
-            })
-            .catch(err => console.error('Error removing from wishlist:', err));
-        }
-
-        function updateWishlistCount(count) {
-            const countEl = document.getElementById('wishlist-count');
-            if (countEl) countEl.textContent = count;
+            .catch(err => showToast('Error', 'error'));
         }
 
         function showToast(message, type) {
             const toast = document.createElement('div');
             toast.className = `toast-notification toast-${type}`;
-            toast.style.cssText = 'position:fixed;top:20px;right:20px;padding:15px 20px;border-radius:5px;z-index:9999;animation:fadeIn 0.3s';
-            toast.style.background = type === 'success' ? '#28a745' : '#dc3545';
-            toast.style.color = 'white';
             toast.textContent = message;
             document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+            setTimeout(() => toast.remove(), 2500);
         }
     </script>
 }

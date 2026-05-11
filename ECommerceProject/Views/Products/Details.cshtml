@@ -5,7 +5,7 @@
     var relatedProducts = ViewBag.RelatedProducts as List<ECommerceProject.Models.Entities.Product>;
 }
 
-<div class="container mt-4">
+<div class="py-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
@@ -14,75 +14,73 @@
         </ol>
     </nav>
 
-    <div class="row">
+    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 3rem;">
         <!-- Product Image -->
-        <div class="col-md-5">
-            <div class="card">
+        <div>
+            <div class="card" style="overflow: hidden;">
                 <img src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/no-image.jpg" : Model.ImageUrl)" 
-                     class="card-img-top" alt="@Model.Name">
+                     alt="@Model.Name" style="width: 100%; aspect-ratio: 1; object-fit: cover;">
             </div>
         </div>
 
         <!-- Product Info -->
-        <div class="col-md-7">
-            <h2>@Model.Name</h2>
-            
-            @if (Model.IsFeatured)
-            {
-                <span class="badge bg-danger mb-2">Featured Product</span>
-            }
-            
-            <div class="mb-3">
-                <span class="text-muted">Category: </span>
-                <a asp-action="ByCategory" asp-route-id="@Model.CategoryId" class="text-decoration-none">
-                    @Model.Category?.Name
-                </a>
+        <div>
+            <div class="flex items-center gap-sm mb-3">
+                @if (Model.IsFeatured)
+                {
+                    <span class="badge badge-danger">Featured</span>
+                }
+                @if (Model.Category != null)
+                {
+                    <a asp-action="ByCategory" asp-route-id="@Model.CategoryId" class="badge badge-primary">
+                        @Model.Category.Name
+                    </a>
+                }
             </div>
 
-            <h3 class="text-primary mb-3">@Model.Price.ToString("C")</h3>
-
-            <div class="mb-4">
-                <h5>Description</h5>
-                <p>@Model.Description</p>
+            <h2 style="margin-bottom: 1rem;">@Model.Name</h2>
+            
+            <div class="flex items-center gap-sm mb-4">
+                <span class="product-price" style="font-size: 1.75rem;">@Model.Price.ToString("C")</span>
             </div>
 
-            <div class="mb-3">
-                <strong>Availability: </strong>
+            <p class="text-muted mb-4">@Model.Description</p>
+
+            <div class="flex items-center gap-md mb-4">
+                <span class="text-secondary">Availability:</span>
                 @if (Model.Stock > 0)
                 {
-                    <span class="badge bg-success">In Stock (@Model.Stock units available)</span>
+                    <span class="badge badge-success">In Stock (@Model.Stock available)</span>
                 }
                 else
                 {
-                    <span class="badge bg-danger">Out of Stock</span>
+                    <span class="badge badge-danger">Out of Stock</span>
                 }
             </div>
 
             <!-- Product Variants -->
             @if (variants != null && variants.Any())
             {
-                <div class="mb-3">
-                    <h5>Available Options</h5>
-                    <div class="row">
+                <div class="mb-4">
+                    <h5 style="margin-bottom: 1rem;">Available Options</h5>
+                    <div class="grid grid-2" style="gap: 1rem;">
                         @foreach (var variant in variants)
                         {
-                            <div class="col-md-6 mb-2">
-                                <div class="card">
-                                    <div class="card-body">
-                                        @if (!string.IsNullOrEmpty(variant.Size))
-                                        {
-                                            <div><strong>Size:</strong> @variant.Size</div>
-                                        }
-                                        @if (!string.IsNullOrEmpty(variant.Color))
-                                        {
-                                            <div><strong>Color:</strong> @variant.Color</div>
-                                        }
-                                        @if (variant.AdditionalPrice > 0)
-                                        {
-                                            <div><strong>Additional Price:</strong> +@variant.AdditionalPrice.ToString("C")</div>
-                                        }
-                                        <div><strong>Stock:</strong> @variant.Stock units</div>
-                                    </div>
+                            <div class="card">
+                                <div class="card-body">
+                                    @if (!string.IsNullOrEmpty(variant.Size))
+                                    {
+                                        <div><strong>Size:</strong> @variant.Size</div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(variant.Color))
+                                    {
+                                        <div><strong>Color:</strong> @variant.Color</div>
+                                    }
+                                    @if (variant.AdditionalPrice > 0)
+                                    {
+                                        <div><strong>Extra:</strong> +@variant.AdditionalPrice.ToString("C")</div>
+                                    }
+                                    <div><strong>Stock:</strong> @variant.Stock units</div>
                                 </div>
                             </div>
                         }
@@ -96,21 +94,20 @@
                 <form asp-controller="Cart" asp-action="AddToCart" method="post">
                     <input type="hidden" name="productId" value="@Model.Id" />
                     
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Quantity</label>
-                            <input type="number" name="quantity" class="form-control" 
-                                   value="1" min="1" max="@Model.Stock" required>
-                        </div>
+                    <div class="form-group" style="max-width: 200px; margin-bottom: 1rem;">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" name="quantity" class="form-control" 
+                               value="1" min="1" max="@Model.Stock" required>
                     </div>
                     
-                    <div class="d-flex gap-2 mb-3">
+                    <div class="flex gap-sm">
                         <button type="submit" class="btn btn-primary btn-lg flex-fill">
-                            <i class="bi bi-cart-plus"></i> Add to Cart
+                            <i class="bi bi-cart-plus"></i>
+                            Add to Cart
                         </button>
-                        <button type="button" class="btn btn-outline-danger btn-lg" 
+                        <button type="button" class="icon-btn btn-lg" 
                                 onclick="toggleWishlist(@Model.Id, this)" id="wishlistBtn">
-                            <i class="bi bi-heart"></i> Wishlist
+                            <i class="bi bi-heart"></i>
                         </button>
                     </div>
                 </form>
@@ -118,107 +115,68 @@
             else if (User.Identity?.IsAuthenticated != true)
             {
                 <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle"></i> 
-                    Please <a asp-controller="Account" asp-action="Login" class="alert-link">login</a> 
-                    to add products to cart.
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Please <a asp-controller="Account" asp-action="Login">login</a> to add products to cart.
                 </div>
             }
             else
             {
                 <div class="alert alert-danger">
-                    <i class="bi bi-x-circle"></i> This product is currently out of stock.
+                    <i class="bi bi-x-circle"></i>
+                    This product is currently out of stock.
                 </div>
             }
         </div>
     </div>
-<!-- Reviews Section -->
-<div class="row mt-5">
-    <div class="col-12">
-        <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">
-                    <i class="bi bi-star-fill"></i> Customer Reviews
-                </h4>
-            </div>
-            <div class="card-body">
+
+    <!-- Reviews Section -->
+    <section class="section">
+        <div class="card">
+            <div class="card-body" style="padding: 2rem;">
+                <h3 style="margin-bottom: 1.5rem;">
+                    <i class="bi bi-star-fill" style="color: var(--accent);"></i>
+                    Customer Reviews
+                </h3>
+                
                 @if (ViewBag.TotalReviews > 0)
                 {
-                    <!-- Rating Summary -->
-                    <div class="row mb-4">
-                        <div class="col-md-4 text-center">
-                            <h1 class="display-3 mb-0">@ViewBag.AverageRating.ToString("F1")</h1>
-                            <div class="mb-2">
+                    <div class="grid" style="grid-template-columns: 300px 1fr; gap: 2rem; margin-bottom: 2rem;">
+                        <div class="text-center" style="padding: 2rem; background: var(--bg-tertiary); border-radius: var(--radius-lg);">
+                            <h1 style="font-size: 3rem; font-weight: 700; color: var(--accent); margin-bottom: 0.5rem;">
+                                @ViewBag.AverageRating.ToString("F1")
+                            </h1>
+                            <div class="rating justify-center mb-2">
                                 @for (int i = 1; i <= 5; i++)
                                 {
-                                    if (i <= Math.Round((double)ViewBag.AverageRating))
-                                    {
-                                        <i class="bi bi-star-fill text-warning"></i>
-                                    }
-                                    else
-                                    {
-                                        <i class="bi bi-star text-warning"></i>
-                                    }
+                                    <i class="bi bi-star-fill @(i <= Math.Round((double)ViewBag.AverageRating) ? "" : "empty")"></i>
                                 }
                             </div>
                             <p class="text-muted">Based on @ViewBag.TotalReviews reviews</p>
                         </div>
 
-                        <div class="col-md-8">
-                            <!-- Rating Breakdown -->
-                            <div class="mb-2">
-                                <div class="d-flex align-items-center">
-                                    <span class="me-2">5 ⭐</span>
-                                    <div class="progress flex-grow-1 me-2" style="height: 20px;">
-                                        <div class="progress-bar bg-warning" 
-                                             style="width: @((ViewBag.FiveStars / (double)ViewBag.TotalReviews * 100))%"></div>
+                        <div>
+                            @for (int stars = 5; stars >= 1; stars--)
+                            {
+                                var count = stars switch {
+                                    5 => ViewBag.FiveStars,
+                                    4 => ViewBag.FourStars,
+                                    3 => ViewBag.ThreeStars,
+                                    2 => ViewBag.TwoStars,
+                                    _ => ViewBag.OneStar
+                                };
+                                var percent = ViewBag.TotalReviews > 0 ? (double)count / ViewBag.TotalReviews * 100 : 0;
+                                <div class="flex items-center gap-sm mb-2">
+                                    <span style="min-width: 40px;">@stars <i class="bi bi-star-fill"></i></span>
+                                    <div style="flex: 1; height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden;">
+                                        <div style="width: @percent%; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s;"></div>
                                     </div>
-                                    <span class="text-muted">@ViewBag.FiveStars</span>
+                                    <span class="text-muted" style="min-width: 30px;">@count</span>
                                 </div>
-                            </div>
-                            <div class="mb-2">
-                                <div class="d-flex align-items-center">
-                                    <span class="me-2">4 ⭐</span>
-                                    <div class="progress flex-grow-1 me-2" style="height: 20px;">
-                                        <div class="progress-bar bg-warning" 
-                                             style="width: @((ViewBag.FourStars / (double)ViewBag.TotalReviews * 100))%"></div>
-                                    </div>
-                                    <span class="text-muted">@ViewBag.FourStars</span>
-                                </div>
-                            </div>
-                            <div class="mb-2">
-                                <div class="d-flex align-items-center">
-                                    <span class="me-2">3 ⭐</span>
-                                    <div class="progress flex-grow-1 me-2" style="height: 20px;">
-                                        <div class="progress-bar bg-warning" 
-                                             style="width: @((ViewBag.ThreeStars / (double)ViewBag.TotalReviews * 100))%"></div>
-                                    </div>
-                                    <span class="text-muted">@ViewBag.ThreeStars</span>
-                                </div>
-                            </div>
-                            <div class="mb-2">
-                                <div class="d-flex align-items-center">
-                                    <span class="me-2">2 ⭐</span>
-                                    <div class="progress flex-grow-1 me-2" style="height: 20px;">
-                                        <div class="progress-bar bg-warning" 
-                                             style="width: @((ViewBag.TwoStars / (double)ViewBag.TotalReviews * 100))%"></div>
-                                    </div>
-                                    <span class="text-muted">@ViewBag.TwoStars</span>
-                                </div>
-                            </div>
-                            <div class="mb-2">
-                                <div class="d-flex align-items-center">
-                                    <span class="me-2">1 ⭐</span>
-                                    <div class="progress flex-grow-1 me-2" style="height: 20px;">
-                                        <div class="progress-bar bg-warning" 
-                                             style="width: @((ViewBag.OneStar / (double)ViewBag.TotalReviews * 100))%"></div>
-                                    </div>
-                                    <span class="text-muted">@ViewBag.OneStar</span>
-                                </div>
-                            </div>
+                            }
                         </div>
                     </div>
 
-                    <hr>
+                    <hr style="border-color: var(--border-subtle); margin: 2rem 0;">
                 }
 
                 <!-- Add Review Form -->
@@ -227,56 +185,54 @@
                     @if (!ViewBag.HasReviewed)
                     {
                         <div class="mb-4">
-                            <h5>Write a Review</h5>
+                            <h5 style="margin-bottom: 1rem;">Write a Review</h5>
                             <form asp-controller="Products" asp-action="AddReview" method="post">
                                 <input type="hidden" name="ProductId" value="@Model.Id" />
                                 
-                                <div class="mb-3">
+                                <div class="form-group">
                                     <label class="form-label">Rating</label>
-                                    <div class="rating-input">
+                                    <div class="rating" style="font-size: 1.5rem;">
                                         @for (int i = 5; i >= 1; i--)
                                         {
-                                            <input type="radio" name="Rating" value="@i" id="star@(i)" required />
-                                            <label for="star@(i)">⭐</label>
+                                            <input type="radio" name="Rating" value="@i" id="star@(i)" required style="display: none;">
+                                            <label for="star@(i)" style="cursor: pointer; color: var(--accent);">★</label>
                                         }
                                     </div>
                                 </div>
 
-                                <div class="mb-3">
-                                    <label for="Title" class="form-label">Review Title (Optional)</label>
-                                    <input type="text" name="Title" class="form-control" 
-                                           placeholder="Summarize your experience" maxlength="100" />
+                                <div class="form-group">
+                                    <label class="form-label">Title (Optional)</label>
+                                    <input type="text" name="Title" class="form-control" maxlength="100">
                                 </div>
 
-                                <div class="mb-3">
-                                    <label for="Comment" class="form-label">Your Review</label>
-                                    <textarea name="Comment" class="form-control" rows="4" 
-                                              placeholder="Share your thoughts about this product" 
-                                              required minlength="10" maxlength="2000"></textarea>
+                                <div class="form-group">
+                                    <label class="form-label">Your Review</label>
+                                    <textarea name="Comment" class="form-control" rows="4" required minlength="10" maxlength="2000"
+                                              placeholder="Share your thoughts"></textarea>
                                 </div>
 
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-send"></i> Submit Review
+                                    <i class="bi bi-send"></i>
+                                    Submit Review
                                 </button>
                             </form>
                         </div>
-                        <hr>
+                        <hr style="border-color: var(--border-subtle); margin: 2rem 0;">
                     }
                     else
                     {
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> You have already reviewed this product.
+                        <div class="alert alert-warning mb-4">
+                            <i class="bi bi-info-circle"></i>
+                            You have already reviewed this product.
                         </div>
-                        <hr>
                     }
                 }
                 else
                 {
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle"></i> 
-                        Please <a asp-controller="Account" asp-action="Login" class="alert-link">login</a> to write a review.
+                    <div class="alert alert-warning mb-4">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Please <a asp-controller="Account" asp-action="Login">login</a> to write a review.
                     </div>
-                    <hr>
                 }
 
                 <!-- Reviews List -->
@@ -284,59 +240,50 @@
                 {
                     var reviews = ViewBag.Reviews as List<ECommerceProject.Models.Entities.ProductReview>;
                     
-                    if (reviews != null && reviews.Any())
+                    @if (reviews != null && reviews.Any())
                     {
-                        <h5 class="mb-3">Customer Reviews (@reviews.Count)</h5>
+                        <h5 style="margin-bottom: 1rem;">Customer Reviews (@reviews.Count)</h5>
                         
                         @foreach (var review in reviews)
                         {
-                            <div class="card mb-3">
+                            <div class="card" style="margin-bottom: 1rem;">
                                 <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div class="flex justify-between items-start mb-2">
                                         <div>
-                                            <div class="mb-1">
+                                            <div class="rating mb-1">
                                                 @for (int i = 1; i <= 5; i++)
                                                 {
-                                                    if (i <= review.Rating)
-                                                    {
-                                                        <i class="bi bi-star-fill text-warning"></i>
-                                                    }
-                                                    else
-                                                    {
-                                                        <i class="bi bi-star text-warning"></i>
-                                                    }
+                                                    <i class="bi bi-star-fill @(i <= review.Rating ? "" : "empty")"></i>
                                                 }
                                             </div>
                                             @if (!string.IsNullOrEmpty(review.Title))
                                             {
-                                                <h6 class="mb-1">@review.Title</h6>
+                                                <h6 style="margin-bottom: 0.25rem;">@review.Title</h6>
                                             }
                                         </div>
-                                        <small class="text-muted">@review.CreatedDate.ToString("dd MMM yyyy")</small>
+                                        <span class="text-muted" style="font-size: 0.85rem;">@review.CreatedDate.ToString("dd MMM yyyy")</span>
                                     </div>
 
-                                    <p class="mb-2">@review.Comment</p>
+                                    <p class="mb-2" style="color: var(--text-secondary);">@review.Comment</p>
 
-                                    <div class="d-flex align-items-center text-muted small">
-                                        <span class="me-3">
+                                    <div class="flex items-center gap-md" style="font-size: 0.85rem; color: var(--text-muted);">
+                                        <span>
                                             <strong>@review.User?.FullName</strong>
                                             @if (review.IsVerifiedPurchase)
                                             {
-                                                <span class="badge bg-success ms-1">✓ Verified Purchase</span>
+                                                <span class="badge badge-success" style="margin-left: 0.5rem;">✓ Verified</span>
                                             }
                                         </span>
 
                                         @if (User.Identity!.IsAuthenticated)
                                         {
-                                            <button class="btn btn-sm btn-outline-secondary me-2" 
-                                                    onclick="markHelpful(@review.Id, true)">
-                                                <i class="bi bi-hand-thumbs-up"></i> 
-                                                Helpful (<span id="helpful-@review.Id">@review.HelpfulCount</span>)
+                                            <button class="btn btn-ghost btn-sm" onclick="markHelpful(@review.Id, true)">
+                                                <i class="bi bi-hand-thumbs-up"></i>
+                                                <span id="helpful-@review.Id">@review.HelpfulCount</span>
                                             </button>
-                                            <button class="btn btn-sm btn-outline-secondary" 
-                                                    onclick="markHelpful(@review.Id, false)">
-                                                <i class="bi bi-hand-thumbs-down"></i> 
-                                                Not Helpful (<span id="nothelpful-@review.Id">@review.NotHelpfulCount</span>)
+                                            <button class="btn btn-ghost btn-sm" onclick="markHelpful(@review.Id, false)">
+                                                <i class="bi bi-hand-thumbs-down"></i>
+                                                <span id="nothelpful-@review.Id">@review.NotHelpfulCount</span>
                                             </button>
                                         }
                                     </div>
@@ -347,37 +294,42 @@
                 }
             </div>
         </div>
-    </div>
-</div>
+    </section>
+
     <!-- Related Products -->
     @if (relatedProducts != null && relatedProducts.Any())
     {
-        <div class="mt-5">
-            <h4 class="mb-3">Related Products</h4>
-            <div class="row row-cols-1 row-cols-md-4 g-4">
+        <section class="section">
+            <div class="section-header">
+                <h3>Related Products</h3>
+            </div>
+            <div class="grid grid-4">
                 @foreach (var relatedProduct in relatedProducts)
                 {
-                    <div class="col">
-                        <div class="card h-100">
-                            <img src="@(string.IsNullOrEmpty(relatedProduct.ImageUrl) ? "/images/no-image.jpg" : relatedProduct.ImageUrl)" 
-                                 class="card-img-top" alt="@relatedProduct.Name" style="height: 150px; object-fit: cover;">
-                            <div class="card-body">
-                                <h6 class="card-title">@relatedProduct.Name</h6>
-                                <p class="text-primary">@relatedProduct.Price.ToString("C")</p>
-                            </div>
-                            <div class="card-footer bg-transparent">
-                                <a asp-action="Details" asp-route-id="@relatedProduct.Id" 
-                                   class="btn btn-sm btn-outline-primary w-100">
-                                    View Details
-                                </a>
-                            </div>
+                    <div class="product-card">
+                        <div class="image-wrapper">
+                            <img src="@(string.IsNullOrEmpty(relatedProduct.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : relatedProduct.ImageUrl)" 
+                                 alt="@relatedProduct.Name"
+                                 onerror="this.src='https://placehold.co/400x300?text=No+Image'">
+                        </div>
+                        <div class="card-content">
+                            <h5 class="product-title">@relatedProduct.Name</h5>
+                            <span class="product-price">@relatedProduct.Price.ToString("C")</span>
+                        </div>
+                        <div class="card-actions">
+                            <a asp-action="Details" asp-route-id="@relatedProduct.Id" class="btn btn-secondary btn-sm w-100">
+                                <i class="bi bi-eye"></i>
+                                View
+                            </a>
                         </div>
                     </div>
                 }
             </div>
-        </div>
+        </section>
     }
-    @section Scripts {
+}
+
+@section Scripts {
 <script>
 function markHelpful(reviewId, helpful) {
     fetch('/Products/MarkHelpful', {
@@ -398,7 +350,6 @@ function markHelpful(reviewId, helpful) {
     .catch(error => console.error('Error:', error));
 }
 
-// Wishlist functionality
 document.addEventListener('DOMContentLoaded', function() {
     checkWishlistStatus(@Model.Id);
 });
@@ -417,9 +368,9 @@ function checkWishlistStatus(productId) {
         if (data.isInWishlist) {
             const btn = document.getElementById('wishlistBtn');
             if (btn) {
-                btn.classList.remove('btn-outline-danger');
-                btn.classList.add('btn-danger');
-                btn.innerHTML = '<i class="bi bi-heart-fill"></i> In Wishlist';
+                btn.classList.add('btn-primary');
+                btn.classList.remove('btn-secondary');
+                btn.innerHTML = '<i class="bi bi-heart-fill"></i>';
             }
         }
     })
@@ -458,19 +409,15 @@ function addToWishlist(productId, btn) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            btn.classList.remove('btn-outline-danger');
-            btn.classList.add('btn-danger');
-            btn.innerHTML = '<i class="bi bi-heart-fill"></i> In Wishlist';
-            updateWishlistCount(data.count);
-            alert('Added to wishlist!');
+            btn.classList.add('btn-primary');
+            btn.classList.remove('btn-secondary');
+            btn.innerHTML = '<i class="bi bi-heart-fill"></i>';
+            showToast('Added to wishlist!', 'success');
         } else {
-            alert(data.message || 'Error adding to wishlist');
+            showToast(data.message || 'Error', 'error');
         }
     })
-    .catch(err => {
-        console.error('Error:', err);
-        alert('Error adding to wishlist');
-    });
+    .catch(err => showToast('Error', 'error'));
 }
 
 function removeFromWishlist(productId, btn) {
@@ -485,20 +432,21 @@ function removeFromWishlist(productId, btn) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            btn.classList.remove('btn-danger');
-            btn.classList.add('btn-outline-danger');
-            btn.innerHTML = '<i class="bi bi-heart"></i> Wishlist';
-            updateWishlistCount(data.count);
-            alert('Removed from wishlist');
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-secondary');
+            btn.innerHTML = '<i class="bi bi-heart"></i>';
+            showToast('Removed from wishlist', 'success');
         }
     })
     .catch(err => console.error('Error:', err));
 }
 
-function updateWishlistCount(count) {
-    const countEl = document.getElementById('wishlist-count');
-    if (countEl) countEl.textContent = count;
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2500);
 }
 </script>
 }
-</div>

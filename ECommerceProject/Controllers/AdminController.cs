@@ -36,19 +36,23 @@ public class AdminController : Controller
     // Dashboard
     public async Task<IActionResult> Dashboard()
     {
+        var allOrders = (await _unitOfWork.Orders.GetAllAsync()).ToList();
+        
         ViewBag.TotalProducts = await _unitOfWork.Products.CountAsync();
         ViewBag.TotalCategories = await _unitOfWork.Categories.CountAsync();
-        ViewBag.TotalOrders = await _unitOfWork.Orders.CountAsync();
+        ViewBag.TotalOrders = allOrders.Count;
         ViewBag.TotalUsers = await _unitOfWork.Users.CountAsync();
 
         // Total Revenue
-        var allOrders = await _unitOfWork.Orders.GetAllAsync();
         ViewBag.TotalRevenue = allOrders.Sum(o => o.TotalAmount);
 
-        // Pending Orders
-        ViewBag.PendingOrders = allOrders.Count(o => o.Status == OrderStatus.Pending);
+        // Pending Orders (Pending, Paid, Processing)
+        ViewBag.PendingOrders = allOrders.Count(o => 
+            o.Status == OrderStatus.Pending || 
+            o.Status == OrderStatus.Paid || 
+            o.Status == OrderStatus.Processing);
 
-        // Completed Orders
+        // Completed Orders (Delivered)
         ViewBag.CompletedOrders = allOrders.Count(o => o.Status == OrderStatus.Delivered);
 
         // Low Stock Products

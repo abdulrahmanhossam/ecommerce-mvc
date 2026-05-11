@@ -6,135 +6,125 @@
     var total = ViewBag.Total as decimal? ?? 0;
 }
 
-<div class="container mt-4">
-    <h2 class="mb-4">
-        <i class="bi bi-credit-card"></i> Checkout
+<div class="py-4">
+    <h2 style="margin-bottom: 1.5rem;">
+        <i class="bi bi-credit-card"></i>
+        Checkout
     </h2>
 
-    <div class="row">
-        <div class="col-lg-7">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Shipping Information</h5>
-                </div>
-                <div class="card-body">
-                    <form asp-action="PlaceOrder" method="post">
-                        <div asp-validation-summary="All" class="text-danger mb-3"></div>
+    <div class="grid" style="grid-template-columns: 1fr 380px; gap: 2rem; align-items: start;">
+        <div class="card">
+            <div class="card-body" style="padding: 1.5rem;">
+                <h4 style="margin-bottom: 1.5rem;">Shipping Information</h4>
+                
+                <form asp-action="PlaceOrder" method="post">
+                    <div asp-validation-summary="All" class="alert alert-danger" style="font-size: 0.85rem; padding: 0.75rem;"></div>
 
-                        <div class="mb-3">
-                            <label asp-for="FullName" class="form-label"></label>
-                            <input asp-for="FullName" class="form-control" />
-                            <span asp-validation-for="FullName" class="text-danger"></span>
+                    <div class="form-group">
+                        <label asp-for="FullName" class="form-label"></label>
+                        <input asp-for="FullName" class="form-control">
+                        <span asp-validation-for="FullName" class="text-danger"></span>
+                    </div>
+
+                    <div class="grid grid-2" style="gap: 1rem;">
+                        <div class="form-group">
+                            <label asp-for="Email" class="form-label"></label>
+                            <input asp-for="Email" class="form-control" type="email">
+                            <span asp-validation-for="Email" class="text-danger"></span>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="Email" class="form-label"></label>
-                                <input asp-for="Email" class="form-control" type="email" />
-                                <span asp-validation-for="Email" class="text-danger"></span>
-                            </div>
+                        <div class="form-group">
+                            <label asp-for="PhoneNumber" class="form-label"></label>
+                            <input asp-for="PhoneNumber" class="form-control">
+                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                        </div>
+                    </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="PhoneNumber" class="form-label"></label>
-                                <input asp-for="PhoneNumber" class="form-control" />
-                                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
-                            </div>
+                    <div class="form-group">
+                        <label asp-for="Address" class="form-label"></label>
+                        <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+                        <span asp-validation-for="Address" class="text-danger"></span>
+                    </div>
+
+                    <div class="grid grid-2" style="gap: 1rem;">
+                        <div class="form-group">
+                            <label asp-for="City" class="form-label"></label>
+                            <input asp-for="City" class="form-control">
+                            <span asp-validation-for="City" class="text-danger"></span>
                         </div>
 
-                        <div class="mb-3">
-                            <label asp-for="Address" class="form-label"></label>
-                            <textarea asp-for="Address" class="form-control" rows="2"></textarea>
-                            <span asp-validation-for="Address" class="text-danger"></span>
+                        <div class="form-group">
+                            <label asp-for="Country" class="form-label"></label>
+                            <input asp-for="Country" class="form-control">
+                            <span asp-validation-for="Country" class="text-danger"></span>
                         </div>
+                    </div>
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="City" class="form-label"></label>
-                                <input asp-for="City" class="form-control" />
-                                <span asp-validation-for="City" class="text-danger"></span>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="Country" class="form-label"></label>
-                                <input asp-for="Country" class="form-control" />
-                                <span asp-validation-for="Country" class="text-danger"></span>
-                            </div>
+                    <div class="form-group">
+                        <label asp-for="PromoCode" class="form-label">
+                            <i class="bi bi-ticket-perforated"></i> Promo Code
+                        </label>
+                        <div class="flex gap-sm">
+                            <input asp-for="PromoCode" class="form-control text-uppercase" 
+                                   placeholder="Enter code" id="promoCodeInput">
+                            <button type="button" class="btn btn-secondary" id="applyPromoBtn">Apply</button>
                         </div>
+                        <div id="promoMessage" class="mt-2" style="font-size: 0.85rem;"></div>
+                    </div>
 
-                        <div class="mb-3">
-                            <label asp-for="PromoCode" class="form-label">
-                                <i class="bi bi-ticket-perforated"></i> Promo Code (Optional)
-                            </label>
-                            <div class="input-group">
-                                <input asp-for="PromoCode" class="form-control text-uppercase"
-                                       placeholder="Enter promo code" id="promoCodeInput" />
-                                <button type="button" class="btn btn-outline-primary" id="applyPromoBtn">
-                                    Apply
-                                </button>
-                            </div>
-                            <div id="promoMessage" class="mt-2"></div>
-                        </div>
+                    <div class="form-group">
+                        <label asp-for="PaymentMethod" class="form-label"></label>
+                        <select asp-for="PaymentMethod" class="form-select" required>
+                            <option value="">Select Payment</option>
+                            <option value="1">Cash on Delivery</option>
+                            <option value="2">Credit Card</option>
+                            <option value="3">PayPal</option>
+                            <option value="4">Stripe</option>
+                        </select>
+                        <span asp-validation-for="PaymentMethod" class="text-danger"></span>
+                    </div>
 
-                        <div class="mb-3">
-                            <label asp-for="PaymentMethod" class="form-label"></label>
-                            <select asp-for="PaymentMethod" class="form-select" required>
-                                <option value="">-- Select Payment Method --</option>
-                                <option value="1">Cash on Delivery</option>
-                                <option value="2">Credit Card</option>
-                                <option value="3">PayPal</option>
-                                <option value="4">Stripe</option>
-                            </select>
-                            <span asp-validation-for="PaymentMethod" class="text-danger"></span>
-                        </div>
+                    <div class="form-group">
+                        <label asp-for="Notes" class="form-label">Notes (Optional)</label>
+                        <textarea asp-for="Notes" class="form-control" rows="2" placeholder="Any special instructions?"></textarea>
+                    </div>
 
-                        <div class="mb-3">
-                            <label asp-for="Notes" class="form-label"></label>
-                            <textarea asp-for="Notes" class="form-control" rows="3"
-                                      placeholder="Any special instructions?"></textarea>
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-success btn-lg">
-                                <i class="bi bi-check-circle"></i> Place Order
-                            </button>
-                            <a asp-controller="Cart" asp-action="Index" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left"></i> Back to Cart
-                            </a>
-                        </div>
-                    </form>
-                </div>
+                    <div class="flex flex-col gap-sm mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="bi bi-check-circle"></i>
+                            Place Order
+                        </button>
+                        <a asp-controller="Cart" asp-action="Index" class="btn btn-ghost w-100">
+                            <i class="bi bi-arrow-left"></i>
+                            Back to Cart
+                        </a>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <div class="col-lg-5">
-            <div class="card shadow-sm sticky-top" style="top: 20px;">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0"><i class="bi bi-receipt"></i> Order Summary</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Subtotal:</span>
-                        <strong>@subtotal.ToString("C")</strong>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Tax (14%):</span>
-                        <strong>@tax.ToString("C")</strong>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Shipping:</span>
-                        <strong class="text-success">Free</strong>
-                    </div>
-                    <div id="discountRow" class="d-flex justify-content-between mb-2" style="display: none;">
-                        <span>Discount:</span>
-                        <strong class="text-success" id="discountAmount">-$0.00</strong>
-                    </div>
-
-                    <hr>
-                    <div class="d-flex justify-content-between mb-3">
-                        <strong class="h5">Total:</strong>
-                        <strong class="h4 text-primary" id="totalAmount">@total.ToString("C")</strong>
-                    </div>
-                </div>
+        <div class="cart-summary" style="position: sticky; top: 100px;">
+            <h4>Order Summary</h4>
+            
+            <div class="cart-summary-row">
+                <span>Subtotal</span>
+                <span>@subtotal.ToString("C")</span>
+            </div>
+            <div class="cart-summary-row">
+                <span>Tax (14%)</span>
+                <span>@tax.ToString("C")</span>
+            </div>
+            <div class="cart-summary-row">
+                <span>Shipping</span>
+                <span class="text-success">Free</span>
+            </div>
+            <div id="discountRow" class="cart-summary-row" style="display: none;">
+                <span>Discount</span>
+                <span class="text-success" id="discountAmount">-$0.00</span>
+            </div>
+            <div class="cart-summary-row total">
+                <span>Total</span>
+                <span id="totalAmount">@total.ToString("C")</span>
             </div>
         </div>
     </div>
@@ -146,10 +136,7 @@
     }
 
     <script>
-        const subtotal = @subtotal;
-        const tax = @tax;
         const originalTotal = @total;
-
         let currentDiscount = 0;
 
         document.querySelector('input[name="PromoCode"]').addEventListener('input', function () {
@@ -167,11 +154,6 @@
 
             if (!code) {
                 messageDiv.innerHTML = '<span class="text-danger">Please enter a promo code.</span>';
-                return;
-            }
-
-            if (promoApplied) {
-                messageDiv.innerHTML = '<span class="text-warning"><i class="bi bi-exclamation-circle"></i> Promo code already applied!</span>';
                 return;
             }
 
@@ -198,17 +180,15 @@
                     const newTotal = data.newTotal;
 
                     document.getElementById('discountRow').style.display = 'flex';
-                    document.getElementById('discountAmount').textContent = '-' + formatCurrency(data.discountAmount);
-                    document.getElementById('totalAmount').textContent = formatCurrency(newTotal);
+                    document.getElementById('discountAmount').textContent = '-' + data.discountAmount.toFixed(2);
+                    document.getElementById('totalAmount').textContent = newTotal.toFixed(2);
 
                     messageDiv.innerHTML = '<span class="text-success"><i class="bi bi-check-circle"></i> ' + data.message + '</span>';
                     
                     applyBtn.disabled = true;
                     applyBtn.textContent = 'Applied';
-                    applyBtn.classList.remove('btn-outline-primary');
-                    applyBtn.classList.add('btn-success');
-                    
-                    document.getElementById('promoCodeInput').readOnly = true;
+                    applyBtn.classList.remove('btn-secondary');
+                    applyBtn.classList.add('btn-primary');
                 } else {
                     messageDiv.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-circle"></i> ' + data.message + '</span>';
                     resetDiscount();
@@ -216,8 +196,7 @@
                     applyBtn.textContent = 'Apply';
                 }
             } catch (error) {
-                messageDiv.innerHTML = '<span class="text-danger">An error occurred. Please try again.</span>';
-                console.error('Error:', error);
+                messageDiv.innerHTML = '<span class="text-danger">An error occurred.</span>';
                 applyBtn.disabled = false;
                 applyBtn.textContent = 'Apply';
             }
@@ -227,11 +206,7 @@
             currentDiscount = 0;
             document.getElementById('discountRow').style.display = 'none';
             document.getElementById('discountAmount').textContent = '-$0.00';
-            document.getElementById('totalAmount').textContent = formatCurrency(originalTotal);
-        }
-
-        function formatCurrency(amount) {
-            return '$' + amount.toFixed(2);
+            document.getElementById('totalAmount').textContent = originalTotal.toFixed(2);
         }
     </script>
 }

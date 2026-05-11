@@ -3,195 +3,233 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - ECommerce Store</title>
+    <title>@ViewData["Title"] - ShopHub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-gradient border-bottom box-shadow mb-3" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);">
-            <div class="container-fluid">
-                <a class="navbar-brand fw-bold" asp-area="" asp-controller="Home" asp-action="Index">
-                    <i class="bi bi-bag-check"></i> ShopHub
+    <header class="header">
+        <div class="container">
+            <div class="header-inner">
+                <a asp-controller="Home" asp-action="Index" class="logo">
+                    <span class="logo-icon">
+                        <i class="bi bi-bag-check"></i>
+                    </span>
+                    ShopHub
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Home" asp-action="Index"><i class="bi bi-house"></i> Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Products" asp-action="Index"><i class="bi bi-grid"></i> Products</a>
-                        </li>
-                    </ul>
-                    <ul class="navbar-nav align-items-center">
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link position-relative px-2" asp-controller="Wishlist" asp-action="Index">
-                                    <i class="bi bi-heart-fill fs-5"></i>
-                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="wishlist-count" style="font-size: 0.65rem;">
-                                        0
-                                    </span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link position-relative px-2" asp-controller="Cart" asp-action="Index">
-                                    <i class="bi bi-cart4 fs-5"></i>
-                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning" id="cart-count" style="font-size: 0.65rem;">
-                                        0
-                                    </span>
-                                </a>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
-                                    <div class="avatar-circle bg-primary text-white me-1">
-                                        @(User.Identity.Name?.FirstOrDefault() ?? 'U')
-                                    </div>
-                                    <span class="d-none d-md-inline">@User.Identity.Name</span>
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile"><i class="bi bi-person"></i> Profile</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Orders" asp-action="MyOrders"><i class="bi bi-box-seam"></i> My Orders</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Wishlist" asp-action="Index"><i class="bi bi-heart"></i> Wishlist</a></li>
-                                    @if (User.IsInRole("Admin"))
-                                    {
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" asp-controller="Admin" asp-action="Dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-                                    }
-                                    <li><hr class="dropdown-divider"></li>
+
+                <nav class="nav-links d-none d-md-flex">
+                    <a class="nav-link" asp-controller="Home" asp-action="Index">
+                        <i class="bi bi-house-door"></i>
+                        <span>Home</span>
+                    </a>
+                    <a class="nav-link" asp-controller="Products" asp-action="Index">
+                        <i class="bi bi-grid-3x3-gap"></i>
+                        <span>Products</span>
+                    </a>
+                </nav>
+
+                <div class="nav-actions">
+                    <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                        <i class="bi bi-moon-stars"></i>
+                    </button>
+
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a class="icon-btn position-relative" asp-controller="Wishlist" asp-action="Index">
+                            <i class="bi bi-heart"></i>
+                            <span class="badge badge-danger" id="wishlist-count" style="display: none;">0</span>
+                        </a>
+
+                        <a class="icon-btn position-relative" asp-controller="Cart" asp-action="Index">
+                            <i class="bi bi-cart4"></i>
+                            <span class="badge badge-danger" id="cart-count" style="display: none;">0</span>
+                        </a>
+
+                        <div class="dropdown">
+                            <div class="avatar" data-bs-toggle="dropdown">
+                                @(User.Identity.Name?.FirstOrDefault() ?? 'U')
+                            </div>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Account" asp-action="Profile">
+                                        <i class="bi bi-person"></i> Profile
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Orders" asp-action="MyOrders">
+                                        <i class="bi bi-box-seam"></i> My Orders
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Wishlist" asp-action="Index">
+                                        <i class="bi bi-heart"></i> Wishlist
+                                    </a>
+                                </li>
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <li class="dropdown-divider"></li>
                                     <li>
-                                        <form asp-controller="Account" asp-action="Logout" method="post">
-                                            <button type="submit" class="dropdown-item text-danger">
-                                                <i class="bi bi-box-arrow-right"></i> Logout
-                                            </button>
-                                        </form>
+                                        <a class="dropdown-item" asp-controller="Admin" asp-action="Dashboard">
+                                            <i class="bi bi-speedometer2"></i> Dashboard
+                                        </a>
                                     </li>
-                                </ul>
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link btn btn-outline-light btn-sm px-3" asp-controller="Account" asp-action="Login">
-                                    <i class="bi bi-box-arrow-in-right"></i> Login
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link btn btn-primary btn-sm px-3 ms-2" asp-controller="Account" asp-action="Register">
-                                    <i class="bi bi-person-plus"></i> Register
-                                </a>
-                            </li>
-                        }
-                    </ul>
+                                }
+                                <li class="dropdown-divider"></li>
+                                <li>
+                                    <form asp-controller="Account" asp-action="Logout" method="post">
+                                        <button type="submit" class="dropdown-item text-danger">
+                                            <i class="bi bi-box-arrow-right"></i> Logout
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <a class="btn btn-ghost" asp-controller="Account" asp-action="Login">
+                            Sign In
+                        </a>
+                        <a class="btn btn-primary" asp-controller="Account" asp-action="Register">
+                            Get Started
+                        </a>
+                    }
                 </div>
             </div>
-        </nav>
-        <style>
-            .avatar-circle {
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 14px;
-            }
-            .navbar .dropdown-menu {
-                border: none;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-                border-radius: 10px;
-            }
-            .navbar .dropdown-item {
-                padding: 10px 20px;
-                border-radius: 5px;
-                margin: 2px 5px;
-            }
-            .navbar .dropdown-item:hover {
-                background: #f8f9fa;
-            }
-        </style>
+        </div>
     </header>
-    
-    <div class="container">
-        @if (TempData["SuccessMessage"] != null)
-        {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        }
-        @if (TempData["ErrorMessage"] != null)
-        {
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-x-circle"></i> @TempData["ErrorMessage"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        }
-        
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container text-center">
-            &copy; 2025 - ECommerce Store - <a asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <main>
+        <div class="container">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success animate-fade-in-up">
+                    <i class="bi bi-check-circle-fill"></i>
+                    @TempData["SuccessMessage"]
+                </div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger animate-fade-in-up">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+
+            @RenderBody()
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a asp-controller="Home" asp-action="Index" class="logo">
+                        <span class="logo-icon">
+                            <i class="bi bi-bag-check"></i>
+                        </span>
+                        ShopHub
+                    </a>
+                    <p>Your destination for premium products with unmatched quality and style.</p>
+                </div>
+                <div class="footer-column">
+                    <h6>Shop</h6>
+                    <div class="footer-links">
+                        <a asp-controller="Products" asp-action="Index" class="footer-link">All Products</a>
+                        <a asp-controller="Home" asp-action="Index" class="footer-link">Featured</a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h6>Account</h6>
+                    <div class="footer-links">
+                        <a asp-controller="Account" asp-action="Profile" class="footer-link">My Profile</a>
+                        <a asp-controller="Orders" asp-action="MyOrders" class="footer-link">My Orders</a>
+                        <a asp-controller="Wishlist" asp-action="Index" class="footer-link">Wishlist</a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h6>Company</h6>
+                    <div class="footer-links">
+                        <a asp-controller="Home" asp-action="Privacy" class="footer-link">Privacy</a>
+                        <a class="footer-link">Terms</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>&copy; 2025 ShopHub. All rights reserved.</span>
+                <div>
+                    <a asp-controller="Home" asp-action="Privacy">Privacy</a>
+                    <a>Terms</a>
+                </div>
+            </div>
         </div>
     </footer>
-    
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 
     <script>
-        // تحديث عدد المنتجات في العربة
+        // Theme toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        }
+
+        function updateThemeIcon(theme) {
+            const icon = document.querySelector('.theme-toggle i');
+            if (icon) {
+                icon.className = theme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+            }
+        }
+
+        // Load saved theme
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+        })();
+
+        // Cart count
         async function updateCartCount() {
             try {
                 const response = await fetch('/Cart/GetCartCount');
                 const data = await response.json();
                 const badge = document.getElementById('cart-count');
                 if (badge && data.count > 0) {
-                    badge.textContent = data.count;
                     badge.style.display = 'inline';
-                } else if (badge) {
-                    badge.style.display = 'none';
+                    badge.textContent = data.count;
                 }
-            } catch (error) {
-                console.error('Error fetching cart count:', error);
-            }
+            } catch (e) {}
         }
 
-        // تحديث عدد المنتجات في Wishlist
+        // Wishlist count
         async function updateWishlistCount() {
             try {
                 const response = await fetch('/Wishlist/GetCount');
                 const data = await response.json();
                 const badge = document.getElementById('wishlist-count');
                 if (badge && data.count > 0) {
-                    badge.textContent = data.count;
                     badge.style.display = 'inline';
-                } else if (badge) {
-                    badge.style.display = 'none';
+                    badge.textContent = data.count;
                 }
-            } catch (error) {
-                console.error('Error fetching wishlist count:', error);
-            }
+            } catch (e) {}
         }
 
-        // تحديث الأعداد عند تحميل الصفحة
-        if (document.getElementById('cart-count')) {
-            updateCartCount();
-        }
-        if (document.getElementById('wishlist-count')) {
-            updateWishlistCount();
-        }
+        // Initialize
+        if (document.getElementById('cart-count')) updateCartCount();
+        if (document.getElementById('wishlist-count')) updateWishlistCount();
     </script>
 </body>
 </html>

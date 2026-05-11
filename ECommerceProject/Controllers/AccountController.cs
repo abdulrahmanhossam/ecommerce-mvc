@@ -292,10 +292,13 @@ namespace ECommerceProject.Controllers
             };
 
             // جلب إحصائيات المستخدم
-            var orders = await _unitOfWork.Orders.GetAsync(o => o.UserId == userId);
-            ViewBag.TotalOrders = orders.Count();
+            var orders = (await _unitOfWork.Orders.GetAsync(o => o.UserId == userId)).ToList();
+            ViewBag.TotalOrders = orders.Count;
             ViewBag.TotalSpent = orders.Sum(o => o.TotalAmount);
-            ViewBag.PendingOrders = orders.Count(o => o.Status == ECommerceProject.Models.Enums.OrderStatus.Pending);
+            ViewBag.PendingOrders = orders.Count(o => 
+                o.Status == ECommerceProject.Models.Enums.OrderStatus.Pending || 
+                o.Status == ECommerceProject.Models.Enums.OrderStatus.Paid || 
+                o.Status == ECommerceProject.Models.Enums.OrderStatus.Processing);
             ViewBag.CompletedOrders = orders.Count(o => o.Status == ECommerceProject.Models.Enums.OrderStatus.Delivered);
 
             // Wishlist count
@@ -318,10 +321,13 @@ namespace ECommerceProject.Controllers
             if (!ModelState.IsValid)
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var orders = await _unitOfWork.Orders.GetAsync(o => o.UserId == userId!);
-                ViewBag.TotalOrders = orders.Count();
+                var orders = (await _unitOfWork.Orders.GetAsync(o => o.UserId == userId!)).ToList();
+                ViewBag.TotalOrders = orders.Count;
                 ViewBag.TotalSpent = orders.Sum(o => o.TotalAmount);
-                ViewBag.PendingOrders = orders.Count(o => o.Status == ECommerceProject.Models.Enums.OrderStatus.Pending);
+                ViewBag.PendingOrders = orders.Count(o => 
+                    o.Status == ECommerceProject.Models.Enums.OrderStatus.Pending || 
+                    o.Status == ECommerceProject.Models.Enums.OrderStatus.Paid || 
+                    o.Status == ECommerceProject.Models.Enums.OrderStatus.Processing);
 
                 return View(model);
             }

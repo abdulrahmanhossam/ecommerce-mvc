@@ -4,56 +4,60 @@
     var wishlistCount = ViewBag.WishlistCount as int? ?? 0;
 }
 
-<div class="container mt-4">
-    <h2 class="mb-4">
-        <i class="bi bi-heart-fill text-danger"></i> My Wishlist
-        <span class="badge bg-danger">@wishlistCount</span>
-    </h2>
+<div class="py-4">
+    <div class="flex items-center justify-between mb-4">
+        <h2>
+            <i class="bi bi-heart-fill" style="color: var(--danger);"></i>
+            Wishlist
+        </h2>
+        <span class="badge badge-primary">@wishlistCount items</span>
+    </div>
 
     @if (!Model.Any())
     {
-        <div class="text-center py-5">
-            <i class="bi bi-heart display-1 text-muted"></i>
-            <h3 class="mt-3">Your wishlist is empty</h3>
-            <p class="text-muted">Start adding products to your wishlist!</p>
-            <a asp-controller="Home" asp-action="Index" class="btn btn-primary">
-                <i class="bi bi-shop"></i> Browse Products
+        <div class="empty-state">
+            <i class="bi bi-heart"></i>
+            <h4>Your wishlist is empty</h4>
+            <p>Start adding products you love</p>
+            <a asp-controller="Products" asp-action="Index" class="btn btn-primary">
+                <i class="bi bi-bag"></i>
+                Browse Products
             </a>
         </div>
     }
     else
     {
-        <div class="row">
+        <div class="grid grid-3">
             @foreach (var item in Model)
             {
-                <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card h-100 shadow-sm">
-                        <img src="@item.Product.ImageUrl" class="card-img-top" alt="@item.Product.Name"
-                             style="height: 200px; object-fit: cover;"
+                <div class="product-card" data-product-id="@item.Product.Id">
+                    <div class="image-wrapper">
+                        <img src="@(string.IsNullOrEmpty(item.Product.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : item.Product.ImageUrl)" 
+                             alt="@item.Product.Name"
+                             style="object-fit: cover;"
                              onerror="this.src='https://placehold.co/400x300?text=No+Image'">
-                        <div class="card-body">
-                            <h5 class="card-title">@item.Product.Name</h5>
-                            <p class="card-text text-muted">@item.Product.Description?.Substring(0, Math.Min(100, item.Product.Description?.Length ?? 0))...</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="h5 text-primary mb-0">@item.Product.Price.ToString("C")</span>
-                                <span class="badge @(item.Product.Stock > 0 ? "bg-success" : "bg-danger")">
-                                    @(item.Product.Stock > 0 ? "In Stock" : "Out of Stock")
-                                </span>
-                            </div>
+                    </div>
+                    <div class="card-content">
+                        <h5 class="product-title">@item.Product.Name</h5>
+                        <p class="product-desc">@(item.Product.Description?.Length > 60 ? item.Product.Description.Substring(0, 60) + "..." : item.Product.Description)</p>
+                        <div class="flex items-center justify-between">
+                            <span class="product-price">@item.Product.Price.ToString("C")</span>
+                            <span class="badge @(item.Product.Stock > 0 ? "badge-success" : "badge-danger")">
+                                @(item.Product.Stock > 0 ? "In Stock" : "Out")
+                            </span>
                         </div>
-                        <div class="card-footer bg-white border-top-0">
-                            <div class="d-flex gap-2">
-                                @if (item.Product.Stock > 0)
-                                {
-                                    <button class="btn btn-success flex-grow-1" onclick="addToCartFromWishlist(@item.Product.Id)">
-                                        <i class="bi bi-cart-plus"></i> Add to Cart
-                                    </button>
-                                }
-                                <button class="btn btn-outline-danger" onclick="removeFromWishlist(@item.Product.Id)">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </div>
+                    </div>
+                    <div class="card-actions">
+                        @if (item.Product.Stock > 0)
+                        {
+                            <button class="btn btn-primary btn-sm flex-fill" onclick="addToCartFromWishlist(@item.Product.Id)">
+                                <i class="bi bi-cart-plus"></i>
+                                Add
+                            </button>
+                        }
+                        <button class="icon-btn" onclick="removeFromWishlist(@item.Product.Id)">
+                            <i class="bi bi-trash"></i>
+                        </button>
                     </div>
                 </div>
             }
@@ -64,13 +68,15 @@
 @section Scripts {
     <script>
         function removeFromWishlist(productId) {
+            if (!confirm('Remove this item?')) return;
+            
             fetch('@Url.Action("Remove", "Wishlist")', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
                 },
-                body: JSON.stringify(productId)
+                body: JSON.stringify({ productId: productId })
             })
             .then(response => response.json())
             .then(data => {
@@ -92,20 +98,18 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    updateCartCount();
-                    removeFromWishlist(productId);
-                } else {
-                    alert(data.message || 'Error adding to cart');
+                    showToast('Added to cart!', 'success');
+                    setTimeout(() => location.reload(), 1000);
                 }
             });
         }
 
-        function updateCartCount() {
-            fetch('@Url.Action("GetCount", "Cart")')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('cartCount').textContent = data.count;
-                });
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
         }
     </script>
 }
