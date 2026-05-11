@@ -32,9 +32,8 @@
             {
                 <div class="product-card" data-product-id="@item.Product.Id">
                     <div class="image-wrapper">
-                        <img src="@(string.IsNullOrEmpty(item.Product.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : item.Product.ImageUrl)" 
-                             alt="@item.Product.Name"
-                             style="object-fit: cover;"
+<img src="@(string.IsNullOrEmpty(item.Product.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : item.Product.ImageUrl)" 
+                             alt="@item.Product.Name" loading="lazy"
                              onerror="this.src='https://placehold.co/400x300?text=No+Image'">
                     </div>
                     <div class="card-content">

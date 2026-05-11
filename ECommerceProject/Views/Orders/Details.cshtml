@@ -83,8 +83,8 @@ ECommerceProject.Models.Entities.Product Product)>;
                         {
                             <div class="row align-items-center border-bottom pb-3 mb-3">
                                 <div class="col-md-2">
-                                    <img src="@(string.IsNullOrEmpty(orderItem.Product.ImageUrl) ? "https://via.placeholder.com/80" : orderItem.Product.ImageUrl)"
-                                         class="img-fluid rounded" alt="@orderItem.Product.Name">
+<img src="@(string.IsNullOrEmpty(orderItem.Product.ImageUrl) ? "https://via.placeholder.com/80" : orderItem.Product.ImageUrl)"
+                                             class="img-fluid rounded" alt="@orderItem.Product.Name" loading="lazy">
                                 </div>
                                 <div class="col-md-5">
                                     <h6>@orderItem.Product.Name</h6>

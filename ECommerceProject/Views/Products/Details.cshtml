@@ -19,7 +19,7 @@
         <div>
             <div class="card" style="overflow: hidden;">
                 <img src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/no-image.jpg" : Model.ImageUrl)" 
-                     alt="@Model.Name" style="width: 100%; aspect-ratio: 1; object-fit: cover;">
+                     alt="@Model.Name" style="width: 100%; aspect-ratio: 1; object-fit: cover;" loading="lazy">
             </div>
         </div>
 
@@ -309,7 +309,7 @@
                     <div class="product-card">
                         <div class="image-wrapper">
                             <img src="@(string.IsNullOrEmpty(relatedProduct.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : relatedProduct.ImageUrl)" 
-                                 alt="@relatedProduct.Name"
+                                 alt="@relatedProduct.Name" loading="lazy"
                                  onerror="this.src='https://placehold.co/400x300?text=No+Image'">
                         </div>
                         <div class="card-content">

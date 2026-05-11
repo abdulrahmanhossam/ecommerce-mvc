@@ -24,7 +24,7 @@
                     <div class="card h-100 shadow-sm @(category.IsActive ? "" : "border-danger")">
                         @if (!string.IsNullOrEmpty(category.ImageUrl))
                         {
-                            <img src="@category.ImageUrl" class="card-img-top" alt="@category.Name" 
+                            <img src="@category.ImageUrl" class="card-img-top" alt="@category.Name" loading="lazy"
                                  style="height: 200px; object-fit: cover;">
                         }
                         else

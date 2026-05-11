@@ -28,15 +28,15 @@
     --border-subtle: rgba(255, 255, 255, 0.08);
     --border-light: rgba(255, 255, 255, 0.12);
     
-    /* Shadows */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-    --shadow-glow: 0 0 40px rgba(201, 162, 39, 0.15);
+    /* Shadows - subtle for performance */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.3);
+    --shadow-glow: 0 0 20px rgba(201, 162, 39, 0.1);
     
-    /* Glass */
-    --glass-bg: rgba(20, 20, 20, 0.8);
-    --glass-border: rgba(255, 255, 255, 0.1);
+    /* Glass - minimal blur for performance */
+    --glass-bg: rgba(20, 20, 20, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.08);
     
     /* Spacing */
     --spacing-xs: 0.25rem;
@@ -74,13 +74,13 @@
     --border-subtle: rgba(0, 0, 0, 0.06);
     --border-light: rgba(0, 0, 0, 0.1);
     
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
-    --shadow-glow: 0 0 40px rgba(201, 162, 39, 0.1);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-glow: 0 0 15px rgba(201, 162, 39, 0.08);
     
-    --glass-bg: rgba(255, 255, 255, 0.85);
-    --glass-border: rgba(0, 0, 0, 0.08);
+    --glass-bg: rgba(255, 255, 255, 0.9);
+    --glass-border: rgba(0, 0, 0, 0.06);
 }
 
 /* ==================== Reset & Base ==================== */
@@ -203,6 +203,7 @@ a:hover {
 main {
     min-height: calc(100vh - 180px);
     padding: var(--spacing-xl) 0;
+    padding-top: calc(var(--spacing-xl) + 70px); /* Extra 70px for fixed header */
 }
 
 /* ==================== Header ==================== */
@@ -213,10 +214,9 @@ main {
     right: 0;
     z-index: 1000;
     background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--glass-border);
-    transition: all var(--transition-base);
 }
 
 .header-inner {
@@ -447,7 +447,7 @@ main {
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
     overflow: hidden;
-    transition: all var(--transition-base);
+    transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 .product-card:hover {
@@ -467,7 +467,7 @@ main {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform var(--transition-slow);
+    transition: transform 0.3s ease;
 }
 
 .product-card:hover img {
@@ -519,7 +519,7 @@ main {
     gap: var(--spacing-sm);
 }
 
-/* Category Card */
+/* Performance-optimized transitions (transform/opacity only) */
 .category-card {
     display: flex;
     flex-direction: column;
@@ -530,7 +530,7 @@ main {
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
     text-align: center;
-    transition: all var(--transition-base);
+    transition: transform 0.2s ease, border-color 0.2s ease;
     cursor: pointer;
 }
 
@@ -544,21 +544,22 @@ main {
     font-size: 1.5rem;
     color: var(--accent);
     margin-bottom: var(--spacing-sm);
-    transition: color var(--transition-fast);
+    transition: color 0.2s ease;
 }
 
 .category-card:hover i {
-    color: var(--bg-primary);
+    color: #1a1a1a; /* Dark for contrast on light hover */
 }
 
 .category-card span {
     font-weight: 500;
     font-size: 0.85rem;
     color: var(--text-primary);
+    transition: color 0.2s ease;
 }
 
 .category-card:hover span {
-    color: var(--bg-primary);
+    color: #1a1a1a; /* Dark for contrast on light hover */
 }
 
 /* Feature Card */

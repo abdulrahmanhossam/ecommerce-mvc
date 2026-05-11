@@ -107,7 +107,7 @@
                                 }
                             </div>
                             <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : product.ImageUrl)" 
-                                 alt="@product.Name"
+                                 alt="@product.Name" loading="lazy"
                                  onerror="this.src='https://placehold.co/400x300?text=No+Image'">
                         </div>
                         <div class="card-content">
