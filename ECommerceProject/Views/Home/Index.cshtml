@@ -106,6 +106,9 @@
                                      loading="lazy"
                                      onerror="this.src='https://placehold.co/400x300?text=No+Image'">
                             </a>
+                            <button class="ai-card-btn" onclick="event.preventDefault(); openAIModal('@Html.Raw(product.Name.Replace("'", "\\'"))', '@Html.Raw(product.Description?.Replace("'", "\\'").Replace("\n", " ").Replace("\r", ""))')" title="Ask AI about this product">
+                                <i class="bi bi-sparkles"></i>
+                            </button>
                         </div>
                         <div class="card-content">
                             <h3 class="product-title">

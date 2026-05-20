@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using ECommerceProject.Services.Interfaces;
 
@@ -36,10 +37,12 @@ public class GeminiService : IGeminiService
             var requestBody = BuildRequestBody(prompt);
             
             var client = _httpClientFactory.CreateClient("Gemini");
-            client.Timeout = TimeSpan.FromSeconds(30);
 
-            var content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-            var response = await client.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent?key={_apiKey}", content);
+            var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+            var response = await client.PostAsync(
+                $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent?key={_apiKey}", 
+                content
+            );
 
             if (!response.IsSuccessStatusCode)
             {
@@ -87,6 +90,7 @@ Provide a helpful, concise, and friendly response about this product. If the que
             {
                 new
                 {
+                    role = "user",
                     parts = new[]
                     {
                         new { text = prompt }
@@ -113,6 +117,7 @@ Provide a helpful, concise, and friendly response about this product. If the que
             using var document = JsonDocument.Parse(jsonResponse);
             var root = document.RootElement;
 
+            // Try candidates array first
             if (root.TryGetProperty("candidates", out var candidates) && 
                 candidates.ValueKind == JsonValueKind.Array && 
                 candidates.GetArrayLength() > 0)
@@ -131,6 +136,13 @@ Provide a helpful, concise, and friendly response about this product. If the que
                         return textElement.GetString() ?? "I'm sorry, I couldn't generate a response.";
                     }
                 }
+            }
+
+            // Fallback: check for promptFeedback block
+            if (root.TryGetProperty("promptFeedback", out var feedback))
+            {
+                _logger.LogWarning("Gemini prompt was blocked: {Feedback}", feedback.GetRawText());
+                return "I'm sorry, I couldn't process that request. Please try a different question.";
             }
 
             _logger.LogWarning("Unexpected Gemini response format: {Response}", jsonResponse);

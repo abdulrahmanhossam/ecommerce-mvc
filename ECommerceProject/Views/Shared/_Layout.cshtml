@@ -186,6 +186,35 @@
         </div>
     </footer>
 
+    <!-- ==================== Global AI Assistant Modal ==================== -->
+    <div class="ai-modal-overlay" id="aiModal" onclick="if(event.target === this) closeAIModal()">
+        <div class="ai-modal" onclick="event.stopPropagation()">
+            <div class="ai-modal-header">
+                <div class="ai-modal-title">
+                    <i class="bi bi-sparkles"></i>
+                    AI Product Assistant
+                </div>
+                <button class="ai-modal-close" onclick="closeAIModal()">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+            <div class="ai-modal-body" id="aiResponse">
+                <div class="ai-placeholder">
+                    <i class="bi bi-chat-dots"></i>
+                    <p>Ask me anything about products!</p>
+                </div>
+            </div>
+            <div class="ai-modal-footer">
+                <input type="text" class="form-control" id="aiQuestion" 
+                       placeholder="e.g., What are the best features?" 
+                       onkeydown="if(event.key==='Enter') askAI()">
+                <button class="btn btn-primary" onclick="askAI()" id="aiAskBtn">
+                    <i class="bi bi-send"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- ==================== Scripts ==================== -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
@@ -224,6 +253,82 @@
             document.documentElement.setAttribute('data-bs-theme', savedTheme);
             updateThemeIcon(savedTheme);
         })();
+
+        /* ==================== Global AI Assistant ==================== */
+        let currentProductName = '';
+        let currentProductDescription = '';
+
+        function openAIModal(productName, productDescription) {
+            currentProductName = productName || '';
+            currentProductDescription = productDescription || '';
+            const modal = document.getElementById('aiModal');
+            if (modal) {
+                modal.classList.add('show');
+                document.getElementById('aiQuestion')?.focus();
+            }
+        }
+
+        function closeAIModal() {
+            const modal = document.getElementById('aiModal');
+            if (modal) {
+                modal.classList.remove('show');
+                const responseDiv = document.getElementById('aiResponse');
+                if (responseDiv) {
+                    responseDiv.innerHTML = '<div class="ai-placeholder"><i class="bi bi-chat-dots"></i><p>Ask me anything about products!</p></div>';
+                }
+                const questionInput = document.getElementById('aiQuestion');
+                if (questionInput) questionInput.value = '';
+            }
+        }
+
+        function askAI() {
+            const question = document.getElementById('aiQuestion')?.value.trim();
+            if (!question) return;
+
+            const btn = document.getElementById('aiAskBtn');
+            const responseDiv = document.getElementById('aiResponse');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="ai-spinner"></span>';
+            responseDiv.innerHTML = '<div class="ai-loading"><div class="ai-spinner-large"></div><p>Thinking...</p></div>';
+
+            fetch('/api/AIAssistant/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    productName: currentProductName,
+                    productDescription: currentProductDescription,
+                    question: question
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    responseDiv.innerHTML = `<div class="ai-response-text">${escapeHtml(data.response)}</div>`;
+                } else {
+                    responseDiv.innerHTML = `<div class="ai-error"><i class="bi bi-exclamation-triangle"></i>${escapeHtml(data.message || 'Something went wrong')}</div>`;
+                }
+            })
+            .catch(() => {
+                responseDiv.innerHTML = '<div class="ai-error"><i class="bi bi-wifi-off"></i>Network error. Please try again.</div>';
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-send"></i>';
+                document.getElementById('aiQuestion').value = '';
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeAIModal();
+        });
 
         /* ==================== Cart/Wishlist Count ==================== */
         async function updateCartCount() {

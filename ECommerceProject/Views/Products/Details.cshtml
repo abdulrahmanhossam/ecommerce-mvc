@@ -129,7 +129,7 @@
 
             <!-- AI Product Assistant Button -->
             <div class="mt-4">
-                <button type="button" class="ai-assistant-btn" onclick="openAIAssistant()">
+                <button type="button" class="ai-assistant-btn" onclick="openAIModal('@Html.Raw(Model.Name.Replace("'", "\\'"))', '@Html.Raw(Model.Description?.Replace("'", "\\'").Replace("\n", " ").Replace("\r", ""))')">
                     <i class="bi bi-sparkles"></i>
                     Ask AI Assistant
                 </button>
@@ -337,35 +337,6 @@
     }
 }
 
-<!-- AI Assistant Modal -->
-<div class="ai-modal-overlay" id="aiModal" onclick="closeAIAssistant(event)">
-    <div class="ai-modal" onclick="event.stopPropagation()">
-        <div class="ai-modal-header">
-            <div class="ai-modal-title">
-                <i class="bi bi-sparkles"></i>
-                AI Product Assistant
-            </div>
-            <button class="ai-modal-close" onclick="closeAIAssistant()">
-                <i class="bi bi-x"></i>
-            </button>
-        </div>
-        <div class="ai-modal-body" id="aiResponse">
-            <div class="ai-placeholder">
-                <i class="bi bi-chat-dots"></i>
-                <p>Ask me anything about this product!</p>
-            </div>
-        </div>
-        <div class="ai-modal-footer">
-            <input type="text" class="form-control" id="aiQuestion" 
-                   placeholder="e.g., Is this product waterproof?" 
-                   onkeydown="if(event.key==='Enter')askAI()">
-            <button class="btn btn-primary" onclick="askAI()" id="aiAskBtn">
-                <i class="bi bi-send"></i>
-            </button>
-        </div>
-    </div>
-</div>
-
 @section Scripts {
 <script>
 function markHelpful(reviewId, helpful) {
@@ -484,64 +455,6 @@ function showToast(message, type) {
     toast.textContent = message;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 2500);
-}
-
-// AI Assistant Functions
-function openAIAssistant() {
-    document.getElementById('aiModal').classList.add('show');
-    document.getElementById('aiQuestion').focus();
-}
-
-function closeAIAssistant(event) {
-    if (event && event.target !== event.currentTarget) return;
-    document.getElementById('aiModal').classList.remove('show');
-    document.getElementById('aiResponse').innerHTML = '<div class="ai-placeholder"><i class="bi bi-chat-dots"></i><p>Ask me anything about this product!</p></div>';
-    document.getElementById('aiQuestion').value = '';
-}
-
-async function askAI() {
-    const question = document.getElementById('aiQuestion').value.trim();
-    if (!question) return;
-
-    const btn = document.getElementById('aiAskBtn');
-    const responseDiv = document.getElementById('aiResponse');
-
-    // Show loading state
-    btn.disabled = true;
-    btn.innerHTML = '<span class="ai-spinner"></span>';
-    responseDiv.innerHTML = '<div class="ai-loading"><div class="ai-spinner-large"></div><p>Thinking...</p></div>';
-
-    try {
-        const response = await fetch('/api/AIAssistant/ask', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                productName: '@Model.Name',
-                productDescription: '@Html.Raw(Model.Description?.Replace("'", "\\'").Replace("\n", " ").Replace("\r", ""))',
-                question: question
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            responseDiv.innerHTML = `<div class="ai-response-text">${escapeHtml(data.response)}</div>`;
-        } else {
-            responseDiv.innerHTML = `<div class="ai-error"><i class="bi bi-exclamation-triangle"></i>${escapeHtml(data.message || 'Something went wrong')}</div>`;
-        }
-    } catch (error) {
-        responseDiv.innerHTML = '<div class="ai-error"><i class="bi bi-wifi-off"></i>Network error. Please try again.</div>';
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-send"></i>';
-        document.getElementById('aiQuestion').value = '';
-    }
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 </script>
 }
