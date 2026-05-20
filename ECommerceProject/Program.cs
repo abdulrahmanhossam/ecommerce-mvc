@@ -51,6 +51,14 @@ builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 // Image Service
 builder.Services.AddScoped<IImageService, ImageService>();
 
+// Gemini AI Service
+builder.Services.AddHttpClient("Gemini", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+builder.Services.AddScoped<IGeminiService, GeminiService>();
+
 // Cookie
 builder.Services.ConfigureApplicationCookie(options =>
 {
