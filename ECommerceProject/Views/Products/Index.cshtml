@@ -8,148 +8,170 @@
     var maxPrice = ViewBag.MaxPrice as decimal?;
 }
 
-<div class="py-4">
-    <div class="flex items-center justify-between mb-4">
-        <div>
-            <h2 style="margin-bottom: 0.25rem;">Products</h2>
-            <p class="text-muted" style="margin-bottom: 0;">Browse our collection</p>
-        </div>
-        <span class="badge badge-primary">@(Model?.Count() ?? 0) items</span>
+<!-- ==================== Page Header ==================== -->
+<div class="flex items-center justify-between mb-4">
+    <div>
+        <h1 style="margin-bottom: 0.25rem;">Products</h1>
+        <p class="text-muted" style="margin-bottom: 0;">Browse our collection</p>
     </div>
-
-    <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-body" style="padding: 1rem;">
-            <form asp-action="Index" method="get" class="grid grid-4" style="gap: 1rem; align-items: end;">
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label class="form-label">Search</label>
-                    <input type="text" name="searchTerm" class="form-control" placeholder="Search products..." value="@searchTerm">
-                </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label class="form-label">Category</label>
-                    <select name="categoryId" class="form-select">
-                        <option value="">All Categories</option>
-                        @if (categories != null)
-                        {
-                            foreach (var category in categories)
-                            {
-                                <option value="@category.Id" selected="@(selectedCategoryId == category.Id)">@category.Name</option>
-                            }
-                        }
-                    </select>
-                </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label class="form-label">Price Range</label>
-                    <div class="flex gap-sm">
-                        <input type="number" name="minPrice" class="form-control" placeholder="Min" value="@minPrice" step="0.01">
-                        <input type="number" name="maxPrice" class="form-control" placeholder="Max" value="@maxPrice" step="0.01">
-                    </div>
-                </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-funnel"></i>
-                        Filter
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Products Grid -->
-    @if (Model != null && Model.Any())
-    {
-        <div class="grid grid-4">
-            @foreach (var product in Model)
-            {
-                <div class="product-card">
-                    <div class="image-wrapper">
-                        <div class="badges">
-                            @if (product.IsFeatured)
-                            {
-                                <span class="badge badge-danger">Featured</span>
-                            }
-                        </div>
-                        <button class="icon-btn" style="position: absolute; top: 0.5rem; right: 0.5rem; background: var(--bg-secondary);" 
-                                onclick="toggleWishlist(@product.Id, this)" title="Add to wishlist">
-                            <i class="bi bi-heart"></i>
-                        </button>
-                        <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : product.ImageUrl)" 
-                             alt="@product.Name" loading="lazy"
-                             onerror="this.src='https://placehold.co/400x300?text=No+Image'">
-                    </div>
-                    <div class="card-content">
-                        <h5 class="product-title">@product.Name</h5>
-                        <p class="product-desc">@(product.Description?.Length > 60 ? product.Description.Substring(0, 60) + "..." : product.Description)</p>
-                        <div class="flex items-center justify-between">
-                            <span class="product-price">@product.Price.ToString("C")</span>
-                            <span class="badge @(product.Stock > 0 ? "badge-success" : "badge-danger")">
-                                @(product.Stock > 0 ? "In Stock" : "Out")
-                            </span>
-                        </div>
-                    </div>
-                    <div class="card-actions">
-                        <a asp-action="Details" asp-route-id="@product.Id" class="btn btn-secondary btn-sm flex-fill">
-                            <i class="bi bi-eye"></i>
-                            View
-                        </a>
-                    </div>
-                </div>
-            }
-        </div>
-    }
-    else
-    {
-        <div class="empty-state">
-            <i class="bi bi-inbox"></i>
-            <h4>No products found</h4>
-            <p>Try adjusting your filters</p>
-            <a asp-action="Index" class="btn btn-primary">
-                Clear Filters
-            </a>
-        </div>
-    }
+    <span class="badge badge-primary">@(Model?.Count() ?? 0) items</span>
 </div>
 
-@section Scripts {
-    <script>
-        function toggleWishlist(productId, btn) {
-            fetch('@Url.Action("Add", "Wishlist")', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
-                },
-                body: JSON.stringify({ productId: productId })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    if (btn) {
-                        btn.classList.toggle('btn-outline');
-                        btn.classList.toggle('btn-primary');
-                        const icon = btn.querySelector('i');
-                        if (icon.classList.contains('bi-heart')) {
-                            icon.classList.remove('bi-heart');
-                            icon.classList.add('bi-heart-fill');
-                        } else {
-                            icon.classList.remove('bi-heart-fill');
-                            icon.classList.add('bi-heart');
+<!-- ==================== Filters ==================== -->
+<div class="card mb-4">
+    <div class="card-body" style="padding: var(--space-md);">
+        <form asp-action="Index" method="get" class="grid" style="grid-template-columns: 1fr auto auto auto; gap: var(--space-md); align-items: end;">
+            <!-- Search -->
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Search</label>
+                <input type="text" name="searchTerm" class="form-control" 
+                       placeholder="Search products..." value="@searchTerm">
+            </div>
+            
+            <!-- Category -->
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Category</label>
+                <select name="categoryId" class="form-select">
+                    <option value="">All Categories</option>
+                    @if (categories != null)
+                    {
+                        @foreach (var category in categories)
+                        {
+                            <option value="@category.Id" selected="@(selectedCategoryId == category.Id)">
+                                @category.Name
+                            </option>
                         }
                     }
-                    showToast(data.message, 'success');
-                } else {
-                    showToast(data.message || 'Error', 'error');
-                }
-            })
-            .catch(err => showToast('Error', 'error'));
-        }
+                </select>
+            </div>
+            
+            <!-- Price Range -->
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Price Range</label>
+                <div class="flex gap-sm">
+                    <input type="number" name="minPrice" class="form-control" 
+                           placeholder="Min" value="@minPrice" step="0.01" style="width: 80px;">
+                    <input type="number" name="maxPrice" class="form-control" 
+                           placeholder="Max" value="@maxPrice" step="0.01" style="width: 80px;">
+                </div>
+            </div>
+            
+            <!-- Submit -->
+            <div class="form-group" style="margin-bottom: 0;">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
-        function showToast(message, type) {
-            const toast = document.createElement('div');
-            toast.className = `toast-notification toast-${type}`;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 2500);
+<!-- ==================== Products Grid ==================== -->
+@if (Model != null && Model.Any())
+{
+    <div class="grid grid-4" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+        @foreach (var product in Model)
+        {
+            <article class="product-card">
+                <!-- Image -->
+                <div class="image-wrapper">
+                    <div class="badges">
+                        @if (product.IsFeatured)
+                        {
+                            <span class="badge badge-danger">Featured</span>
+                        }
+                    </div>
+                    
+                    <!-- Wishlist Button -->
+                    <button class="icon-btn" 
+                            onclick="toggleWishlist(@product.Id, this)" 
+                            title="Add to wishlist"
+                            style="position: absolute; top: var(--space-sm); right: var(--space-sm); z-index: 1;">
+                        <i class="bi bi-heart"></i>
+                    </button>
+                    
+                    <a asp-action="Details" asp-route-id="@product.Id">
+                        <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : product.ImageUrl)" 
+                             alt="@product.Name" 
+                             loading="lazy"
+                             onerror="this.src='https://placehold.co/400x300?text=No+Image'">
+                    </a>
+                </div>
+                
+                <!-- Content -->
+                <div class="card-content">
+                    <h3 class="product-title">
+                        <a asp-action="Details" asp-route-id="@product.Id" style="color: inherit; text-decoration: none;">
+                            @product.Name
+                        </a>
+                    </h3>
+                    <p class="product-desc">
+                        @(product.Description?.Length > 60 ? product.Description.Substring(0, 60) + "..." : product.Description)
+                    </p>
+                    <div class="flex items-center justify-between">
+                        <span class="product-price">@product.Price.ToString("C")</span>
+                        <span class="badge @(product.Stock > 0 ? "badge-success" : "badge-danger")">
+                            @(product.Stock > 0 ? "In Stock" : "Out")
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="card-actions">
+                    <a asp-action="Details" asp-route-id="@product.Id" class="btn btn-secondary btn-sm flex-fill">
+                        <i class="bi bi-eye"></i> View
+                    </a>
+                </div>
+            </article>
         }
-    </script>
+    </div>
+}
+else
+{
+    <!-- Empty State -->
+    <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <h4>No products found</h4>
+        <p>Try adjusting your filters</p>
+        <a asp-action="Index" class="btn btn-primary">
+            Clear Filters
+        </a>
+    </div>
+}
+
+<!-- ==================== Scripts ==================== -->
+@section Scripts {
+<script>
+/* Wishlist Toggle */
+function toggleWishlist(productId, btn) {
+    fetch('@Url.Action("Add", "Wishlist")', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+        },
+        body: JSON.stringify({ productId: productId })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && btn) {
+            btn.classList.toggle('btn-outline');
+            btn.classList.toggle('btn-primary');
+            const icon = btn.querySelector('i');
+            icon.className = icon.classList.contains('bi-heart') ? 'bi bi-heart-fill' : 'bi bi-heart';
+        }
+        showToast(data.message || 'Done', data.success ? 'success' : 'error');
+    })
+    .catch(() => showToast('Error', 'error'));
+}
+
+/* Toast Notification */
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2500);
+}
+</script>
 }
