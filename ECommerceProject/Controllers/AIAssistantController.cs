@@ -24,11 +24,6 @@ public class AIAssistantController : ControllerBase
             return BadRequest(new { success = false, message = "Question is required" });
         }
 
-        if (string.IsNullOrWhiteSpace(request.ProductName))
-        {
-            return BadRequest(new { success = false, message = "Product information is required" });
-        }
-
         try
         {
             _logger.LogInformation("AI Assistant request for product: {ProductName}", request.ProductName);

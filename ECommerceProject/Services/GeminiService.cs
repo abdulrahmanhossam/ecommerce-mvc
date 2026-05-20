@@ -35,19 +35,28 @@ public class GeminiService : IGeminiService
         {
             var prompt = BuildPrompt(productName, productDescription, userQuestion);
             var requestBody = BuildRequestBody(prompt);
-            
-            var client = _httpClientFactory.CreateClient("Gemini");
 
-            var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
-            var response = await client.PostAsync(
-                $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent?key={_apiKey}", 
-                content
-            );
+            var client = _httpClientFactory.CreateClient("Gemini");
+            var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
+
+            var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Headers.Add("X-goog-api-key", _apiKey);
+            request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+
+            _logger.LogInformation("Calling Gemini API: {Url}", url);
+
+            var response = await client.SendAsync(request);
 
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError("Gemini API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                _logger.LogError("Gemini API {StatusCode}. Body: {Body}", response.StatusCode, errorContent);
+
+                if ((int)response.StatusCode == 429)
+                {
+                    return "⚠️ AI is temporarily overloaded. Please wait a moment and try again.";
+                }
+
                 throw new HttpRequestException($"Gemini API returned {response.StatusCode}");
             }
 
@@ -90,7 +99,6 @@ Provide a helpful, concise, and friendly response about this product. If the que
             {
                 new
                 {
-                    role = "user",
                     parts = new[]
                     {
                         new { text = prompt }
@@ -99,7 +107,7 @@ Provide a helpful, concise, and friendly response about this product. If the que
             },
             generationConfig = new
             {
-                maxOutputTokens = _maxTokens,
+                maxOutputTokens = 800,
                 temperature = _temperature
             }
         };
@@ -117,7 +125,6 @@ Provide a helpful, concise, and friendly response about this product. If the que
             using var document = JsonDocument.Parse(jsonResponse);
             var root = document.RootElement;
 
-            // Try candidates array first
             if (root.TryGetProperty("candidates", out var candidates) && 
                 candidates.ValueKind == JsonValueKind.Array && 
                 candidates.GetArrayLength() > 0)
@@ -129,16 +136,27 @@ Provide a helpful, concise, and friendly response about this product. If the que
                     parts.ValueKind == JsonValueKind.Array &&
                     parts.GetArrayLength() > 0)
                 {
-                    var firstPart = parts[0];
-                    
-                    if (firstPart.TryGetProperty("text", out var textElement))
+                    var fullText = new StringBuilder();
+
+                    foreach (var part in parts.EnumerateArray())
                     {
-                        return textElement.GetString() ?? "I'm sorry, I couldn't generate a response.";
+                        if (part.TryGetProperty("text", out var textElement))
+                        {
+                            var text = textElement.GetString();
+                            if (!string.IsNullOrEmpty(text))
+                            {
+                                fullText.Append(text);
+                            }
+                        }
+                    }
+
+                    if (fullText.Length > 0)
+                    {
+                        return fullText.ToString();
                     }
                 }
             }
 
-            // Fallback: check for promptFeedback block
             if (root.TryGetProperty("promptFeedback", out var feedback))
             {
                 _logger.LogWarning("Gemini prompt was blocked: {Feedback}", feedback.GetRawText());
