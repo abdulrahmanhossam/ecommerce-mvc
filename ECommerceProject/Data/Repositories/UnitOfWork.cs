@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Storage;
 using ECommerceProject.Data.Context;
 using ECommerceProject.Data.Interfaces;
 using ECommerceProject.Models.Entities;
@@ -40,6 +41,11 @@ namespace ECommerceProject.Data.Repositories
         public async Task<int> SaveAsync()
         {
             return await _context.SaveChangesAsync();
+        }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _context.Database.BeginTransactionAsync();
         }
 
         public void Dispose()

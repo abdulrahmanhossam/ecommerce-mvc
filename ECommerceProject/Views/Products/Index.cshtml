@@ -144,39 +144,10 @@ else
     </div>
 }
 
+<form id="antiforgery-form" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
 <!-- ==================== Scripts ==================== -->
 @section Scripts {
-<script>
-/* Wishlist Toggle */
-function toggleWishlist(productId, btn) {
-    fetch('@Url.Action("Add", "Wishlist")', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
-        },
-        body: JSON.stringify({ productId: productId })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success && btn) {
-            btn.classList.toggle('btn-outline');
-            btn.classList.toggle('btn-primary');
-            const icon = btn.querySelector('i');
-            icon.className = icon.classList.contains('bi-heart') ? 'bi bi-heart-fill' : 'bi bi-heart';
-        }
-        showToast(data.message || 'Done', data.success ? 'success' : 'error');
-    })
-    .catch(() => showToast('Error', 'error'));
-}
-
-/* Toast Notification */
-function showToast(message, type) {
-    const toast = document.createElement('div');
-    toast.className = `toast-notification toast-${type}`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 2500);
-}
-</script>
 }

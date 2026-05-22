@@ -37,24 +37,23 @@ public class GeminiService : IGeminiService
             var requestBody = BuildRequestBody(prompt);
 
             var client = _httpClientFactory.CreateClient("Gemini");
-            var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent?key={_apiKey}";
 
-            var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Headers.Add("X-goog-api-key", _apiKey);
-            request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
-
-            _logger.LogInformation("Calling Gemini API: {Url}", url);
+            var request = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = new StringContent(requestBody, Encoding.UTF8, "application/json")
+            };
 
             var response = await client.SendAsync(request);
 
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError("Gemini API {StatusCode}. Body: {Body}", response.StatusCode, errorContent);
+                _logger.LogError("Gemini API {StatusCode}", response.StatusCode);
 
                 if ((int)response.StatusCode == 429)
                 {
-                    return "⚠️ AI is temporarily overloaded. Please wait a moment and try again.";
+                    return "AI is temporarily overloaded. Please wait a moment and try again.";
                 }
 
                 throw new HttpRequestException($"Gemini API returned {response.StatusCode}");

@@ -49,25 +49,22 @@ namespace ECommerceProject.Services
         public async Task<bool> DeleteImageAsync(string imagePath)
         {
             if (string.IsNullOrEmpty(imagePath))
-            {
                 return true;
-            }
 
             try
             {
                 var fullPath = Path.Combine(_environment.WebRootPath, imagePath.TrimStart('/'));
-                
+
                 if (File.Exists(fullPath))
                 {
-                    await Task.Run(() => File.Delete(fullPath));
-                    return true;
+                    File.Delete(fullPath);
                 }
-                
-                return false;
+
+                return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error deleting image: {ex.Message}");
+                _logger.LogError(ex, "Error deleting image {ImagePath}", imagePath);
                 return false;
             }
         }

@@ -4,37 +4,38 @@ namespace ECommerceProject.Data.Interfaces
 {
     public interface IRepository<T> where T : class
     {
-        // Get All
+        IQueryable<T> GetQueryable();
+
+        IQueryable<T> GetQueryable(bool asNoTracking);
+
         Task<IEnumerable<T>> GetAllAsync();
 
-        // Get with filter
+        Task<IEnumerable<T>> GetAllAsync(params Expression<Func<T, object>>[] includes);
+
         Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>> filter);
 
-        // Get by ID
+        Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>> filter, params Expression<Func<T, object>>[] includes);
+
         Task<T?> GetByIdAsync(int id);
 
-        // Get single with filter
+        Task<T?> GetByIdAsync(int id, params Expression<Func<T, object>>[] includes);
+
         Task<T?> GetFirstOrDefaultAsync(Expression<Func<T, bool>> filter);
 
-        // Add
+        Task<T?> GetFirstOrDefaultAsync(Expression<Func<T, bool>> filter, params Expression<Func<T, object>>[] includes);
+
         Task AddAsync(T entity);
 
-        // Update
         void Update(T entity);
 
-        // Delete
         void Delete(T entity);
 
-        // Delete Range
         void DeleteRange(IEnumerable<T> entities);
 
-        // Save Changes
         Task<int> SaveAsync();
 
-        // Check if exists
         Task<bool> AnyAsync(Expression<Func<T, bool>> filter);
 
-        // Count
         Task<int> CountAsync(Expression<Func<T, bool>>? filter = null);
     }
 }

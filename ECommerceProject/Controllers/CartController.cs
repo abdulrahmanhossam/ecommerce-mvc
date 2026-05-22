@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using ECommerceProject.Data.Interfaces;
 using ECommerceProject.Models.Entities;
@@ -24,26 +25,18 @@ namespace ECommerceProject.Controllers
             if (string.IsNullOrEmpty(userId))
                 return RedirectToAction("Login", "Account");
 
-            // جلب العربة الخاصة بالمستخدم
-            var cartItems = await _unitOfWork.ShoppingCarts.GetAsync(c => c.UserId == userId);
+            var cartItems = await _unitOfWork.ShoppingCarts.GetQueryable(asNoTracking: true)
+                .Where(c => c.UserId == userId)
+                .Include(c => c.Product)
+                .ToListAsync();
 
-            // جلب تفاصيل المنتجات
-            var cartWithProducts = new List<(ShoppingCart Cart, Product Product)>();
-
-            foreach (var item in cartItems)
-            {
-                var product = await _unitOfWork.Products.GetByIdAsync(item.ProductId);
-                if (product != null && product.IsActive)
-                {
-                    cartWithProducts.Add((item, product));
-                }
-            }
+            var cartWithProducts = cartItems
+                .Where(item => item.Product is { IsActive: true })
+                .Select(item => (Cart: item, item.Product))
+                .ToList();
 
             ViewBag.CartItems = cartWithProducts;
-
-            // حساب الإجمالي
-            decimal total = cartWithProducts.Sum(x => x.Product.Price * x.Cart.Quantity);
-            ViewBag.Total = total;
+            ViewBag.Total = cartWithProducts.Sum(x => x.Product.Price * x.Cart.Quantity);
 
             return View();
         }

@@ -275,7 +275,7 @@
                                         <tr>
                                             <td style="padding-left: 1.25rem; font-weight: 600;">#@order.Id</td>
                                             <td style="color: var(--text-muted); font-size: 0.8rem;">@order.OrderDate.ToString("dd MMM HH:mm")</td>
-                                            <td>@(order.User?.UserName ?? "Guest")</td>
+                                            <td>@(order.User?.FullName ?? "Guest")</td>
                                             <td style="font-weight: 600;">@order.TotalAmount.ToString("C")</td>
                                             <td>
                                                 @{

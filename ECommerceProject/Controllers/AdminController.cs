@@ -20,17 +20,20 @@ public class AdminController : Controller
     private readonly IAnalyticsService _analyticsService;
 
     private readonly IImageService _imageService;
+    private readonly ILogger<AdminController> _logger;
 
     public AdminController(
         IUnitOfWork unitOfWork,
         UserManager<ApplicationUser> userManager,
         IAnalyticsService analyticsService,
-        IImageService imageService)
+        IImageService imageService,
+        ILogger<AdminController> logger)
     {
         _unitOfWork = unitOfWork;
         _userManager = userManager;
         _analyticsService = analyticsService;
         _imageService = imageService;
+        _logger = logger;
     }
 
     // Dashboard
@@ -66,24 +69,27 @@ public class AdminController : Controller
         ViewBag.SalesByStatus = salesByStatus;
 
         // Top Products (by quantity sold)
-        var orderItems = await _unitOfWork.OrderItems.GetAllAsync();
-        var topProducts = orderItems
+        var allProducts = (await _unitOfWork.Products.GetAllAsync())
+            .ToDictionary(p => p.Id, p => p.Name);
+
+        var topProductGroups = (await _unitOfWork.OrderItems.GetAllAsync())
             .GroupBy(oi => oi.ProductId)
             .Select(g => new { ProductId = g.Key, TotalQuantity = g.Sum(oi => oi.Quantity), TotalSales = g.Sum(oi => oi.TotalPrice) })
             .OrderByDescending(x => x.TotalQuantity)
             .Take(5)
             .ToList();
 
-        var topProductsWithDetails = new List<(int ProductId, string Name, int Quantity, decimal Sales)>();
-        foreach (var item in topProducts)
+        var topProductsList = new List<(int ProductId, string Name, int Quantity, decimal Sales)>();
+        foreach (var item in topProductGroups)
         {
-            var product = await _unitOfWork.Products.GetByIdAsync(item.ProductId);
-            if (product != null)
-            {
-                topProductsWithDetails.Add((item.ProductId, product.Name, item.TotalQuantity, item.TotalSales));
-            }
+            topProductsList.Add((
+                item.ProductId,
+                allProducts.GetValueOrDefault(item.ProductId, "Unknown"),
+                item.TotalQuantity,
+                item.TotalSales
+            ));
         }
-        ViewBag.TopProducts = topProductsWithDetails;
+        ViewBag.TopProducts = topProductsList;
 
         // Orders by Payment Method
         var ordersByPayment = allOrders
@@ -92,8 +98,18 @@ public class AdminController : Controller
             .ToList();
         ViewBag.OrdersByPayment = ordersByPayment;
 
-        // جلب آخر 5 طلبات
-        ViewBag.RecentOrders = allOrders.OrderByDescending(o => o.OrderDate).Take(5).ToList();
+        // جلب آخر 5 طلبات مع User info
+        var recentOrders = allOrders.OrderByDescending(o => o.OrderDate).Take(5).ToList();
+        var userIds = recentOrders.Select(o => o.UserId).Distinct().ToList();
+        var userDict = (await _unitOfWork.Users.GetAsync(u => userIds.Contains(u.Id)))
+            .ToDictionary(u => u.Id, u => u.FullName);
+
+        foreach (var order in recentOrders)
+        {
+            userDict.TryGetValue(order.UserId, out var name);
+            order.User = new ApplicationUser { FullName = name ?? "Unknown" };
+        }
+        ViewBag.RecentOrders = recentOrders;
 
         return View();
     }
@@ -149,7 +165,7 @@ public class AdminController : Controller
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            _logger.LogError(ex, "AdminController error");
             TempData["ErrorMessage"] = "Error updating user status.";
         }
 
@@ -192,7 +208,7 @@ public class AdminController : Controller
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            _logger.LogError(ex, "AdminController error");
             TempData["ErrorMessage"] = "Error deleting user.";
         }
 
@@ -204,6 +220,8 @@ public class AdminController : Controller
     public async Task<IActionResult> Products()
     {
         var products = await _unitOfWork.Products.GetAllAsync();
+        var categories = (await _unitOfWork.Categories.GetAllAsync()).ToDictionary(c => c.Id, c => c.Name);
+        ViewBag.CategoryNames = categories;
         return View(products.ToList());
     }
 
@@ -249,7 +267,7 @@ public class AdminController : Controller
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            _logger.LogError(ex, "AdminController error");
             ModelState.AddModelError("", $"Error: {ex.Message}");
 
             var categories = await _unitOfWork.Categories.GetAsync(c => c.IsActive);
@@ -323,7 +341,7 @@ public class AdminController : Controller
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            _logger.LogError(ex, "AdminController error");
             ModelState.AddModelError("", "Error updating product");
 
             var categories = await _unitOfWork.Categories.GetAsync(c => c.IsActive);
@@ -391,7 +409,7 @@ public class AdminController : Controller
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            _logger.LogError(ex, "AdminController error");
             TempData["ErrorMessage"] = "Error processing request.";
         }
 
@@ -458,7 +476,7 @@ public class AdminController : Controller
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            _logger.LogError(ex, "AdminController error");
             ModelState.AddModelError("", "Error creating category");
             return View(model);
         }
@@ -526,7 +544,7 @@ public class AdminController : Controller
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            _logger.LogError(ex, "AdminController error");
             ModelState.AddModelError("", "Error updating category");
             return View(model);
         }
@@ -584,7 +602,7 @@ public class AdminController : Controller
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            _logger.LogError(ex, "AdminController error");
             TempData["ErrorMessage"] = "Error deleting category.";
         }
 
@@ -613,7 +631,7 @@ public class AdminController : Controller
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            _logger.LogError(ex, "AdminController error");
             TempData["ErrorMessage"] = "Error updating category status.";
         }
 
@@ -626,6 +644,12 @@ public class AdminController : Controller
     {
         var orders = await _unitOfWork.Orders.GetAllAsync();
         var ordersList = orders.OrderByDescending(o => o.OrderDate).ToList();
+
+        var userIds = ordersList.Select(o => o.UserId).Distinct().ToList();
+        var userNames = (await _unitOfWork.Users.GetAsync(u => userIds.Contains(u.Id)))
+            .ToDictionary(u => u.Id, u => u.FullName);
+        ViewBag.UserNames = userNames;
+
         return View(ordersList);
     }
 
@@ -747,7 +771,7 @@ public class AdminController : Controller
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            _logger.LogError(ex, "AdminController error");
             ModelState.AddModelError("", "Error creating promo code");
             return View(promoCode);
         }
@@ -772,7 +796,7 @@ public class AdminController : Controller
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            _logger.LogError(ex, "AdminController error");
             TempData["ErrorMessage"] = "Error updating promo code status.";
         }
 
@@ -796,7 +820,7 @@ public class AdminController : Controller
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            _logger.LogError(ex, "AdminController error");
             TempData["ErrorMessage"] = "Error deleting promo code.";
         }
 

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using ECommerceProject.Data.Interfaces;
 using ECommerceProject.Models.Entities;
@@ -20,18 +21,15 @@ namespace ECommerceProject.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var wishlistItems = await _unitOfWork.Wishlists.GetAsync(w => w.UserId == userId);
+            var wishlistItems = await _unitOfWork.Wishlists.GetQueryable(asNoTracking: true)
+                .Where(w => w.UserId == userId)
+                .Include(w => w.Product)
+                .ToListAsync();
 
-            var wishlistWithProducts = new List<(Wishlist Wishlist, Product Product)>();
-
-            foreach (var item in wishlistItems)
-            {
-                var product = await _unitOfWork.Products.GetByIdAsync(item.ProductId);
-                if (product != null && product.IsActive)
-                {
-                    wishlistWithProducts.Add((item, product));
-                }
-            }
+            var wishlistWithProducts = wishlistItems
+                .Where(w => w.Product is { IsActive: true })
+                .Select(w => (w, w.Product))
+                .ToList();
 
             ViewBag.WishlistCount = wishlistWithProducts.Count;
             return View(wishlistWithProducts);

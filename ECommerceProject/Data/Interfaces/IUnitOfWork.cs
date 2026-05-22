@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Storage;
 using ECommerceProject.Models.Entities;
 
 namespace ECommerceProject.Data.Interfaces
@@ -16,5 +17,6 @@ namespace ECommerceProject.Data.Interfaces
         IRepository<PromoCode> PromoCodes { get; }
         IRepository<Wishlist> Wishlists { get; }
         Task<int> SaveAsync();
+        Task<IDbContextTransaction> BeginTransactionAsync();
     }
 }

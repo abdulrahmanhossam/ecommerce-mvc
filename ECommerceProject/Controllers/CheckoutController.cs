@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using ECommerceProject.Data.Interfaces;
 using ECommerceProject.Models.Entities;
@@ -23,21 +24,24 @@ namespace ECommerceProject.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IEmailService _emailService;
         private readonly IPaymentService _paymentService;
+        private readonly ILogger<CheckoutController> _logger;
 
         public CheckoutController(
             IUnitOfWork unitOfWork,
             UserManager<ApplicationUser> userManager,
             IEmailService emailService,
-            IPaymentService paymentService)
+            IPaymentService paymentService,
+            ILogger<CheckoutController> logger)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
             _emailService = emailService;
             _paymentService = paymentService;
+            _logger = logger;
         }
 
         // GET: Checkout
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? promoCode = null)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -46,7 +50,10 @@ namespace ECommerceProject.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            var cartItems = await _unitOfWork.ShoppingCarts.GetAsync(c => c.UserId == userId);
+            var cartItems = await _unitOfWork.ShoppingCarts.GetQueryable(asNoTracking: true)
+                .Where(c => c.UserId == userId)
+                .Include(c => c.Product)
+                .ToListAsync();
 
             if (!cartItems.Any())
             {
@@ -54,16 +61,7 @@ namespace ECommerceProject.Controllers
                 return RedirectToAction("Index", "Cart");
             }
 
-            decimal subtotal = 0;
-            foreach (var item in cartItems)
-            {
-                var product = await _unitOfWork.Products.GetByIdAsync(item.ProductId);
-                if (product != null)
-                {
-                    subtotal += product.Price * item.Quantity;
-                }
-            }
-
+            var subtotal = cartItems.Sum(item => item.Product.Price * item.Quantity);
             var tax = subtotal * 0.14m;
             var total = subtotal + tax;
 
@@ -80,7 +78,8 @@ namespace ECommerceProject.Controllers
                 PhoneNumber = user?.PhoneNumber ?? "",
                 Address = user?.Address ?? "",
                 City = user?.City ?? "",
-                Country = user?.Country ?? ""
+                Country = user?.Country ?? "",
+                PromoCode = promoCode
             };
 
             return View(model);
@@ -100,17 +99,11 @@ namespace ECommerceProject.Controllers
 
             if (!ModelState.IsValid)
             {
-                var cartItems = await _unitOfWork.ShoppingCarts.GetAsync(c => c.UserId == userId);
+                var cartItems = await _unitOfWork.ShoppingCarts.GetAsync(
+                    c => c.UserId == userId,
+                    c => c.Product);
 
-                decimal subtotal = 0;
-                foreach (var item in cartItems)
-                {
-                    var product = await _unitOfWork.Products.GetByIdAsync(item.ProductId);
-                    if (product != null)
-                    {
-                        subtotal += product.Price * item.Quantity;
-                    }
-                }
+                var subtotal = cartItems.Sum(item => item.Product.Price * item.Quantity);
 
                 ViewBag.Subtotal = subtotal;
                 ViewBag.Tax = subtotal * 0.14m;
@@ -121,208 +114,185 @@ namespace ECommerceProject.Controllers
 
             try
             {
-                var cartItems = await _unitOfWork.ShoppingCarts.GetAsync(c => c.UserId == userId);
+                await using var transaction = await _unitOfWork.BeginTransactionAsync();
 
-                if (!cartItems.Any())
+                try
                 {
-                    TempData["ErrorMessage"] = "Your cart is empty!";
-                    return RedirectToAction("Index", "Cart");
-                }
+                    var cartItems = await _unitOfWork.ShoppingCarts.GetAsync(
+                        c => c.UserId == userId,
+                        c => c.Product);
 
-                decimal subtotal = 0;
-                var orderItems = new List<OrderItem>();
-
-                foreach (var cartItem in cartItems)
-                {
-                    var product = await _unitOfWork.Products.GetByIdAsync(cartItem.ProductId);
-
-                    if (product == null || !product.IsActive)
-                        continue;
-
-                    if (product.Stock < cartItem.Quantity)
+                    if (!cartItems.Any())
                     {
-                        TempData["ErrorMessage"] = $"{product.Name} is out of stock!";
+                        TempData["ErrorMessage"] = "Your cart is empty!";
                         return RedirectToAction("Index", "Cart");
                     }
 
-                    var itemTotal = product.Price * cartItem.Quantity;
-                    subtotal += itemTotal;
+                    var cartItemList = cartItems.ToList();
+                    decimal subtotal = 0;
+                    var orderItems = new List<OrderItem>();
 
-                    orderItems.Add(new OrderItem
+                    foreach (var cartItem in cartItemList)
                     {
-                        ProductId = product.Id,
-                        Quantity = cartItem.Quantity,
-                        UnitPrice = product.Price,
-                        TotalPrice = itemTotal
-                    });
+                        var product = cartItem.Product;
 
-                    product.Stock -= cartItem.Quantity;
-                    _unitOfWork.Products.Update(product);
-                }
+                        if (product == null || !product.IsActive)
+                            continue;
 
-                // حساب Tax
-                decimal tax = subtotal * 0.14m;
-                decimal totalAmount = subtotal + tax;
+                        if (product.Stock < cartItem.Quantity)
+                        {
+                            TempData["ErrorMessage"] = $"{product.Name} is out of stock!";
+                            return RedirectToAction("Index", "Cart");
+                        }
 
-                // معالجة PromoCode
-                int? promoCodeId = null;
-                decimal discountAmount = 0;
+                        var itemTotal = product.Price * cartItem.Quantity;
+                        subtotal += itemTotal;
 
-                Console.WriteLine($"PromoCode from form: '{model.PromoCode}'");
+                        orderItems.Add(new OrderItem
+                        {
+                            ProductId = product.Id,
+                            Quantity = cartItem.Quantity,
+                            UnitPrice = product.Price,
+                            TotalPrice = itemTotal
+                        });
 
-                if (!string.IsNullOrWhiteSpace(model.PromoCode))
-                {
-                    var promoCode = await _unitOfWork.PromoCodes.GetFirstOrDefaultAsync(
-                        p => p.Code.ToUpper() == model.PromoCode.ToUpper() && p.IsActive);
+                        product.Stock -= cartItem.Quantity;
+                        _unitOfWork.Products.Update(product);
+                    }
 
-                    if (promoCode != null)
+                    decimal tax = subtotal * 0.14m;
+                    decimal totalAmount = subtotal + tax;
+
+                    int? promoCodeId = null;
+                    decimal discountAmount = 0;
+
+                    if (!string.IsNullOrWhiteSpace(model.PromoCode))
                     {
-                        Console.WriteLine($"PromoCode found: {promoCode.Code}");
+                        var promoCode = await _unitOfWork.PromoCodes.GetFirstOrDefaultAsync(
+                            p => p.Code.ToUpper() == model.PromoCode.ToUpper() && p.IsActive);
 
-                        bool isValid = true;
-
-                        if (promoCode.StartDate.HasValue && DateTime.Now < promoCode.StartDate.Value)
+                        if (promoCode != null)
                         {
-                            Console.WriteLine("PromoCode not yet valid");
-                            isValid = false;
-                        }
+                            bool isValid = true;
 
-                        if (promoCode.EndDate.HasValue && DateTime.Now > promoCode.EndDate.Value)
-                        {
-                            Console.WriteLine("PromoCode expired");
-                            isValid = false;
-                        }
+                            if (promoCode.StartDate.HasValue && DateTime.Now < promoCode.StartDate.Value)
+                                isValid = false;
 
-                        if (promoCode.UsageLimit.HasValue && promoCode.UsageCount >= promoCode.UsageLimit.Value)
-                        {
-                            Console.WriteLine("PromoCode usage limit reached");
-                            isValid = false;
-                        }
+                            if (promoCode.EndDate.HasValue && DateTime.Now > promoCode.EndDate.Value)
+                                isValid = false;
 
-                        if (promoCode.MinimumPurchase.HasValue && totalAmount < promoCode.MinimumPurchase.Value)
-                        {
-                            Console.WriteLine($"Minimum purchase not met: {totalAmount} < {promoCode.MinimumPurchase.Value}");
-                            isValid = false;
-                        }
+                            if (promoCode.UsageLimit.HasValue && promoCode.UsageCount >= promoCode.UsageLimit.Value)
+                                isValid = false;
 
-                        if (isValid)
-                        {
-                            if (promoCode.DiscountType == DiscountType.Percentage)
+                            if (promoCode.MinimumPurchase.HasValue && totalAmount < promoCode.MinimumPurchase.Value)
+                                isValid = false;
+
+                            if (isValid)
                             {
-                                discountAmount = totalAmount * (promoCode.DiscountValue / 100);
-
-                                if (promoCode.MaximumDiscount.HasValue && discountAmount > promoCode.MaximumDiscount.Value)
+                                if (promoCode.DiscountType == DiscountType.Percentage)
                                 {
-                                    discountAmount = promoCode.MaximumDiscount.Value;
+                                    discountAmount = totalAmount * (promoCode.DiscountValue / 100);
+
+                                    if (promoCode.MaximumDiscount.HasValue && discountAmount > promoCode.MaximumDiscount.Value)
+                                        discountAmount = promoCode.MaximumDiscount.Value;
+                                }
+                                else
+                                {
+                                    discountAmount = promoCode.DiscountValue;
                                 }
 
-                                Console.WriteLine($"Percentage discount: {promoCode.DiscountValue}% = ${discountAmount}");
+                                if (discountAmount > totalAmount)
+                                    discountAmount = totalAmount;
+
+                                totalAmount -= discountAmount;
+                                promoCodeId = promoCode.Id;
+
+                                promoCode.UsageCount++;
+                                _unitOfWork.PromoCodes.Update(promoCode);
+
+                                TempData["SuccessMessage"] = $"Promo code applied! You saved ${discountAmount:F2}";
                             }
                             else
                             {
-                                discountAmount = promoCode.DiscountValue;
-                                Console.WriteLine($"Fixed discount: ${discountAmount}");
+                                TempData["InfoMessage"] = "Promo code could not be applied.";
                             }
-
-                            if (discountAmount > totalAmount)
-                            {
-                                discountAmount = totalAmount;
-                            }
-
-                            totalAmount -= discountAmount;
-                            promoCodeId = promoCode.Id;
-
-                            promoCode.UsageCount++;
-                            _unitOfWork.PromoCodes.Update(promoCode);
-
-                            Console.WriteLine($"Final total after discount: ${totalAmount}");
-                            TempData["SuccessMessage"] = $"Promo code applied! You saved ${discountAmount:F2}";
                         }
                         else
                         {
-                            TempData["InfoMessage"] = "Promo code could not be applied.";
+                            TempData["InfoMessage"] = "Invalid promo code.";
                         }
                     }
-                    else
+
+                    var order = new Order
                     {
-                        Console.WriteLine("PromoCode not found or inactive");
-                        TempData["InfoMessage"] = "Invalid promo code.";
-                    }
-                }
+                        UserId = userId,
+                        OrderDate = DateTime.Now,
+                        TotalAmount = totalAmount,
+                        Status = OrderStatus.Pending,
+                        PaymentMethod = model.PaymentMethod,
+                        ShippingAddress = model.Address,
+                        City = model.City,
+                        Country = model.Country,
+                        PhoneNumber = model.PhoneNumber,
+                        Notes = model.Notes ?? string.Empty,
+                        PromoCodeId = promoCodeId,
+                        DiscountAmount = discountAmount,
+                        OrderItems = orderItems
+                    };
 
-                var order = new Order
-                {
-                    UserId = userId,
-                    OrderDate = DateTime.Now,
-                    TotalAmount = totalAmount,
-                    Status = OrderStatus.Pending,
-                    PaymentMethod = model.PaymentMethod,
-                    ShippingAddress = model.Address,
-                    City = model.City,
-                    Country = model.Country,
-                    PhoneNumber = model.PhoneNumber,
-                    Notes = model.Notes ?? string.Empty,
-                    PromoCodeId = promoCodeId,
-                    DiscountAmount = discountAmount,
-                    OrderItems = orderItems
-                };
+                    await _unitOfWork.Orders.AddAsync(order);
+                    await _unitOfWork.SaveAsync();
 
-                await _unitOfWork.Orders.AddAsync(order);
-                await _unitOfWork.SaveAsync();
-
-                var payment = new Payment
-                {
-                    OrderId = order.Id,
-                    Amount = totalAmount,
-                    PaymentDate = DateTime.Now,
-                    PaymentMethod = model.PaymentMethod,
-                    Status = PaymentStatus.Pending,
-                    TransactionId = $"PENDING-{order.Id}-{DateTime.Now.Ticks}"
-                };
-
-                await _unitOfWork.Payments.AddAsync(payment);
-                await _unitOfWork.SaveAsync();
-
-                if (model.PaymentMethod == PaymentMethod.Stripe ||
-                    model.PaymentMethod == PaymentMethod.CreditCard)
-                {
-                    try
+                    var payment = new Payment
                     {
-                        var productNames = new List<string>();
-                        foreach (var item in orderItems)
+                        OrderId = order.Id,
+                        Amount = totalAmount,
+                        PaymentDate = DateTime.Now,
+                        PaymentMethod = model.PaymentMethod,
+                        Status = PaymentStatus.Pending,
+                        TransactionId = $"PENDING-{order.Id}-{DateTime.Now.Ticks}"
+                    };
+
+                    await _unitOfWork.Payments.AddAsync(payment);
+                    await _unitOfWork.SaveAsync();
+
+                    if (model.PaymentMethod == PaymentMethod.Stripe ||
+                        model.PaymentMethod == PaymentMethod.CreditCard)
+                    {
+                        try
                         {
-                            var product = await _unitOfWork.Products.GetByIdAsync(item.ProductId);
-                            if (product != null)
-                            {
-                                productNames.Add(product.Name);
-                            }
+                            var productNames = cartItemList
+                                .Select(ci => ci.Product.Name)
+                                .ToList();
+
+                            var checkoutUrl = await _paymentService.CreateCheckoutSessionAsync(
+                                order.Id,
+                                totalAmount,
+                                productNames);
+
+                            _unitOfWork.ShoppingCarts.DeleteRange(cartItems);
+                            await _unitOfWork.SaveAsync();
+
+                            await transaction.CommitAsync();
+                            return Redirect(checkoutUrl);
                         }
-
-                        var checkoutUrl = await _paymentService.CreateCheckoutSessionAsync(
-                            order.Id,
-                            totalAmount,
-                            productNames);
-
-                        _unitOfWork.ShoppingCarts.DeleteRange(cartItems);
-                        await _unitOfWork.SaveAsync();
-
-                        return Redirect(checkoutUrl);
+                        catch (Exception ex)
+                        {
+                            await transaction.RollbackAsync();
+                            _logger.LogError(ex, "Stripe payment error");
+                            TempData["ErrorMessage"] = "Payment gateway error. Please try again.";
+                            return RedirectToAction("Index");
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Stripe Error: {ex.Message}");
-                        TempData["ErrorMessage"] = "Payment gateway error. Please try again.";
-                        return RedirectToAction("Index");
-                    }
-                }
-                else
-                {
+
                     payment.Status = PaymentStatus.Pending;
                     _unitOfWork.Payments.Update(payment);
                     await _unitOfWork.SaveAsync();
 
                     _unitOfWork.ShoppingCarts.DeleteRange(cartItems);
                     await _unitOfWork.SaveAsync();
+
+                    await transaction.CommitAsync();
 
                     TempData["SuccessMessage"] = "Order placed successfully!";
 
@@ -340,19 +310,20 @@ namespace ECommerceProject.Controllers
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Email Error: {ex.Message}");
+                        _logger.LogWarning(ex, "Failed to send order confirmation email");
                     }
 
                     return RedirectToAction("OrderConfirmation", new { orderId = order.Id });
                 }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: {ex.Message}");
-                if (ex.InnerException != null)
-                {
-                    Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
-                }
+                _logger.LogError(ex, "Error placing order for user {UserId}", userId);
                 TempData["ErrorMessage"] = "An error occurred while placing your order. Please try again.";
                 return RedirectToAction("Index");
             }
@@ -369,19 +340,11 @@ namespace ECommerceProject.Controllers
                 return NotFound();
             }
 
-            var orderItems = await _unitOfWork.OrderItems.GetAsync(oi => oi.OrderId == orderId);
-            var orderItemsWithProducts = new List<(OrderItem Item, Product Product)>();
+            var orderItems = await _unitOfWork.OrderItems.GetAsync(
+                oi => oi.OrderId == orderId,
+                oi => oi.Product);
 
-            foreach (var item in orderItems)
-            {
-                var product = await _unitOfWork.Products.GetByIdAsync(item.ProductId);
-                if (product != null)
-                {
-                    orderItemsWithProducts.Add((item, product));
-                }
-            }
-
-            ViewBag.OrderItems = orderItemsWithProducts;
+            ViewBag.OrderItems = orderItems.Select(oi => (oi, oi.Product)).ToList();
 
             var payment = await _unitOfWork.Payments.GetFirstOrDefaultAsync(p => p.OrderId == orderId);
             ViewBag.Payment = payment;
@@ -429,7 +392,7 @@ namespace ECommerceProject.Controllers
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Email Error: {ex.Message}");
+                        _logger.LogWarning(ex, "Failed to send order confirmation email for PaymentSuccess");
                     }
                 }
 
@@ -437,7 +400,7 @@ namespace ECommerceProject.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Payment Success Error: {ex.Message}");
+                _logger.LogError(ex, "Payment success processing error for order {OrderId}", orderId);
                 TempData["ErrorMessage"] = "An error occurred while processing your payment.";
                 return RedirectToAction("Index", "Cart");
             }
@@ -468,7 +431,7 @@ namespace ECommerceProject.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Payment Cancelled Error: {ex.Message}");
+                _logger.LogError(ex, "Payment cancellation error for order {OrderId}", orderId);
                 return RedirectToAction("Index", "Cart");
             }
         }
@@ -554,7 +517,7 @@ namespace ECommerceProject.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: {ex.Message}");
+                _logger.LogError(ex, "Promo code validation error");
                 return Json(new { success = false, message = "An error occurred while validating the promo code." });
             }
         }

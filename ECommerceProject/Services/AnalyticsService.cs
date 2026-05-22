@@ -3,6 +3,7 @@ using ECommerceProject.Models.Enums;
 using ECommerceProject.Models.ViewModels;
 using ECommerceProject.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using ECommerceProject.Models.Entities;
 
 namespace ECommerceProject.Services
@@ -22,20 +23,27 @@ namespace ECommerceProject.Services
         {
             var model = new SalesAnalyticsViewModel();
 
-            // Get all orders
-            var allOrders = await _unitOfWork.Orders.GetAllAsync();
-            var ordersList = allOrders.ToList();
+            // Get all orders and items
+            var ordersList = await _unitOfWork.Orders.GetQueryable(asNoTracking: true)
+                .ToListAsync();
 
-            // Get all order items
-            var allOrderItems = await _unitOfWork.OrderItems.GetAllAsync();
-            var orderItemsList = allOrderItems.ToList();
+            var orderItemsList = await _unitOfWork.OrderItems.GetQueryable(asNoTracking: true)
+                .ToListAsync();
+
+            // Preload reference data into dictionaries to avoid N+1 queries
+            var productsDict = (await _unitOfWork.Products.GetQueryable(asNoTracking: true)
+                .ToListAsync())
+                .ToDictionary(p => p.Id);
+
+            var categoriesDict = (await _unitOfWork.Categories.GetQueryable(asNoTracking: true)
+                .ToListAsync())
+                .ToDictionary(c => c.Id);
 
             // Overview Stats
             model.TotalOrders = ordersList.Count;
             model.TotalRevenue = ordersList.Sum(o => o.TotalAmount);
             model.AverageOrderValue = model.TotalOrders > 0 ? model.TotalRevenue / model.TotalOrders : 0;
 
-            var allUsers = await _unitOfWork.Users.GetAllAsync();
             var customerRole = await _userManager.GetUsersInRoleAsync("Customer");
             model.TotalCustomers = customerRole.Count;
 
@@ -81,8 +89,7 @@ namespace ECommerceProject.Services
 
             foreach (var ps in productSales)
             {
-                var product = await _unitOfWork.Products.GetByIdAsync(ps.ProductId);
-                if (product != null)
+                if (productsDict.TryGetValue(ps.ProductId, out var product))
                 {
                     model.TopSellingProducts.Add(new ProductSalesData
                     {
@@ -96,6 +103,10 @@ namespace ECommerceProject.Services
             }
 
             // Top Customers
+            var usersDict = (await _unitOfWork.Users.GetQueryable(asNoTracking: true)
+                .ToListAsync())
+                .ToDictionary(u => u.Id);
+
             var customerSales = ordersList
                 .GroupBy(o => o.UserId)
                 .Select(g => new
@@ -109,8 +120,7 @@ namespace ECommerceProject.Services
 
             foreach (var cs in customerSales)
             {
-                var user = await _userManager.FindByIdAsync(cs.UserId);
-                if (user != null)
+                if (usersDict.TryGetValue(cs.UserId, out var user))
                 {
                     model.TopCustomers.Add(new CustomerSalesData
                     {
@@ -124,11 +134,8 @@ namespace ECommerceProject.Services
             }
 
             // Category Performance
-            var products = await _unitOfWork.Products.GetAllAsync();
-            var productsList = products.ToList();
-
             var categorySales = orderItemsList
-                .Join(productsList, oi => oi.ProductId, p => p.Id, (oi, p) => new { oi, p })
+                .Join(productsDict.Values, oi => oi.ProductId, p => p.Id, (oi, p) => new { oi, p })
                 .GroupBy(x => x.p.CategoryId)
                 .Select(g => new
                 {
@@ -139,8 +146,7 @@ namespace ECommerceProject.Services
 
             foreach (var cs in categorySales)
             {
-                var category = await _unitOfWork.Categories.GetByIdAsync(cs.CategoryId);
-                if (category != null)
+                if (categoriesDict.TryGetValue(cs.CategoryId, out var category))
                 {
                     model.CategorySales.Add(new CategorySalesData
                     {
@@ -166,7 +172,9 @@ namespace ECommerceProject.Services
             var result = new List<DailySalesData>();
             var startDate = DateTime.Now.Date.AddDays(-days);
 
-            var orders = await _unitOfWork.Orders.GetAsync(o => o.OrderDate >= startDate);
+            var orders = await _unitOfWork.Orders.GetQueryable(asNoTracking: true)
+                .Where(o => o.OrderDate >= startDate)
+                .ToListAsync();
 
             var dailyData = orders
                 .GroupBy(o => o.OrderDate.Date)
@@ -208,7 +216,9 @@ namespace ECommerceProject.Services
             var result = new List<MonthlySalesData>();
             var startDate = DateTime.Now.AddMonths(-months);
 
-            var orders = await _unitOfWork.Orders.GetAsync(o => o.OrderDate >= startDate);
+            var orders = await _unitOfWork.Orders.GetQueryable(asNoTracking: true)
+                .Where(o => o.OrderDate >= startDate)
+                .ToListAsync();
 
             var monthlyData = orders
                 .GroupBy(o => new { o.OrderDate.Year, o.OrderDate.Month })

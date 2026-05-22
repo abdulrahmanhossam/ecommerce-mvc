@@ -16,9 +16,38 @@ namespace ECommerceProject.Data.Repositories
             _dbSet = context.Set<T>();
         }
 
+        public IQueryable<T> GetQueryable()
+        {
+            return _dbSet;
+        }
+
+        public IQueryable<T> GetQueryable(bool asNoTracking)
+        {
+            return asNoTracking ? _dbSet.AsNoTracking() : _dbSet;
+        }
+
+        private IQueryable<T> ApplyIncludes(IQueryable<T> query, params Expression<Func<T, object>>[] includes)
+        {
+            if (includes is { Length: > 0 })
+            {
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
+            }
+            return query;
+        }
+
         public async Task<IEnumerable<T>> GetAllAsync()
         {
             return await _dbSet.ToListAsync();
+        }
+
+        public async Task<IEnumerable<T>> GetAllAsync(params Expression<Func<T, object>>[] includes)
+        {
+            var query = GetQueryable();
+            query = ApplyIncludes(query, includes);
+            return await query.ToListAsync();
         }
 
         public async Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>> filter)
@@ -26,14 +55,35 @@ namespace ECommerceProject.Data.Repositories
             return await _dbSet.Where(filter).ToListAsync();
         }
 
+        public async Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>> filter, params Expression<Func<T, object>>[] includes)
+        {
+            var query = _dbSet.Where(filter);
+            query = ApplyIncludes(query, includes);
+            return await query.ToListAsync();
+        }
+
         public async Task<T?> GetByIdAsync(int id)
         {
             return await _dbSet.FindAsync(id);
         }
 
+        public async Task<T?> GetByIdAsync(int id, params Expression<Func<T, object>>[] includes)
+        {
+            var query = GetQueryable();
+            query = ApplyIncludes(query, includes);
+            return await query.FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id);
+        }
+
         public async Task<T?> GetFirstOrDefaultAsync(Expression<Func<T, bool>> filter)
         {
             return await _dbSet.FirstOrDefaultAsync(filter);
+        }
+
+        public async Task<T?> GetFirstOrDefaultAsync(Expression<Func<T, bool>> filter, params Expression<Func<T, object>>[] includes)
+        {
+            var query = _dbSet.Where(filter);
+            query = ApplyIncludes(query, includes);
+            return await query.FirstOrDefaultAsync();
         }
 
         public async Task AddAsync(T entity)

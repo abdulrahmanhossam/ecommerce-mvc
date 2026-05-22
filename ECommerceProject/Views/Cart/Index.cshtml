@@ -113,13 +113,22 @@
                     <div class="card-body">
                         <p style="font-size: 0.9rem; font-weight: 500; margin-bottom: 0.75rem;">Have a promo code?</p>
                         <div class="flex gap-sm">
-                            <input type="text" class="form-control" placeholder="Enter code">
-                            <button class="btn btn-secondary">Apply</button>
+                            <input type="text" id="cart-promo-code" class="form-control text-uppercase" placeholder="Enter code">
+                            <button class="btn btn-secondary" onclick="applyCartPromo()">Apply</button>
                         </div>
+                        <div id="cart-promo-message" class="mt-2" style="font-size: 0.85rem;"></div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <script>
+        function applyCartPromo() {
+            const code = document.getElementById('cart-promo-code')?.value.trim();
+            if (!code) return;
+            window.location.href = '@Url.Action("Index", "Checkout")' + '?promoCode=' + encodeURIComponent(code);
+        }
+        </script>
     }
     else
     {

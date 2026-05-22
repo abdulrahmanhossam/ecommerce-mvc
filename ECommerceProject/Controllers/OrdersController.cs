@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using ECommerceProject.Data.Interfaces;
 
@@ -48,20 +49,14 @@ namespace ECommerceProject.Controllers
                 return NotFound();
             }
 
-            // جلب Order Items مع المنتجات
-            var orderItems = await _unitOfWork.OrderItems.GetAsync(oi => oi.OrderId == id);
-            var orderItemsWithProducts = new List<(Models.Entities.OrderItem Item, Models.Entities.Product Product)>();
+            var orderItems = await _unitOfWork.OrderItems.GetQueryable(asNoTracking: true)
+                .Where(oi => oi.OrderId == id)
+                .Include(oi => oi.Product)
+                .ToListAsync();
 
-            foreach (var item in orderItems)
-            {
-                var product = await _unitOfWork.Products.GetByIdAsync(item.ProductId);
-                if (product != null)
-                {
-                    orderItemsWithProducts.Add((item, product));
-                }
-            }
-
-            ViewBag.OrderItems = orderItemsWithProducts;
+            ViewBag.OrderItems = orderItems
+                .Select(item => (item, item.Product))
+                .ToList();
 
             // جلب Payment
             var payment = await _unitOfWork.Payments.GetFirstOrDefaultAsync(p => p.OrderId == id);

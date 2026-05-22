@@ -28,7 +28,7 @@
                         {
                             <tr>
                                 <td><strong>#@order.Id</strong></td>
-                                <td>User @order.UserId.Substring(0, 8)...</td>
+                                <td>@(ViewBag.UserNames?[order.UserId] ?? $"User {order.UserId[..8]}...")</td>
                                 <td>@order.OrderDate.ToString("dd MMM yyyy")</td>
                                 <td><strong>@order.TotalAmount.ToString("C")</strong></td>
                                 <td>

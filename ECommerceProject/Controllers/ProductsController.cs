@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using ECommerceProject.Data.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using ECommerceProject.Models.Entities;
@@ -19,41 +20,41 @@ namespace ECommerceProject.Controllers
         // GET: Products
         public async Task<IActionResult> Index(int? categoryId, string? searchTerm, decimal? minPrice, decimal? maxPrice)
         {
-            var products = await _unitOfWork.Products.GetAllAsync();
+            var query = _unitOfWork.Products.GetQueryable().Where(p => p.IsActive);
 
             if (categoryId.HasValue)
             {
-                products = products.Where(p => p.CategoryId == categoryId.Value);
+                query = query.Where(p => p.CategoryId == categoryId.Value);
             }
 
             if (!string.IsNullOrEmpty(searchTerm))
             {
-                products = products.Where(p =>
-                    p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    (p.Description != null && p.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                query = query.Where(p =>
+                    p.Name.Contains(searchTerm) ||
+                    (p.Description != null && p.Description.Contains(searchTerm))
                 );
             }
 
             if (minPrice.HasValue)
             {
-                products = products.Where(p => p.Price >= minPrice.Value);
+                query = query.Where(p => p.Price >= minPrice.Value);
             }
 
             if (maxPrice.HasValue)
             {
-                products = products.Where(p => p.Price <= maxPrice.Value);
+                query = query.Where(p => p.Price <= maxPrice.Value);
             }
 
-            products = products.Where(p => p.IsActive);
+            var products = await query.ToListAsync();
 
-            var categories = await _unitOfWork.Categories.GetAllAsync();
-            ViewBag.Categories = categories.Where(c => c.IsActive).ToList();
+            var categories = await _unitOfWork.Categories.GetAsync(c => c.IsActive);
+            ViewBag.Categories = categories.ToList();
             ViewBag.SelectedCategoryId = categoryId;
             ViewBag.SearchTerm = searchTerm;
             ViewBag.MinPrice = minPrice;
             ViewBag.MaxPrice = maxPrice;
 
-            return View(products.ToList());
+            return View(products);
         }
 
         // GET: Products/Details/5
@@ -171,7 +172,6 @@ namespace ECommerceProject.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: {ex.Message}");
                 TempData["ErrorMessage"] = "Failed to submit review. Please try again.";
             }
 

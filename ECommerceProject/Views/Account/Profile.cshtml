@@ -62,7 +62,7 @@
                             <p class="stat-label text-white-50 mb-0 small">Total Orders</p>
                             <h4 class="stat-value mb-0">@totalOrders</h4>
                         </div>
-                        <div class="stat-icon bg-white bg-opacity-15">
+                        <div class="stat-icon" style="background: rgba(255,255,255,0.15);">
                             <i class="bi bi-bag-check"></i>
                         </div>
                     </div>
@@ -78,7 +78,7 @@
                             <p class="stat-label text-white-50 mb-0 small">Completed</p>
                             <h4 class="stat-value mb-0">@completedOrders</h4>
                         </div>
-                        <div class="stat-icon bg-white bg-opacity-15">
+                        <div class="stat-icon bg-white bg-opacity-25">
                             <i class="bi bi-check-circle"></i>
                         </div>
                     </div>
@@ -94,7 +94,7 @@
                             <p class="stat-label text-white opacity-75 mb-0 small">Pending</p>
                             <h4 class="stat-value mb-0">@pendingOrders</h4>
                         </div>
-                        <div class="stat-icon bg-white bg-opacity-15">
+                        <div class="stat-icon bg-white bg-opacity-25">
                             <i class="bi bi-hourglass-split"></i>
                         </div>
                     </div>
@@ -110,7 +110,7 @@
                             <p class="stat-label text-white-50 mb-0 small">Total Spent</p>
                             <h4 class="stat-value mb-0">@totalSpent.ToString("C")</h4>
                         </div>
-                        <div class="stat-icon bg-white bg-opacity-15">
+                        <div class="stat-icon bg-white bg-opacity-25">
                             <i class="bi bi-currency-dollar"></i>
                         </div>
                     </div>
@@ -253,7 +253,7 @@
                                                 <span class="badge @bgClass">@label</span>
                                             </td>
                                             <td class="pe-3">
-                                                <a asp-controller="Orders" asp-action="MyOrderDetails" asp-route-id="@order.Id" class="btn btn-sm btn-outline-primary">
+                                                <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id" class="btn btn-sm btn-outline-primary">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
                                             </td>
