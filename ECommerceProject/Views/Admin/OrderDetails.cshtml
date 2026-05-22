@@ -89,7 +89,7 @@ ECommerceProject.Models.Entities.Product Product)>;
                             <hr>
                             <p><strong>Shipping Address:</strong><br>
                                 @Model.ShippingAddress<br>
-                                @Model.City, @Model.Country</p>
+                                @Model.City@(!string.IsNullOrEmpty(Model.State) ? $", {Model.State}" : ""), @Model.Country @Model.ZipCode</p>
                                 <p><strong>Order Date:</strong> @Model.OrderDate.ToString("dd MMMM yyyy, hh:mm tt")</p>
                             </div>
                         </div>

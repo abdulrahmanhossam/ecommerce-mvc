@@ -18,9 +18,10 @@ namespace ECommerceProject.Controllers
         }
 
         // GET: Products
-        public async Task<IActionResult> Index(int? categoryId, string? searchTerm, decimal? minPrice, decimal? maxPrice)
+        public async Task<IActionResult> Index(int? categoryId, string? searchTerm, decimal? minPrice, decimal? maxPrice,
+            string? sortBy, int page = 1)
         {
-            var query = _unitOfWork.Products.GetQueryable().Where(p => p.IsActive);
+            var query = _unitOfWork.Products.GetQueryable(asNoTracking: true).Where(p => p.IsActive);
 
             if (categoryId.HasValue)
             {
@@ -45,7 +46,19 @@ namespace ECommerceProject.Controllers
                 query = query.Where(p => p.Price <= maxPrice.Value);
             }
 
-            var products = await query.ToListAsync();
+            // Sorting
+            query = sortBy switch
+            {
+                "price_asc" => query.OrderBy(p => p.Price),
+                "price_desc" => query.OrderByDescending(p => p.Price),
+                "name_asc" => query.OrderBy(p => p.Name),
+                "name_desc" => query.OrderByDescending(p => p.Name),
+                "newest" => query.OrderByDescending(p => p.CreatedDate),
+                _ => query.OrderByDescending(p => p.CreatedDate) // default: newest first
+            };
+
+            int pageSize = 12;
+            var products = await PaginatedList<Product>.CreateAsync(query, page, pageSize);
 
             var categories = await _unitOfWork.Categories.GetAsync(c => c.IsActive);
             ViewBag.Categories = categories.ToList();
@@ -53,6 +66,7 @@ namespace ECommerceProject.Controllers
             ViewBag.SearchTerm = searchTerm;
             ViewBag.MinPrice = minPrice;
             ViewBag.MaxPrice = maxPrice;
+            ViewBag.SortBy = sortBy;
 
             return View(products);
         }

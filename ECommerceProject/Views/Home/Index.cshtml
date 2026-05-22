@@ -150,8 +150,9 @@
             <div style="padding: var(--space-2xl); text-align: center; color: var(--bg-primary);">
                 <h3 style="color: var(--bg-primary); margin-bottom: var(--space-sm);">Stay in the Loop</h3>
                 <p style="opacity: 0.7; margin-bottom: var(--space-lg);">Get exclusive offers and new arrivals</p>
-                <form class="flex justify-center gap-sm" style="max-width: 400px; margin: 0 auto;" onsubmit="event.preventDefault(); showSubscribeToast();">
-                    <input type="email" class="form-control" placeholder="Enter your email" required 
+                <form asp-controller="Home" asp-action="Subscribe" method="post" class="flex justify-center gap-sm" style="max-width: 400px; margin: 0 auto;">
+                    @Html.AntiForgeryToken()
+                    <input type="email" name="email" class="form-control" placeholder="Enter your email" required 
                            style="background: rgba(255,255,255,0.9); border: none; color: var(--bg-primary);">
                     <button type="submit" class="btn" style="background: var(--bg-primary); color: var(--accent);">
                         Subscribe
@@ -162,14 +163,3 @@
     </div>
 </section>
 
-@section Scripts {
-<script>
-function showSubscribeToast() {
-    const toast = document.createElement('div');
-    toast.className = 'toast-notification toast-success';
-    toast.textContent = 'Thank you for subscribing!';
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 2500);
-}
-</script>
-}

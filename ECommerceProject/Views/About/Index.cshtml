@@ -1,0 +1,85 @@
+@{
+    ViewData["Title"] = "About Us";
+}
+
+<div class="page-header">
+    <h1 class="page-title">About ShopHub</h1>
+    <p class="page-subtitle">Your premium destination for quality products</p>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body" style="padding: var(--space-xl);">
+                <h5 style="margin-bottom: var(--space-md);">Our Story</h5>
+                <p style="line-height: 1.8; color: var(--text-secondary); margin-bottom: var(--space-lg);">
+                    Founded with a passion for quality and style, ShopHub has grown from a small boutique into 
+                    a trusted online marketplace. We curate every product with care, ensuring that each item 
+                    meets our high standards of craftsmanship, design, and value.
+                </p>
+
+                <h5 style="margin-bottom: var(--space-md);">Our Mission</h5>
+                <p style="line-height: 1.8; color: var(--text-secondary); margin-bottom: var(--space-lg);">
+                    To make premium shopping accessible to everyone. We believe that quality shouldn't be a luxury — 
+                    it should be the standard. Every product we offer is thoughtfully selected to bring you the 
+                    best in design, durability, and affordability.
+                </p>
+
+                <h5 style="margin-bottom: var(--space-md);">Why Choose Us?</h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="d-flex gap-3 align-items-start" style="padding: var(--space-md); background: var(--bg-secondary); border-radius: var(--radius-md);">
+                            <i class="bi bi-truck" style="font-size: 1.5rem; color: var(--accent);"></i>
+                            <div>
+                                <strong>Fast Delivery</strong>
+                                <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">Free shipping on orders over $50</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex gap-3 align-items-start" style="padding: var(--space-md); background: var(--bg-secondary); border-radius: var(--radius-md);">
+                            <i class="bi bi-shield-check" style="font-size: 1.5rem; color: var(--accent);"></i>
+                            <div>
+                                <strong>Secure Payments</strong>
+                                <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">Encrypted transactions with multiple options</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex gap-3 align-items-start" style="padding: var(--space-md); background: var(--bg-secondary); border-radius: var(--radius-md);">
+                            <i class="bi bi-arrow-return-left" style="font-size: 1.5rem; color: var(--accent);"></i>
+                            <div>
+                                <strong>Easy Returns</strong>
+                                <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">30-day hassle-free return policy</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex gap-3 align-items-start" style="padding: var(--space-md); background: var(--bg-secondary); border-radius: var(--radius-md);">
+                            <i class="bi bi-headset" style="font-size: 1.5rem; color: var(--accent);"></i>
+                            <div>
+                                <strong>24/7 Support</strong>
+                                <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">Always here when you need us</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body" style="padding: var(--space-xl); text-align: center;">
+                <i class="bi bi-bag-check" style="font-size: 3rem; color: var(--accent); margin-bottom: var(--space-md);"></i>
+                <h5>Shop With Confidence</h5>
+                <p style="font-size: 0.9rem; color: var(--text-secondary);">
+                    Every purchase is protected by our satisfaction guarantee.
+                </p>
+                <a asp-controller="Products" asp-action="Index" class="btn btn-primary w-100">
+                    <i class="bi bi-bag"></i> Start Shopping
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

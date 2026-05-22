@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /Admin/
+Disallow: /Account/
+Disallow: /Cart/
+Disallow: /Checkout/
+Disallow: /Orders/
+Disallow: /Wishlist/
+Disallow: /api/
+
+Sitemap: https://shophub.com/sitemap.xml

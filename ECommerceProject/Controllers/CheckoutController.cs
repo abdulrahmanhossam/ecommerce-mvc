@@ -232,6 +232,8 @@ namespace ECommerceProject.Controllers
                         PaymentMethod = model.PaymentMethod,
                         ShippingAddress = model.Address,
                         City = model.City,
+                        State = model.State,
+                        ZipCode = model.ZipCode,
                         Country = model.Country,
                         PhoneNumber = model.PhoneNumber,
                         Notes = model.Notes ?? string.Empty,

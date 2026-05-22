@@ -1,4 +1,5 @@
-@model IEnumerable<ECommerceProject.Models.Entities.Product>
+@using ECommerceProject.Models.ViewModels
+@model PaginatedList<ECommerceProject.Models.Entities.Product>
 @{
     ViewData["Title"] = "Products";
     var categories = ViewBag.Categories as List<ECommerceProject.Models.Entities.Category>;
@@ -6,6 +7,7 @@
     var searchTerm = ViewBag.SearchTerm as string;
     var minPrice = ViewBag.MinPrice as decimal?;
     var maxPrice = ViewBag.MaxPrice as decimal?;
+    var sortBy = ViewBag.SortBy as string;
 }
 
 <!-- ==================== Page Header ==================== -->
@@ -14,22 +16,22 @@
         <h1 style="margin-bottom: 0.25rem;">Products</h1>
         <p class="text-muted" style="margin-bottom: 0;">Browse our collection</p>
     </div>
-    <span class="badge badge-primary">@(Model?.Count() ?? 0) items</span>
+    <span class="badge badge-primary">@Model.TotalCount items</span>
 </div>
 
 <!-- ==================== Filters ==================== -->
 <div class="card mb-4">
     <div class="card-body" style="padding: var(--space-md);">
-        <form asp-action="Index" method="get" class="grid" style="grid-template-columns: 1fr auto auto auto; gap: var(--space-md); align-items: end;">
+        <form asp-action="Index" method="get" class="flex gap-md" style="flex-wrap: wrap; align-items: end;">
             <!-- Search -->
-            <div class="form-group" style="margin-bottom: 0;">
+            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 180px;">
                 <label class="form-label">Search</label>
                 <input type="text" name="searchTerm" class="form-control" 
                        placeholder="Search products..." value="@searchTerm">
             </div>
             
             <!-- Category -->
-            <div class="form-group" style="margin-bottom: 0;">
+            <div class="form-group" style="margin-bottom: 0; min-width: 160px;">
                 <label class="form-label">Category</label>
                 <select name="categoryId" class="form-select">
                     <option value="">All Categories</option>
@@ -50,27 +52,42 @@
                 <label class="form-label">Price Range</label>
                 <div class="flex gap-sm">
                     <input type="number" name="minPrice" class="form-control" 
-                           placeholder="Min" value="@minPrice" step="0.01" style="width: 80px;">
+                           placeholder="Min" value="@minPrice" step="0.01" style="width: 90px;">
                     <input type="number" name="maxPrice" class="form-control" 
-                           placeholder="Max" value="@maxPrice" step="0.01" style="width: 80px;">
+                           placeholder="Max" value="@maxPrice" step="0.01" style="width: 90px;">
                 </div>
+            </div>
+
+            <!-- Sort -->
+            <div class="form-group" style="margin-bottom: 0; min-width: 150px;">
+                <label class="form-label">Sort By</label>
+                <select name="sortBy" class="form-select" onchange="this.form.submit()">
+                    <option value="newest" selected="@(sortBy == "newest" || sortBy == null)">Newest</option>
+                    <option value="price_asc" selected="@(sortBy == "price_asc")">Price: Low to High</option>
+                    <option value="price_desc" selected="@(sortBy == "price_desc")">Price: High to Low</option>
+                    <option value="name_asc" selected="@(sortBy == "name_asc")">Name: A to Z</option>
+                    <option value="name_desc" selected="@(sortBy == "name_desc")">Name: Z to A</option>
+                </select>
             </div>
             
             <!-- Submit -->
             <div class="form-group" style="margin-bottom: 0;">
-                <button type="submit" class="btn btn-primary w-100">
+                <button type="submit" class="btn btn-primary">
                     <i class="bi bi-funnel"></i> Filter
                 </button>
+                <a asp-action="Index" class="btn btn-ghost">
+                    <i class="bi bi-x"></i> Clear
+                </a>
             </div>
         </form>
     </div>
 </div>
 
 <!-- ==================== Products Grid ==================== -->
-@if (Model != null && Model.Any())
+@if (Model.Items.Any())
 {
-    <div class="grid grid-4" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
-        @foreach (var product in Model)
+    <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+        @foreach (var product in Model.Items)
         {
             <article class="product-card">
                 <!-- Image -->
@@ -128,6 +145,56 @@
                     </a>
                 </div>
             </article>
+        }
+    </div>
+
+    <!-- ==================== Pagination ==================== -->
+    <div class="flex items-center justify-between mt-5">
+        <p class="text-muted" style="font-size: 0.85rem;">
+            Showing @((Model.PageIndex - 1) * 12 + 1) - @Math.Min(Model.PageIndex * 12, Model.TotalCount) of @Model.TotalCount
+        </p>
+
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="pagination">
+                <a class="page-link @(Model.HasPreviousPage ? "" : "disabled")" 
+                   href="@Url.Action("Index", new { categoryId = selectedCategoryId, searchTerm, minPrice, maxPrice, sortBy, page = Model.PageIndex - 1 })"
+                   @(Model.HasPreviousPage ? "" : "tabindex='-1'")>
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+
+                @{
+                    var startPage = Math.Max(1, Model.PageIndex - 2);
+                    var endPage = Math.Min(Model.TotalPages, Model.PageIndex + 2);
+                    if (startPage > 1)
+                    {
+                        <a class="page-link" href="@Url.Action("Index", new { categoryId = selectedCategoryId, searchTerm, minPrice, maxPrice, sortBy, page = 1 })">1</a>
+                        if (startPage > 2)
+                        {
+                            <span class="page-link disabled">...</span>
+                        }
+                    }
+                    for (int i = startPage; i <= endPage; i++)
+                    {
+                        <a class="page-link @(i == Model.PageIndex ? "active" : "")" 
+                           href="@Url.Action("Index", new { categoryId = selectedCategoryId, searchTerm, minPrice, maxPrice, sortBy, page = i })">@i</a>
+                    }
+                    if (endPage < Model.TotalPages)
+                    {
+                        if (endPage < Model.TotalPages - 1)
+                        {
+                            <span class="page-link disabled">...</span>
+                        }
+                        <a class="page-link" href="@Url.Action("Index", new { categoryId = selectedCategoryId, searchTerm, minPrice, maxPrice, sortBy, page = Model.TotalPages })">@Model.TotalPages</a>
+                    }
+                }
+
+                <a class="page-link @(Model.HasNextPage ? "" : "disabled")" 
+                   href="@Url.Action("Index", new { categoryId = selectedCategoryId, searchTerm, minPrice, maxPrice, sortBy, page = Model.PageIndex + 1 })"
+                   @(Model.HasNextPage ? "" : "tabindex='-1'")>
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </nav>
         }
     </div>
 }

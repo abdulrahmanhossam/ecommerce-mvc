@@ -17,6 +17,8 @@ namespace ECommerceProject.Models.Entities
         [Required]
         public int Quantity { get; set; } = 1;
 
+        public int? ProductVariantId { get; set; }
+
         public DateTime AddedDate { get; set; } = DateTime.Now;
 
         // Navigation Properties
@@ -25,5 +27,8 @@ namespace ECommerceProject.Models.Entities
 
         [ForeignKey("ProductId")]
         public virtual Product Product { get; set; } = null!;
+
+        [ForeignKey("ProductVariantId")]
+        public virtual ProductVariant? ProductVariant { get; set; }
     }
 }

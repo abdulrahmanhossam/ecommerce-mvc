@@ -36,6 +36,12 @@ namespace ECommerceProject.Models.Entities
         [StringLength(100)]
         public string Country { get; set; } = string.Empty;
 
+        [StringLength(100)]
+        public string? State { get; set; }
+
+        [StringLength(20)]
+        public string? ZipCode { get; set; }
+
         [Required]
         [Phone]
         public string PhoneNumber { get; set; } = string.Empty;

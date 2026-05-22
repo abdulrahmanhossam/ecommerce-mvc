@@ -116,15 +116,15 @@ public class AdminController : Controller
 
     // ==================== Users Management ====================
 
-    public async Task<IActionResult> Users()
+    public async Task<IActionResult> Users(int page = 1)
     {
-        var users = await _unitOfWork.Users.GetAllAsync();
-        var usersList = users.OrderByDescending(u => u.CreatedDate).ToList();
+        var query = _unitOfWork.Users.GetQueryable(asNoTracking: true)
+            .OrderByDescending(u => u.CreatedDate);
+        var users = await PaginatedList<ApplicationUser>.CreateAsync(query, page, 15);
 
-        // جلب الـ Roles لكل مستخدم
         var usersWithRoles = new List<(ApplicationUser User, IList<string> Roles, int OrderCount)>();
 
-        foreach (var user in usersList)
+        foreach (var user in users.Items)
         {
             var roles = await _userManager.GetRolesAsync(user);
             var orderCount = await _unitOfWork.Orders.CountAsync(o => o.UserId == user.Id);
@@ -133,7 +133,7 @@ public class AdminController : Controller
 
         ViewBag.UsersWithRoles = usersWithRoles;
 
-        return View(usersList);
+        return View(users);
     }
 
     [HttpPost]
@@ -217,12 +217,14 @@ public class AdminController : Controller
 
     // ==================== Products Management ====================
 
-    public async Task<IActionResult> Products()
+    public async Task<IActionResult> Products(int page = 1)
     {
-        var products = await _unitOfWork.Products.GetAllAsync();
+        var query = _unitOfWork.Products.GetQueryable(asNoTracking: true)
+            .OrderByDescending(p => p.CreatedDate);
+        var products = await PaginatedList<Product>.CreateAsync(query, page, 15);
         var categories = (await _unitOfWork.Categories.GetAllAsync()).ToDictionary(c => c.Id, c => c.Name);
         ViewBag.CategoryNames = categories;
-        return View(products.ToList());
+        return View(products);
     }
 
     [HttpGet]
@@ -640,17 +642,18 @@ public class AdminController : Controller
 
     // ==================== Orders Management ====================
 
-    public async Task<IActionResult> Orders()
+    public async Task<IActionResult> Orders(int page = 1)
     {
-        var orders = await _unitOfWork.Orders.GetAllAsync();
-        var ordersList = orders.OrderByDescending(o => o.OrderDate).ToList();
+        var query = _unitOfWork.Orders.GetQueryable(asNoTracking: true)
+            .OrderByDescending(o => o.OrderDate);
+        var orders = await PaginatedList<Order>.CreateAsync(query, page, 15);
 
-        var userIds = ordersList.Select(o => o.UserId).Distinct().ToList();
+        var userIds = orders.Items.Select(o => o.UserId).Distinct().ToList();
         var userNames = (await _unitOfWork.Users.GetAsync(u => userIds.Contains(u.Id)))
             .ToDictionary(u => u.Id, u => u.FullName);
         ViewBag.UserNames = userNames;
 
-        return View(ordersList);
+        return View(orders);
     }
 
     [HttpGet]
@@ -723,11 +726,12 @@ public class AdminController : Controller
 
     // ==================== Promo Codes Management ====================
 
-    public async Task<IActionResult> PromoCodes()
+    public async Task<IActionResult> PromoCodes(int page = 1)
     {
-        var promoCodes = await _unitOfWork.PromoCodes.GetAllAsync();
-        var promoCodesList = promoCodes.OrderByDescending(p => p.CreatedDate).ToList();
-        return View(promoCodesList);
+        var query = _unitOfWork.PromoCodes.GetQueryable(asNoTracking: true)
+            .OrderByDescending(p => p.CreatedDate);
+        var promoCodes = await PaginatedList<PromoCode>.CreateAsync(query, page, 15);
+        return View(promoCodes);
     }
 
     [HttpGet]

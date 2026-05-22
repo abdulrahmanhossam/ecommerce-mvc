@@ -56,7 +56,7 @@ ECommerceProject.Models.Entities.Product Product)>;
                         <strong>Shipping Address:</strong><br>
                         <span class="text-muted">
                             @Model.ShippingAddress<br>
-                            @Model.City, @Model.Country<br>
+                            @Model.City@(!string.IsNullOrEmpty(Model.State) ? $", {Model.State}" : ""), @Model.Country @Model.ZipCode<br>
                             Phone: @Model.PhoneNumber
                         </span>
                     </div>

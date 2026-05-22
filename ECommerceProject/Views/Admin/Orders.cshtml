@@ -1,4 +1,5 @@
-@model IEnumerable<ECommerceProject.Models.Entities.Order>
+@using ECommerceProject.Models.ViewModels
+@model PaginatedList<ECommerceProject.Models.Entities.Order>
 @{
     ViewData["Title"] = "Manage Orders";
 }
@@ -24,7 +25,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var order in Model)
+                        @foreach (var order in Model.Items)
                         {
                             <tr>
                                 <td><strong>#@order.Id</strong></td>
@@ -59,6 +60,26 @@
                     </tbody>
                 </table>
             </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <nav class="d-flex justify-content-center mt-4">
+                    <ul class="pagination">
+                        <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                            <a class="page-link" href="@Url.Action("Orders", new { page = Model.PageIndex - 1 })">&laquo;</a>
+                        </li>
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("Orders", new { page = i })">@i</a>
+                            </li>
+                        }
+                        <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                            <a class="page-link" href="@Url.Action("Orders", new { page = Model.PageIndex + 1 })">&raquo;</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
         </div>
     </div>
 </div>

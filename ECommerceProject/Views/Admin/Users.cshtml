@@ -1,4 +1,5 @@
-@model IEnumerable<ECommerceProject.Models.Entities.ApplicationUser>
+@using ECommerceProject.Models.ViewModels
+@model PaginatedList<ECommerceProject.Models.Entities.ApplicationUser>
 @{
     ViewData["Title"] = "Manage Users";
     var usersWithRoles = ViewBag.UsersWithRoles as List<(ECommerceProject.Models.Entities.ApplicationUser User, IList<string> Roles, int OrderCount)>;
@@ -8,9 +9,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-people"></i> Manage Users</h2>
         <div>
-            <span class="badge bg-primary">Total: @Model.Count()</span>
-            <span class="badge bg-success">Active: @Model.Count(u => !u.LockoutEnd.HasValue)</span>
-            <span class="badge bg-danger">Inactive: @Model.Count(u => u.LockoutEnd.HasValue)</span>
+            <span class="badge bg-primary">Total: @Model.TotalCount</span>
         </div>
     </div>
 
@@ -123,6 +122,26 @@
                         </tbody>
                     </table>
                 </div>
+
+                @if (Model.TotalPages > 1)
+                {
+                    <nav class="d-flex justify-content-center mt-4">
+                        <ul class="pagination">
+                            <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                                <a class="page-link" href="@Url.Action("Users", new { page = Model.PageIndex - 1 })">&laquo;</a>
+                            </li>
+                            @for (int i = 1; i <= Model.TotalPages; i++)
+                            {
+                                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                                    <a class="page-link" href="@Url.Action("Users", new { page = i })">@i</a>
+                                </li>
+                            }
+                            <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                                <a class="page-link" href="@Url.Action("Users", new { page = Model.PageIndex + 1 })">&raquo;</a>
+                            </li>
+                        </ul>
+                    </nav>
+                }
             </div>
         </div>
     }

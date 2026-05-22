@@ -1,4 +1,8 @@
-﻿<!DOCTYPE html>
+﻿@inject ECommerceProject.Data.Interfaces.IUnitOfWork UnitOfWork
+@{
+    var navCategories = await UnitOfWork.Categories.GetAsync(c => c.IsActive);
+}
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -30,12 +34,61 @@
                         <i class="bi bi-house-door"></i>
                         <span>Home</span>
                     </a>
-                    <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Index" && ViewContext.RouteData.Values["controller"]?.ToString() == "Products" ? "active" : "")" 
-                       asp-controller="Products" asp-action="Index">
-                        <i class="bi bi-grid-3x3-gap"></i>
-                        <span>Products</span>
+
+                    <!-- Categories Dropdown -->
+                    <div class="nav-link dropdown">
+                        <a class="dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" 
+                           style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 0.35rem;">
+                            <i class="bi bi-grid-3x3-gap"></i>
+                            <span>Categories</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" asp-controller="Products" asp-action="Index">
+                                    <i class="bi bi-collection"></i> All Products
+                                </a>
+                            </li>
+                            @if (navCategories.Any())
+                            {
+                                <li><hr class="dropdown-divider"></li>
+                                foreach (var cat in navCategories)
+                                {
+                                    <li>
+                                        <a class="dropdown-item" asp-controller="Products" asp-action="Index" asp-route-categoryId="@cat.Id">
+                                            @if (!string.IsNullOrEmpty(cat.ImageUrl))
+                                            {
+                                                <img src="@cat.ImageUrl" alt="" style="width: 24px; height: 24px; object-fit: cover; border-radius: 4px; margin-right: 8px;" />
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-tag" style="margin-right: 8px;"></i>
+                                            }
+                                            @cat.Name
+                                        </a>
+                                    </li>
+                                }
+                            }
+                        </ul>
+                    </div>
+
+                    <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "About" ? "active" : "")" 
+                       asp-controller="About" asp-action="Index">
+                        <i class="bi bi-info-circle"></i>
+                        <span>About</span>
                     </a>
                 </nav>
+
+                <!-- Search Bar -->
+                <form asp-controller="Products" asp-action="Index" method="get" class="nav-search d-none d-lg-flex">
+                    <div class="search-wrapper">
+                        <i class="bi bi-search search-icon"></i>
+                        <input type="text" name="searchTerm" class="form-control search-input" 
+                               placeholder="Search products..." value="@Context.Request.Query["searchTerm"]">
+                        <button type="submit" class="search-btn" aria-label="Search">
+                            <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </div>
+                </form>
 
                 <!-- Actions -->
                 <div class="nav-actions">
@@ -116,6 +169,25 @@
                 <a class="nav-link" asp-controller="Products" asp-action="Index">
                     <i class="bi bi-grid-3x3-gap"></i> Products
                 </a>
+                <a class="nav-link" asp-controller="About" asp-action="Index">
+                    <i class="bi bi-info-circle"></i> About
+                </a>
+                <a class="nav-link" asp-controller="Contact" asp-action="Index">
+                    <i class="bi bi-envelope"></i> Contact
+                </a>
+                <a class="nav-link" asp-controller="FAQ" asp-action="Index">
+                    <i class="bi bi-question-circle"></i> FAQ
+                </a>
+                @if (navCategories.Any())
+                {
+                    <div style="padding: 0.5rem 1rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.5; margin-top: 0.5rem;">Categories</div>
+                    foreach (var cat in navCategories)
+                    {
+                        <a class="nav-link" asp-controller="Products" asp-action="Index" asp-route-categoryId="@cat.Id">
+                            <i class="bi bi-tag"></i> @cat.Name
+                        </a>
+                    }
+                }
             </nav>
         </div>
     </header>
@@ -171,16 +243,22 @@
                 <div class="footer-column">
                     <h6>Company</h6>
                     <div class="footer-links">
+                        <a asp-controller="About" asp-action="Index" class="footer-link">About Us</a>
+                        <a asp-controller="Contact" asp-action="Index" class="footer-link">Contact</a>
+                        <a asp-controller="FAQ" asp-action="Index" class="footer-link">FAQ</a>
                         <a asp-controller="Home" asp-action="Privacy" class="footer-link">Privacy</a>
-                        <a class="footer-link">Terms</a>
+                        <a asp-controller="Home" asp-action="Terms" class="footer-link">Terms</a>
                     </div>
                 </div>
             </div>
             <div class="footer-bottom">
                 <span>&copy; @DateTime.UtcNow.Year ShopHub. All rights reserved.</span>
                 <div>
+                    <a asp-controller="About" asp-action="Index">About</a>
+                    <a asp-controller="Contact" asp-action="Index">Contact</a>
+                    <a asp-controller="FAQ" asp-action="Index">FAQ</a>
                     <a asp-controller="Home" asp-action="Privacy">Privacy</a>
-                    <a>Terms</a>
+                    <a asp-controller="Home" asp-action="Terms">Terms</a>
                 </div>
             </div>
         </div>

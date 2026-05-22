@@ -63,26 +63,38 @@
             {
                 <div class="mb-4">
                     <h5 style="margin-bottom: 1rem;">Available Options</h5>
-                    <div class="grid grid-2" style="gap: 1rem;">
+                    <div class="grid grid-2" style="gap: 0.75rem;">
                         @foreach (var variant in variants)
                         {
-                            <div class="card">
-                                <div class="card-body">
-                                    @if (!string.IsNullOrEmpty(variant.Size))
-                                    {
-                                        <div><strong>Size:</strong> @variant.Size</div>
-                                    }
-                                    @if (!string.IsNullOrEmpty(variant.Color))
-                                    {
-                                        <div><strong>Color:</strong> @variant.Color</div>
-                                    }
-                                    @if (variant.AdditionalPrice > 0)
-                                    {
-                                        <div><strong>Extra:</strong> +@variant.AdditionalPrice.ToString("C")</div>
-                                    }
-                                    <div><strong>Stock:</strong> @variant.Stock units</div>
+                            var isOutOfStock = variant.Stock <= 0;
+                            <label class="variant-option @(isOutOfStock ? "disabled" : "")" 
+                                   onclick="selectVariant(this, @variant.Id, @variant.AdditionalPrice.ToString("0.00"))">
+                                <input type="radio" name="variant" value="@variant.Id" 
+                                       class="d-none" @(isOutOfStock ? "disabled" : "")>
+                                <div class="variant-content">
+                                    <div class="variant-info">
+                                        @if (!string.IsNullOrEmpty(variant.Size) && !string.IsNullOrEmpty(variant.Color))
+                                        {
+                                            <strong>@variant.Size / @variant.Color</strong>
+                                        }
+                                        else if (!string.IsNullOrEmpty(variant.Size))
+                                        {
+                                            <strong>Size: @variant.Size</strong>
+                                        }
+                                        else if (!string.IsNullOrEmpty(variant.Color))
+                                        {
+                                            <strong>Color: @variant.Color</strong>
+                                        }
+                                        @if (variant.AdditionalPrice > 0)
+                                        {
+                                            <span class="variant-price">+@variant.AdditionalPrice.ToString("C")</span>
+                                        }
+                                    </div>
+                                    <small class="variant-stock @(isOutOfStock ? "text-danger" : "text-muted")">
+                                        @(isOutOfStock ? "Out of Stock" : $"{variant.Stock} left")
+                                    </small>
                                 </div>
-                            </div>
+                            </label>
                         }
                     </div>
                 </div>
@@ -91,8 +103,9 @@
             <!-- Add to Cart Form -->
             @if (User.Identity?.IsAuthenticated == true && Model.Stock > 0)
             {
-                <form asp-controller="Cart" asp-action="AddToCart" method="post">
+                <form asp-controller="Cart" asp-action="AddToCart" method="post" id="addToCartForm">
                     <input type="hidden" name="productId" value="@Model.Id" />
+                    <input type="hidden" name="variantId" id="selectedVariantId" value="" />
                     
                     <div class="form-group" style="max-width: 200px; margin-bottom: 1rem;">
                         <label class="form-label">Quantity</label>
@@ -101,7 +114,7 @@
                     </div>
                     
                     <div class="flex gap-sm">
-                        <button type="submit" class="btn btn-primary btn-lg flex-fill">
+                        <button type="submit" class="btn btn-primary btn-lg flex-fill" id="addToCartBtn">
                             <i class="bi bi-cart-plus"></i>
                             Add to Cart
                         </button>
@@ -339,4 +352,19 @@
 
 @section Scripts {
     <input type="hidden" id="product-id" value="@Model.Id" />
+    <script>
+    function selectVariant(el, variantId, additionalPrice) {
+        document.querySelectorAll('.variant-option').forEach(opt => opt.classList.remove('active'));
+        el.classList.add('active');
+        el.querySelector('input[type="radio"]').checked = true;
+        document.getElementById('selectedVariantId').value = variantId;
+
+        var basePrice = @Model.Price.ToString("0.00");
+        var total = basePrice + parseFloat(additionalPrice);
+        var priceEl = document.querySelector('.product-price');
+        if (priceEl) {
+            priceEl.innerHTML = '$' + total.toFixed(2);
+        }
+    }
+    </script>
 }

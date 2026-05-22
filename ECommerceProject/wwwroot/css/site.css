@@ -256,6 +256,66 @@ main {
     background: var(--accent-muted);
 }
 
+.nav-search {
+    flex: 1;
+    max-width: 360px;
+}
+
+.search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    pointer-events: none;
+}
+
+.search-input {
+    padding-left: 36px;
+    padding-right: 36px;
+    height: 38px;
+    font-size: 0.85rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    color: var(--text-primary);
+    width: 100%;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-muted);
+}
+
+.search-input::placeholder { color: var(--text-muted); }
+
+.search-btn {
+    position: absolute;
+    right: 4px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-full);
+    transition: color 0.15s var(--ease-out), background-color 0.15s var(--ease-out);
+}
+
+.search-btn:hover {
+    color: var(--accent);
+    background: var(--accent-muted);
+}
+
 .nav-actions {
     display: flex;
     align-items: center;
@@ -944,6 +1004,28 @@ main {
     color: var(--bg-primary);
 }
 
+/* ==================== Page Header ==================== */
+.page-header {
+    margin-bottom: var(--space-xl);
+    animation: fadeInUp 0.5s var(--ease-out) forwards;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: var(--space-xs);
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.page-subtitle {
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
 /* ==================== Empty State ==================== */
 .empty-state {
     display: flex;
@@ -1213,6 +1295,64 @@ main {
 /* ==================== Page Enter Animation ==================== */
 main > .container {
     animation: fadeInUp 0.5s var(--ease-out) forwards;
+}
+
+/* ==================== Variant Selection ==================== */
+.variant-option {
+    display: block;
+    cursor: pointer;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: border-color 0.15s var(--ease-out), box-shadow 0.15s var(--ease-out);
+}
+
+.variant-option:hover {
+    border-color: var(--accent);
+}
+
+.variant-option.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.variant-option input:checked ~ .variant-content {
+    border-color: var(--accent);
+    background: var(--accent-muted);
+}
+
+.variant-option:has(input:checked) {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-muted);
+}
+
+.variant-content {
+    padding: var(--space-md);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.variant-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.variant-info strong {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.variant-price {
+    font-size: 0.8rem;
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.variant-stock {
+    font-size: 0.75rem;
 }
 
 /* ==================== Rating Input (Reviews) ==================== */

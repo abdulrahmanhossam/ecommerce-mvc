@@ -28,6 +28,7 @@ namespace ECommerceProject.Controllers
             var cartItems = await _unitOfWork.ShoppingCarts.GetQueryable(asNoTracking: true)
                 .Where(c => c.UserId == userId)
                 .Include(c => c.Product)
+                .Include(c => c.ProductVariant)
                 .ToListAsync();
 
             var cartWithProducts = cartItems
@@ -44,7 +45,7 @@ namespace ECommerceProject.Controllers
         // POST: Cart/AddToCart
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddToCart(int productId, int quantity = 1)
+        public async Task<IActionResult> AddToCart(int productId, int quantity = 1, int? variantId = null)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -60,16 +61,37 @@ namespace ECommerceProject.Controllers
                 return RedirectToAction("Index", "Products");
             }
 
-            // التحقق من الكمية المتاحة
-            if (product.Stock < quantity)
+            // التحقق من الـ Variant
+            ProductVariant? selectedVariant = null;
+            if (variantId.HasValue)
             {
-                TempData["ErrorMessage"] = $"Only {product.Stock} units available.";
+                selectedVariant = await _unitOfWork.ProductVariants.GetFirstOrDefaultAsync(
+                    v => v.Id == variantId && v.ProductId == productId && v.IsActive);
+
+                if (selectedVariant == null)
+                {
+                    TempData["ErrorMessage"] = "Selected option not available.";
+                    return RedirectToAction("Details", "Products", new { id = productId });
+                }
+
+                if (selectedVariant.Stock < quantity)
+                {
+                    TempData["ErrorMessage"] = $"Only {selectedVariant.Stock} units available for this option.";
+                    return RedirectToAction("Details", "Products", new { id = productId });
+                }
+            }
+
+            // التحقق من الكمية المتاحة
+            var availableStock = selectedVariant?.Stock ?? product.Stock;
+            if (availableStock < quantity)
+            {
+                TempData["ErrorMessage"] = $"Only {availableStock} units available.";
                 return RedirectToAction("Details", "Products", new { id = productId });
             }
 
-            // البحث عن المنتج في العربة
+            // البحث عن المنتج في العربة (مع الـ variant)
             var existingCartItem = await _unitOfWork.ShoppingCarts.GetFirstOrDefaultAsync(
-                c => c.UserId == userId && c.ProductId == productId);
+                c => c.UserId == userId && c.ProductId == productId && c.ProductVariantId == variantId);
 
             if (existingCartItem != null)
             {
@@ -77,9 +99,9 @@ namespace ECommerceProject.Controllers
                 existingCartItem.Quantity += quantity;
 
                 // التأكد من عدم تجاوز المخزون
-                if (existingCartItem.Quantity > product.Stock)
+                if (existingCartItem.Quantity > availableStock)
                 {
-                    TempData["ErrorMessage"] = $"Cannot add more than {product.Stock} units.";
+                    TempData["ErrorMessage"] = $"Cannot add more than {availableStock} units.";
                     return RedirectToAction("Details", "Products", new { id = productId });
                 }
 
@@ -92,6 +114,7 @@ namespace ECommerceProject.Controllers
                 {
                     UserId = userId,
                     ProductId = productId,
+                    ProductVariantId = variantId,
                     Quantity = quantity,
                     AddedDate = DateTime.Now
                 };

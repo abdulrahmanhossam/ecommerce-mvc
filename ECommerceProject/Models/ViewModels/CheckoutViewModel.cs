@@ -35,6 +35,14 @@ namespace ECommerceProject.Models.ViewModels
         [Display(Name = "Country")]
         public string Country { get; set; } = string.Empty;
 
+        [StringLength(100)]
+        [Display(Name = "State / Province")]
+        public string? State { get; set; }
+
+        [StringLength(20)]
+        [Display(Name = "ZIP / Postal Code")]
+        public string? ZipCode { get; set; }
+
         [Required(ErrorMessage = "Payment method is required")]
         [Display(Name = "Payment Method")]
         public PaymentMethod PaymentMethod { get; set; }

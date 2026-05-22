@@ -23,6 +23,24 @@
                         
                         <div class="cart-item-details">
                             <h5 class="cart-item-title">@item.Product.Name</h5>
+                            @if (item.Cart.ProductVariant != null)
+                            {
+                                var v = item.Cart.ProductVariant;
+                                <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 2px;">
+                                    @if (!string.IsNullOrEmpty(v.Size) && !string.IsNullOrEmpty(v.Color))
+                                    {
+                                        <span>@v.Size / @v.Color</span>
+                                    }
+                                    else if (!string.IsNullOrEmpty(v.Size))
+                                    {
+                                        <span>Size: @v.Size</span>
+                                    }
+                                    else if (!string.IsNullOrEmpty(v.Color))
+                                    {
+                                        <span>Color: @v.Color</span>
+                                    }
+                                </p>
+                            }
                             <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 0;">
                                 @item.Product.Price.ToString("C") each
                             </p>
