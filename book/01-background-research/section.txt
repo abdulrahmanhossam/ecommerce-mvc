@@ -1,0 +1,380 @@
+================================================================================
+                      SECTION ONE: BACKGROUND RESEARCH
+================================================================================
+
+                          ShopHub E-Commerce Platform
+                  Graduation Project - Background & Literature Review
+================================================================================
+
+
+1.1 INTRODUCTION
+--------------------------------------------------------------------------------
+
+Electronic commerce, or e-commerce, refers to the buying and selling of goods
+and services over the internet. What started with simple electronic data
+interchange (EDI) systems in the 1960s has grown into a multi-trillion-dollar
+industry. According to Statista, global e-commerce sales passed $5.8 trillion
+in 2024 and are expected to reach $8 trillion by 2027.
+
+The COVID-19 pandemic accelerated the shift from physical retail to online
+shopping by several years. Small and medium businesses that previously relied
+only on physical stores had to quickly adopt online sales channels. However,
+existing e-commerce solutions have several problems: high subscription fees,
+limited customization options, vendor lock-in, and complex integrations.
+
+ShopHub is a full-featured e-commerce platform built as a graduation project.
+It uses ASP.NET Core 10.0 with SQL Server and provides product management,
+shopping cart, checkout, payment processing, order management, and admin
+analytics. This section covers the background research that guided the design
+and technology decisions for the ShopHub platform.
+
+
+1.2 THE E-COMMERCE LANDSCAPE
+--------------------------------------------------------------------------------
+
+1.2.1 Market Overview
+
+The e-commerce market can be divided into several categories:
+
+  - General Marketplaces: Amazon, eBay, AliExpress - multi-vendor platforms
+    that serve billions of users worldwide.
+  - SaaS Platforms: Shopify, BigCommerce, Wix Stores - hosted solutions with
+    monthly subscription fees.
+  - Open Source Solutions: WooCommerce (WordPress plugin), Magento (Adobe),
+    nopCommerce (.NET based) - self-hosted with full source code access.
+  - Custom-Built Solutions: Platforms built with frameworks like ASP.NET Core,
+    Django, Ruby on Rails, or Laravel.
+
+Each option has trade-offs between how fast you can launch, how much you can
+customize, how much it costs, and how much control you have.
+
+1.2.2 Analysis of Existing Solutions
+
+  Platform         | Type        | Cost Model       | Tech Stack    | Customization
+  -----------------|-------------|------------------|---------------|--------------
+  Shopify          | SaaS        | $39+/month + 2.9%| Proprietary   | Limited
+  WooCommerce      | Open Source | Free (plugin)    | PHP/MySQL     | High
+  Magento          | Open Source | Free (Community) | PHP/MySQL     | Very High
+  nopCommerce      | Open Source | Free             | ASP.NET/SQL   | High
+  BigCommerce      | SaaS        | $39+/month       | Proprietary   | Moderate
+  Saleor           | Open Source | Free             | Python/GraphQL| High
+  Medusa           | Open Source | Free             | Node.js/React | High
+
+The main problems found in existing platforms are:
+
+  1. Cost. SaaS platforms charge monthly fees plus a percentage of each
+     transaction, which reduces profit margins for small businesses.
+
+  2. Vendor lock-in. Moving data and infrastructure away from a SaaS provider
+     is often difficult and expensive.
+
+  3. Performance overhead. Platforms like WooCommerce and Magento need a lot
+     of server resources even for moderate traffic levels.
+
+  4. Integration complexity. Connecting payment gateways, shipping providers,
+     and analytics tools often requires custom plugin development.
+
+  5. Security. Meeting PCI compliance and preventing SQL injection, CSRF, and
+     XSS attacks needs strong framework-level protections.
+
+  6. Maintenance. Open-source solutions require regular updates, patch
+     management, and server administration.
+
+
+1.3 TECHNOLOGY RESEARCH AND SELECTION
+--------------------------------------------------------------------------------
+
+1.3.1 Backend Framework Selection
+
+Three backend frameworks were evaluated for this project:
+
+  a) ASP.NET Core (Microsoft):
+     - Works on Linux, Windows, and macOS
+     - High performance in benchmarks (TechEmpower)
+     - Strong typing with C# and nullable reference types
+     - Built-in dependency injection, logging, and configuration
+     - Large package ecosystem through NuGet
+     - Good tooling via Visual Studio, Rider, and the .NET CLI
+     - Native support for the MVC pattern
+
+  b) Django (Python):
+     - Quick development with built-in features
+     - Comes with an admin interface
+     - Has ORM with migration support
+     - Slower runtime compared to compiled languages
+
+  c) Laravel (PHP):
+     - Available on most web hosting providers
+     - Clean syntax and expressive ORM (Eloquent)
+     - Weaker type safety and runtime speed
+
+  ASP.NET Core was chosen because of its performance, strong typing, security
+  features, and the team's familiarity with the .NET ecosystem.
+
+1.3.2 Database Technology
+
+  a) SQL Server:
+     - Full-text search support
+     - Good indexing and performance tuning
+     - ACID compliance for transaction safety
+     - Works with Entity Framework Core
+     - Free Express edition for development
+
+  b) PostgreSQL:
+     - Open source with good feature set
+     - Strong JSON support
+     - More complex Windows setup
+
+  c) SQLite:
+     - File-based, no configuration needed
+     - Not suitable for production with multiple users
+
+  SQL Server was chosen because it works well with the .NET ecosystem, has
+  good management tools (SSMS), and the team knows T-SQL.
+
+1.3.3 Architectural Patterns
+
+  a) Model-View-Controller (MVC):
+     The MVC pattern splits the application into three parts:
+       - Model: Business data and rules
+       - View: What the user sees
+       - Controller: Handles requests and decides what to do
+
+     ASP.NET Core MVC provides model binding, validation, action filters, and
+     tag helpers. The controller, service, and view files are organized in
+     their own folders.
+
+  b) Repository Pattern:
+     This pattern creates a layer between business logic and data access. It
+     helps with:
+       - Keeping data access code in one place
+       - Making unit testing easier with mock objects
+       - Having a consistent way to query data
+       - Switching data sources if needed
+
+  c) Unit of Work Pattern:
+     This pattern keeps track of objects changed during a transaction and
+     writes all changes at once. In this project, the IUnitOfWork interface
+     holds all repositories and provides a SaveAsync() method.
+
+[📸 SCREENSHOT PLACEHOLDER: IUnitOfWork.cs - Show the interface declaration with all repository properties and the SaveAsync method signature]
+
+The implementation creates a Repository<T> for each entity type, providing
+methods like GetAllAsync, GetAsync with filters and includes, AddAsync,
+Update, and Delete.
+
+[📸 SCREENSHOT PLACEHOLDER: UnitOfWork.cs - Show the constructor where each repository is instantiated from the DbContext]
+
+1.3.4 Authentication and Authorization
+
+  ASP.NET Core Identity was used for authentication and authorization. It
+  provides:
+     - User registration, login, and password management
+     - Role-based access control (Admin, Seller, Customer)
+     - Password hashing using PBKDF2
+     - Anti-forgery token generation
+     - Cookie-based authentication
+     - An extensible user model (ApplicationUser)
+
+  The user entity extends IdentityUser with custom fields like FullName,
+  Address, City, Country, and CreatedDate.
+
+[📸 SCREENSHOT PLACEHOLDER: ApplicationUser.cs - Show the entity class extending IdentityUser with extra properties]
+
+1.3.5 Payment Processing
+
+  Stripe was selected as the payment gateway for these reasons:
+     - Well-designed API and documentation
+     - PCI DSS Level 1 certification
+     - Supports cards and digital wallets
+     - Stripe Checkout for hosted payment pages
+     - Payment Intents for custom flows
+     - Webhooks for async payment confirmation
+     - 135+ currencies for future expansion
+     - No monthly fees
+     - .NET SDK (Stripe.net)
+
+  The architecture also supports Cash on Delivery, Credit Card (manual entry),
+  and PayPal.
+
+  The Stripe integration creates a Checkout Session with the order amount and
+  product name, then redirects the user to Stripe's hosted page.
+
+[📸 SCREENSHOT PLACEHOLDER: StripePaymentService.cs - Show the CreateCheckoutSessionAsync method showing Stripe Session creation]
+
+1.3.6 AI Integration
+
+  Google Gemini was added as an AI product assistant. The service:
+     - Uses the Gemini API via HTTP requests
+     - Takes product context (name, description) and user questions
+     - Has configurable parameters (temperature, max tokens)
+     - Uses IHttpClientFactory for HTTP calls
+     - Handles rate limiting with retry logic
+     - Does not need additional infrastructure (cloud API)
+
+  The service constructs a prompt that tells the AI to act as a product
+  assistant, then sends it to the Gemini API.
+
+[📸 SCREENSHOT PLACEHOLDER: GeminiService.cs - Show the GetProductAssistantResponseAsync method with the API call logic]
+
+1.3.7 Email Service
+
+  Email is sent through Gmail's SMTP server:
+     - Protocol: SMTP with TLS
+     - Port: 587
+     - HTML email templates with inline CSS
+     - Interface-based design for swapping providers
+     - Templates for order confirmation, password reset, and welcome emails
+
+[📸 SCREENSHOT PLACEHOLDER: EmailService.cs - Show the SendEmailAsync method with SmtpClient configuration]
+
+
+1.4 SECURITY MEASURES
+--------------------------------------------------------------------------------
+
+The following security measures were put in place:
+
+  1. CSRF Protection: Anti-forgery tokens on all POST forms and AJAX requests.
+
+  2. XSS Prevention: Razor views HTML-encode dynamic content. JSON responses
+     are also sanitized.
+
+  3. SQL Injection: Entity Framework Core uses parameterized queries, which
+     prevents SQL injection.
+
+  4. Account Lockout: Identity locks accounts after failed login attempts.
+
+  5. Role Authorization: The [Authorize(Roles = "Admin")] attribute protects
+     all admin controller actions.
+
+[📸 SCREENSHOT PLACEHOLDER: AdminController.cs - Show the [Authorize(Roles = "Admin")] attribute above the class declaration]
+
+  6. Payment Data: Credit card details go to Stripe, not the application
+     server.
+
+  7. Password Hashing: PBKDF2 with random salt, handled by ASP.NET Core
+     Identity.
+
+  8. HTTPS: Enforced with HSTS and HTTPS redirection in production.
+
+  9. Robots.txt: Admin, account, cart, checkout, orders, wishlist, and API
+     endpoints are blocked from search indexing.
+
+  10. Input Validation: Client-side (jQuery Validation) and server-side
+      (data annotations) validation on all forms.
+
+
+1.5 PERFORMANCE OPTIMIZATIONS
+--------------------------------------------------------------------------------
+
+  1. Caching:
+     - IMemoryCache for categories and featured products with sliding
+       expiration
+     - Response caching for public pages (300s for home, 3600s for static)
+     - Sitemap caching for 24 hours
+
+[📸 SCREENSHOT PLACEHOLDER: HomeController.cs - Show the ResponseCache attribute on the Index action and IMemoryCache usage]
+
+  2. Database:
+     - AsNoTracking() on read-only queries
+     - Eager loading with Include() to avoid N+1 problems
+     - Indexes on commonly filtered columns
+     - Skip/Take pagination with OrderBy for consistent results
+
+  3. Assets:
+     - Bootstrap CSS/JS vendored locally
+     - Version-tagged static files
+     - Lazy loading for images
+     - CDN for third-party resources
+
+  4. HTTP:
+     - Named HttpClient with connection limits (5 max, 30s timeout)
+     - Connection pooling for SQL Server
+
+
+1.6 LITERATURE REVIEW
+--------------------------------------------------------------------------------
+
+  1. "E-Commerce Applications: A Study of Architectural Patterns" -
+     Compared MVC, MVVM, and Microservices for e-commerce. Found MVC has the
+     best balance of separation of concerns and development speed for mid-size
+     applications.
+
+  2. "Security Challenges in Modern E-Commerce Platforms" -
+     Analyzed the OWASP Top 10 in e-commerce. Recommends framework-level
+     protections, parameterized queries, and outsourcing payment processing.
+
+  3. "Performance Comparison of .NET vs Node.js vs Python for Web
+     Applications" -
+     Benchmarks showed ASP.NET Core is 3-5x faster than Django and 1.5-2x
+     faster than Node.js under concurrent load.
+
+  4. "User Experience Design Patterns in E-Commerce" -
+     Covered checkout flow optimization and cart abandonment reduction. These
+     patterns influenced the frontend architecture of ShopHub.
+
+  5. "Implementing Repository and Unit of Work Patterns in .NET" -
+     Practical guide on data access abstraction, including expression tree-
+     based Include() and generic repository constraints.
+
+  6. "AI-Powered Customer Service in Retail" -
+     Study on LLM-based product assistants. Reported 25-40% improvement in
+     user satisfaction when AI help is available during product browsing.
+
+
+1.7 PROJECT SCOPE AND REQUIREMENTS
+--------------------------------------------------------------------------------
+
+1.7.1 Functional Requirements
+
+  FR-01: Product catalog with categories, filtering, search, and pagination
+  FR-02: User registration, authentication, and profile management
+  FR-03: Shopping cart with variant support and quantity management
+  FR-04: Checkout with multiple payment methods and promo codes
+  FR-05: Order management and tracking for customers
+  FR-06: Admin dashboard with CRUD for all entities
+  FR-07: Analytics dashboard with charts
+  FR-08: Product reviews with ratings and voting
+  FR-09: Wishlist with AJAX interactions
+  FR-10: AI product assistant chatbot
+  FR-11: Email notifications (orders, registration, password reset)
+  FR-12: Newsletter subscription
+  FR-13: Dark/light theme toggle
+  FR-14: Responsive design for mobile, tablet, and desktop
+
+1.7.2 Non-Functional Requirements
+
+  NFR-01: OWASP Top 10 security protections
+  NFR-02: Page load under 2 seconds
+  NFR-03: Horizontal scaling via stateless architecture
+  NFR-04: Clean separation of concerns for maintainability
+  NFR-05: Semantic HTML and ARIA attributes
+  NFR-06: Cross-browser support (Chrome, Firefox, Edge, Safari)
+  NFR-07: SEO with semantic markup, meta tags, XML sitemap, robots.txt
+
+
+1.8 TECHNOLOGY STACK SUMMARY
+--------------------------------------------------------------------------------
+
+  +---------------------+------------------------------------------+
+  | Category            | Technology                               |
+  +---------------------+------------------------------------------+
+  | Backend Framework   | ASP.NET Core 10.0 (MVC)                  |
+  | Language            | C# with nullable enabled                 |
+  | ORM                 | Entity Framework Core 10.0               |
+  | Database            | SQL Server (LocalDB/MSSQL)               |
+  | Authentication      | ASP.NET Core Identity                    |
+  | Payment Gateway     | Stripe (Stripe.net v50.4.0)              |
+  | AI Service          | Google Gemini (gemini-flash-latest)      |
+  | Email               | SMTP via Gmail                           |
+  | Frontend            | Bootstrap 5, jQuery 3, Chart.js 4.4      |
+  | Icons               | Bootstrap Icons 1.11                     |
+  | Fonts               | Plus Jakarta Sans                        |
+  | Caching             | IMemoryCache + ResponseCache             |
+  | Logging             | ILogger (built-in)                       |
+  +---------------------+------------------------------------------+
+
+
+================================================================================
+                      END OF SECTION ONE
+================================================================================
