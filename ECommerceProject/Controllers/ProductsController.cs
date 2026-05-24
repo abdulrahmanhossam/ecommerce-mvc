@@ -184,7 +184,7 @@ namespace ECommerceProject.Controllers
 
                 TempData["SuccessMessage"] = "Thank you for your review!";
             }
-            catch (Exception ex)
+            catch
             {
                 TempData["ErrorMessage"] = "Failed to submit review. Please try again.";
             }
@@ -242,7 +242,7 @@ namespace ECommerceProject.Controllers
             return orderItems.Any();
         }
 
-        public async Task<IActionResult> ByCategory(int id)
+        public async Task<IActionResult> ByCategory(int id, int page = 1)
         {
             var category = await _unitOfWork.Categories.GetByIdAsync(id);
 
@@ -251,12 +251,22 @@ namespace ECommerceProject.Controllers
                 return NotFound();
             }
 
-            var products = await _unitOfWork.Products.GetAsync(p => p.CategoryId == id && p.IsActive);
+            var query = _unitOfWork.Products.GetQueryable(asNoTracking: true)
+                .Where(p => p.CategoryId == id && p.IsActive)
+                .OrderByDescending(p => p.CreatedDate);
+            var products = await PaginatedList<Product>.CreateAsync(query, page, 12);
 
+            var categories = await _unitOfWork.Categories.GetAsync(c => c.IsActive);
+            ViewBag.Categories = categories.ToList();
+            ViewBag.SelectedCategoryId = id;
+            ViewBag.SearchTerm = null;
+            ViewBag.MinPrice = null;
+            ViewBag.MaxPrice = null;
+            ViewBag.SortBy = "newest";
             ViewBag.CategoryName = category.Name;
             ViewBag.CategoryDescription = category.Description;
 
-            return View("Index", products.ToList());
+            return View("Index", products);
         }
     }
 }
