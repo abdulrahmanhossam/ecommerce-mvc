@@ -22,61 +22,74 @@ public class GeminiService : IGeminiService
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
         _logger = logger;
-        
+
         _apiKey = _configuration["Gemini:ApiKey"] ?? throw new InvalidOperationException("Gemini API key not configured");
-        _model = _configuration["Gemini:Model"] ?? "gemini-2.0-flash";
-        _maxTokens = int.Parse(_configuration["Gemini:MaxTokens"] ?? "500");
+        _model = _configuration["Gemini:Model"] ?? "gemini-flash-latest";
+        _maxTokens = int.Parse(_configuration["Gemini:MaxTokens"] ?? "800");
         _temperature = double.Parse(_configuration["Gemini:Temperature"] ?? "0.7");
     }
 
     public async Task<string> GetProductAssistantResponseAsync(string productName, string productDescription, string userQuestion)
     {
-        try
+        var prompt = BuildPrompt(productName, productDescription, userQuestion);
+        var requestBody = BuildRequestBody(prompt);
+
+        var client = _httpClientFactory.CreateClient("Gemini");
+
+        var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent";
+
+        var request = new HttpRequestMessage(HttpMethod.Post, url);
+        request.Headers.Add("X-goog-api-key", _apiKey);
+        request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+
+        var response = await client.SendAsync(request);
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
         {
-            var prompt = BuildPrompt(productName, productDescription, userQuestion);
-            var requestBody = BuildRequestBody(prompt);
+            _logger.LogError("Gemini API {StatusCode}: {Error}", response.StatusCode, responseContent);
 
-            var client = _httpClientFactory.CreateClient("Gemini");
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent?key={_apiKey}";
-
-            var request = new HttpRequestMessage(HttpMethod.Post, url)
+            if ((int)response.StatusCode == 429)
             {
-                Content = new StringContent(requestBody, Encoding.UTF8, "application/json")
-            };
-
-            var response = await client.SendAsync(request);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError("Gemini API {StatusCode}", response.StatusCode);
-
-                if ((int)response.StatusCode == 429)
-                {
-                    return "AI is temporarily overloaded. Please wait a moment and try again.";
-                }
-
-                throw new HttpRequestException($"Gemini API returned {response.StatusCode}");
+                var retrySeconds = ExtractRetryDelay(responseContent);
+                var message = retrySeconds > 0
+                    ? $"AI service quota exceeded. Please try again in {retrySeconds} seconds."
+                    : "AI service quota exceeded. Please try again later.";
+                throw new HttpRequestException(message);
             }
 
-            var responseContent = await response.Content.ReadAsStringAsync();
-            return ExtractTextFromResponse(responseContent);
+            throw new HttpRequestException("AI service error. Please try again later.");
         }
-        catch (TaskCanceledException)
+
+        return ExtractTextFromResponse(responseContent);
+    }
+
+    private static int ExtractRetryDelay(string errorJson)
+    {
+        try
         {
-            _logger.LogError("Gemini API request timed out");
-            throw new TimeoutException("The AI request timed out. Please try again.");
+            using var document = JsonDocument.Parse(errorJson);
+            var details = document.RootElement
+                .GetProperty("error")
+                .GetProperty("details")
+                .EnumerateArray();
+
+            foreach (var detail in details)
+            {
+                if (detail.TryGetProperty("retryDelay", out var delay))
+                {
+                    var delayStr = delay.GetString();
+                    if (delayStr != null && delayStr.EndsWith("s") &&
+                        int.TryParse(delayStr.TrimEnd('s'), out var seconds))
+                    {
+                        return seconds;
+                    }
+                }
+            }
         }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "Gemini API request failed");
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error in Gemini service");
-            throw;
-        }
+        catch { }
+
+        return 0;
     }
 
     private string BuildPrompt(string productName, string productDescription, string userQuestion)
@@ -106,14 +119,14 @@ Provide a helpful, concise, and friendly response about this product. If the que
             },
             generationConfig = new
             {
-                maxOutputTokens = 800,
+                maxOutputTokens = _maxTokens,
                 temperature = _temperature
             }
         };
 
-        return JsonSerializer.Serialize(request, new JsonSerializerOptions 
-        { 
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
+        return JsonSerializer.Serialize(request, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         });
     }
 
@@ -124,12 +137,12 @@ Provide a helpful, concise, and friendly response about this product. If the que
             using var document = JsonDocument.Parse(jsonResponse);
             var root = document.RootElement;
 
-            if (root.TryGetProperty("candidates", out var candidates) && 
-                candidates.ValueKind == JsonValueKind.Array && 
+            if (root.TryGetProperty("candidates", out var candidates) &&
+                candidates.ValueKind == JsonValueKind.Array &&
                 candidates.GetArrayLength() > 0)
             {
                 var firstCandidate = candidates[0];
-                
+
                 if (firstCandidate.TryGetProperty("content", out var content) &&
                     content.TryGetProperty("parts", out var parts) &&
                     parts.ValueKind == JsonValueKind.Array &&

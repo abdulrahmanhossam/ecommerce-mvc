@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using ECommerceProject.Data.Interfaces;
 using System.Diagnostics;
+using System.Text;
 using ECommerceProject.Models;
 
 namespace ECommerceProject.Controllers
@@ -9,33 +12,53 @@ namespace ECommerceProject.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMemoryCache _memoryCache;
         private readonly Services.Interfaces.IEmailService _emailService;
 
-        public HomeController(ILogger<HomeController> logger, IUnitOfWork unitOfWork, Services.Interfaces.IEmailService emailService)
+        public HomeController(ILogger<HomeController> logger, IUnitOfWork unitOfWork, IMemoryCache memoryCache, Services.Interfaces.IEmailService emailService)
         {
             _logger = logger;
             _unitOfWork = unitOfWork;
+            _memoryCache = memoryCache;
             _emailService = emailService;
         }
 
+        [ResponseCache(Duration = 300, Location = ResponseCacheLocation.Any)]
         public async Task<IActionResult> Index()
         {
-            // جلب المنتجات المميزة
-            var featuredProducts = await _unitOfWork.Products.GetAsync(p => p.IsFeatured && p.IsActive);
-            ViewBag.FeaturedProducts = featuredProducts.Take(8).ToList();
+            var featuredProducts = await _memoryCache.GetOrCreateAsync("FeaturedProducts", async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+                return await _unitOfWork.Products.GetQueryable(asNoTracking: true)
+                    .Where(p => p.IsFeatured && p.IsActive)
+                    .OrderBy(p => p.Id)
+                    .Take(8)
+                    .ToListAsync();
+            });
 
-            // جلب الفئات
-            var categories = await _unitOfWork.Categories.GetAsync(c => c.IsActive);
-            ViewBag.Categories = categories.Take(6).ToList();
+            var categories = await _memoryCache.GetOrCreateAsync("HomeCategories", async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+                return await _unitOfWork.Categories.GetQueryable(asNoTracking: true)
+                    .Where(c => c.IsActive)
+                    .OrderBy(c => c.Name)
+                    .Take(6)
+                    .ToListAsync();
+            });
+
+            ViewBag.FeaturedProducts = featuredProducts;
+            ViewBag.Categories = categories;
 
             return View();
         }
 
+        [ResponseCache(Duration = 3600)]
         public IActionResult Privacy()
         {
             return View();
         }
 
+        [ResponseCache(Duration = 3600)]
         public IActionResult Terms()
         {
             return View();
@@ -101,23 +124,24 @@ namespace ECommerceProject.Controllers
                 urls.Add($"{baseUrl}/Products/Details/{product.Id}");
             }
 
-            var xml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
-<urlset xmlns=""http://www.sitemaps.org/schemas/sitemap/0.9"">";
+            var sb = new StringBuilder();
+            sb.Append(@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<urlset xmlns=""http://www.sitemaps.org/schemas/sitemap/0.9"">");
 
             foreach (var url in urls)
             {
-                xml += $@"
+                sb.Append(@"
   <url>
-    <loc>{url}</loc>
+    <loc>").Append(url).Append(@"</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-  </url>";
+  </url>");
             }
 
-            xml += @"
-</urlset>";
+            sb.Append(@"
+</urlset>");
 
-            return Content(xml, "application/xml");
+            return Content(sb.ToString(), "application/xml");
         }
     }
 }

@@ -1,6 +1,15 @@
-﻿@inject ECommerceProject.Data.Interfaces.IUnitOfWork UnitOfWork
+﻿@inject IMemoryCache MemoryCache
+@inject ECommerceProject.Data.Interfaces.IUnitOfWork UnitOfWork
 @{
-    var navCategories = await UnitOfWork.Categories.GetAsync(c => c.IsActive);
+    var navCategories = await MemoryCache.GetOrCreateAsync("NavCategories", async entry =>
+    {
+        entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+        entry.SlidingExpiration = TimeSpan.FromMinutes(2);
+        return (await UnitOfWork.Categories.GetAsync(c => c.IsActive)).ToList();
+    });
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    bool IsActive(string ctrl, string action) => currentController == ctrl && currentAction == action;
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -29,16 +38,16 @@
 
                 <!-- Desktop Navigation -->
                 <nav class="nav-links d-none d-md-flex">
-                    <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Index" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")" 
-                       asp-controller="Home" asp-action="Index">
+                    <a class="nav-link @(IsActive("Home", "Index") ? "active" : "")"
+                       asp-controller="Home" asp-action="Index"
+                       aria-current="@(IsActive("Home", "Index") ? "page" : null)">
                         <i class="bi bi-house-door"></i>
                         <span>Home</span>
                     </a>
 
                     <!-- Categories Dropdown -->
                     <div class="nav-link dropdown">
-                        <a class="dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" 
-                           style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 0.35rem;">
+                        <a class="dropdown-toggle dropdown-toggle-link" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-grid-3x3-gap"></i>
                             <span>Categories</span>
                         </a>
@@ -57,11 +66,11 @@
                                         <a class="dropdown-item" asp-controller="Products" asp-action="Index" asp-route-categoryId="@cat.Id">
                                             @if (!string.IsNullOrEmpty(cat.ImageUrl))
                                             {
-                                                <img src="@cat.ImageUrl" alt="" style="width: 24px; height: 24px; object-fit: cover; border-radius: 4px; margin-right: 8px;" />
+                                                <img src="@cat.ImageUrl" alt="@cat.Name" loading="lazy" class="nav-cat-img" />
                                             }
                                             else
                                             {
-                                                <i class="bi bi-tag" style="margin-right: 8px;"></i>
+                                                <i class="bi bi-tag nav-cat-icon"></i>
                                             }
                                             @cat.Name
                                         </a>
@@ -71,8 +80,9 @@
                         </ul>
                     </div>
 
-                    <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "About" ? "active" : "")" 
-                       asp-controller="About" asp-action="Index">
+                    <a class="nav-link @(currentController == "About" ? "active" : "")"
+                       asp-controller="About" asp-action="Index"
+                       aria-current="@(currentController == "About" ? "page" : null)">
                         <i class="bi bi-info-circle"></i>
                         <span>About</span>
                     </a>
@@ -82,7 +92,7 @@
                 <form asp-controller="Products" asp-action="Index" method="get" class="nav-search d-none d-lg-flex">
                     <div class="search-wrapper">
                         <i class="bi bi-search search-icon"></i>
-                        <input type="text" name="searchTerm" class="form-control search-input" 
+                        <input type="text" name="searchTerm" class="form-control search-input"
                                placeholder="Search products..." value="@Context.Request.Query["searchTerm"]">
                         <button type="submit" class="search-btn" aria-label="Search">
                             <i class="bi bi-arrow-right"></i>
@@ -92,7 +102,7 @@
 
                 <!-- Actions -->
                 <div class="nav-actions">
-                    <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme">
+                    <button class="icon-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme">
                         <i class="bi bi-moon-stars"></i>
                     </button>
 
@@ -162,25 +172,35 @@
             </div>
 
             <!-- Mobile Navigation -->
-            <nav class="mobile-nav d-none" id="mobile-nav">
-                <a class="nav-link" asp-controller="Home" asp-action="Index">
+            <nav class="mobile-nav" id="mobile-nav">
+                <a class="nav-link @(IsActive("Home", "Index") ? "active" : "")"
+                   asp-controller="Home" asp-action="Index"
+                   aria-current="@(IsActive("Home", "Index") ? "page" : null)">
                     <i class="bi bi-house-door"></i> Home
                 </a>
-                <a class="nav-link" asp-controller="Products" asp-action="Index">
+                <a class="nav-link @(currentController == "Products" ? "active" : "")"
+                   asp-controller="Products" asp-action="Index"
+                   aria-current="@(currentController == "Products" ? "page" : null)">
                     <i class="bi bi-grid-3x3-gap"></i> Products
                 </a>
-                <a class="nav-link" asp-controller="About" asp-action="Index">
+                <a class="nav-link @(currentController == "About" ? "active" : "")"
+                   asp-controller="About" asp-action="Index"
+                   aria-current="@(currentController == "About" ? "page" : null)">
                     <i class="bi bi-info-circle"></i> About
                 </a>
-                <a class="nav-link" asp-controller="Contact" asp-action="Index">
+                <a class="nav-link @(currentController == "Contact" ? "active" : "")"
+                   asp-controller="Contact" asp-action="Index"
+                   aria-current="@(currentController == "Contact" ? "page" : null)">
                     <i class="bi bi-envelope"></i> Contact
                 </a>
-                <a class="nav-link" asp-controller="FAQ" asp-action="Index">
+                <a class="nav-link @(currentController == "FAQ" ? "active" : "")"
+                   asp-controller="FAQ" asp-action="Index"
+                   aria-current="@(currentController == "FAQ" ? "page" : null)">
                     <i class="bi bi-question-circle"></i> FAQ
                 </a>
                 @if (navCategories.Any())
                 {
-                    <div style="padding: 0.5rem 1rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.5; margin-top: 0.5rem;">Categories</div>
+                    <div class="mobile-nav-label">Categories</div>
                     foreach (var cat in navCategories)
                     {
                         <a class="nav-link" asp-controller="Products" asp-action="Index" asp-route-categoryId="@cat.Id">
@@ -283,8 +303,8 @@
                 </div>
             </div>
             <div class="ai-modal-footer">
-                <input type="text" class="form-control" id="aiQuestion" 
-                       placeholder="e.g., What are the best features?" 
+                <input type="text" class="form-control" id="aiQuestion"
+                       placeholder="e.g., What are the best features?"
                        onkeydown="if(event.key==='Enter') askAI()">
                 <button class="btn btn-primary" onclick="askAI()" id="aiAskBtn">
                     <i class="bi bi-send"></i>
@@ -311,18 +331,21 @@
         }
 
         function updateThemeIcon(theme) {
-            const icon = document.querySelector('.theme-toggle i');
-            if (icon) icon.className = theme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+            const btn = document.getElementById('themeToggleBtn');
+            if (btn) {
+                const icon = btn.querySelector('i');
+                if (icon) icon.className = theme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+            }
         }
 
         /* ==================== Mobile Menu ==================== */
         function toggleMobileMenu() {
             const nav = document.getElementById('mobile-nav');
             const btn = document.getElementById('mobile-menu-btn');
-            nav.classList.toggle('d-none');
-            nav.classList.toggle('show');
+            const isOpen = nav.classList.toggle('show');
             const icon = btn.querySelector('i');
-            icon.className = nav.classList.contains('show') ? 'bi bi-x' : 'bi bi-list';
+            icon.className = isOpen ? 'bi bi-x' : 'bi bi-list';
+            btn.setAttribute('aria-expanded', isOpen);
         }
 
         /* ==================== Initialize ==================== */
@@ -359,10 +382,15 @@
             }
         }
 
+        let aiRequestInProgress = false;
+
         function askAI() {
+            if (aiRequestInProgress) return;
+
             const question = document.getElementById('aiQuestion')?.value.trim();
             if (!question) return;
 
+            aiRequestInProgress = true;
             const btn = document.getElementById('aiAskBtn');
             const responseDiv = document.getElementById('aiResponse');
 
@@ -379,12 +407,13 @@
                     question: question
                 })
             })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
+            .then(async res => {
+                const data = await res.json();
+                if (res.ok && data.success) {
                     responseDiv.innerHTML = `<div class="ai-response-text">${escapeHtml(data.response)}</div>`;
                 } else {
-                    responseDiv.innerHTML = `<div class="ai-error"><i class="bi bi-exclamation-triangle"></i>${escapeHtml(data.message || 'Something went wrong')}</div>`;
+                    const msg = data.message || 'Something went wrong';
+                    responseDiv.innerHTML = `<div class="ai-error"><i class="bi bi-exclamation-triangle"></i>${escapeHtml(msg)}</div>`;
                 }
             })
             .catch(() => {
@@ -393,7 +422,7 @@
             .finally(() => {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="bi bi-send"></i>';
-                document.getElementById('aiQuestion').value = '';
+                aiRequestInProgress = false;
             });
         }
 

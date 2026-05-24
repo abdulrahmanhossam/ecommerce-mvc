@@ -144,8 +144,7 @@ ECommerceProject.Models.Entities.Product Product)>;
                                             <tr>
                                                 <td>
 <img src="@(string.IsNullOrEmpty(item.Product.ImageUrl) ? "https://via.placeholder.com/50" : item.Product.ImageUrl)"
-                                             alt="@item.Product.Name" loading="lazy"
-                                             style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;">
+                                             alt="@item.Product.Name" loading="lazy" class="img-thumb-sm">
                                                 </td>
                                                 <td>@item.Product.Name</td>
                                                 <td>@item.Item.UnitPrice.ToString("C")</td>

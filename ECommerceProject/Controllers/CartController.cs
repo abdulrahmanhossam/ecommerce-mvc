@@ -230,6 +230,7 @@ namespace ECommerceProject.Controllers
 
         // POST: Cart/Add (JSON endpoint for AJAX)
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Add([FromBody] AddToCartRequest request)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

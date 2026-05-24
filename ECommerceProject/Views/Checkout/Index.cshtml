@@ -7,16 +7,16 @@
 }
 
 <div class="py-4">
-    <h2 style="margin-bottom: 1.5rem;">
+    <h2 class="mb-4">
         <i class="bi bi-credit-card"></i>
         Checkout
     </h2>
 
-    <div class="grid" style="grid-template-columns: 1fr 380px; gap: 2rem; align-items: start;">
+    <div class="checkout-layout">
         <div class="card">
-            <div class="card-body" style="padding: 1.5rem;">
-                <h4 style="margin-bottom: 1.5rem;">Shipping Information</h4>
-                
+            <div class="card-body checkout-card-body">
+                <h4 class="mb-4">Shipping Information</h4>
+
                 <form asp-action="PlaceOrder" method="post">
                     <div asp-validation-summary="All" class="alert alert-danger" style="font-size: 0.85rem; padding: 0.75rem;"></div>
 
@@ -79,11 +79,11 @@
                             <i class="bi bi-ticket-perforated"></i> Promo Code
                         </label>
                         <div class="flex gap-sm">
-                            <input asp-for="PromoCode" class="form-control text-uppercase" 
+                            <input asp-for="PromoCode" class="form-control text-uppercase-input"
                                    placeholder="Enter code" id="promoCodeInput">
                             <button type="button" class="btn btn-secondary" id="applyPromoBtn">Apply</button>
                         </div>
-                        <div id="promoMessage" class="mt-2" style="font-size: 0.85rem;"></div>
+                        <div id="promoMessage" class="cart-promo-msg"></div>
                     </div>
 
                     <div class="form-group">
@@ -117,9 +117,9 @@
             </div>
         </div>
 
-        <div class="cart-summary" style="position: sticky; top: 100px;">
+        <div class="cart-summary checkout-summary">
             <h4>Order Summary</h4>
-            
+
             <div class="cart-summary-row">
                 <span>Subtotal</span>
                 <span>@subtotal.ToString("C")</span>
@@ -198,7 +198,7 @@
                     document.getElementById('totalAmount').textContent = newTotal.toFixed(2);
 
                     messageDiv.innerHTML = '<span class="text-success"><i class="bi bi-check-circle"></i> ' + data.message + '</span>';
-                    
+
                     applyBtn.disabled = true;
                     applyBtn.textContent = 'Applied';
                     applyBtn.classList.remove('btn-secondary');

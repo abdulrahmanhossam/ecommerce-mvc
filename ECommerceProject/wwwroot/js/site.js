@@ -1,29 +1,32 @@
-﻿/* Wishlist Toggle */
-function toggleWishlist(productId, btn) {
-    const token = document.querySelector('#antiforgery-form input[name="__RequestVerificationToken"]')?.value ||
-                  document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-
-    fetch('/Wishlist/CheckIsInWishlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
-        body: JSON.stringify({ productId: productId })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.isInWishlist) {
-            removeFromWishlist(productId, btn);
-        } else {
-            addToWishlist(productId, btn);
-        }
-    })
-    .catch(() => showToast('Error', 'error'));
+﻿/* ===== Anti-Forgery Token ===== */
+function getToken() {
+    return document.querySelector('input[name="__RequestVerificationToken"]')?.value;
 }
 
-function addToWishlist(productId, btn) {
-    const token = document.querySelector('#antiforgery-form input[name="__RequestVerificationToken"]')?.value ||
-                  document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+/* ===== Wishlist ===== */
+function updateWishlistBtn(btn, isInWishlist) {
+    if (!btn) return;
+    if (isInWishlist) {
+        btn.classList.add('btn-primary');
+        btn.classList.remove('btn-secondary');
+        const icon = btn.querySelector('i') || btn;
+        icon.className = 'bi bi-heart-fill';
+    } else {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-secondary');
+        const icon = btn.querySelector('i') || btn;
+        icon.className = 'bi bi-heart';
+    }
+}
 
-    fetch('/Wishlist/Add', {
+function toggleWishlist(productId, btn) {
+    const token = getToken();
+    if (!token) return;
+
+    const isAdding = btn ? !btn.classList.contains('btn-primary') : true;
+    const url = isAdding ? '/Wishlist/Add' : '/Wishlist/Remove';
+
+    fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
         body: JSON.stringify({ productId: productId })
@@ -31,56 +34,38 @@ function addToWishlist(productId, btn) {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            if (btn) {
-                btn.classList.add('btn-primary');
-                btn.classList.remove('btn-secondary');
-                const icon = btn.querySelector('i') || btn;
-                icon.className = 'bi bi-heart-fill';
-            }
-            showToast('Added to wishlist!', 'success');
+            updateWishlistBtn(btn, isAdding);
+            showToast(isAdding ? 'Added to wishlist!' : 'Removed from wishlist', 'success');
         } else {
             showToast(data.message || 'Error', 'error');
         }
     })
-    .catch(() => showToast('Error', 'error'));
+    .catch(() => showToast('Network error', 'error'));
 }
 
-function removeFromWishlist(productId, btn) {
-    const token = document.querySelector('#antiforgery-form input[name="__RequestVerificationToken"]')?.value ||
-                  document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-
-    fetch('/Wishlist/Remove', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
-        body: JSON.stringify({ productId: productId })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            if (btn) {
-                btn.classList.remove('btn-primary');
-                btn.classList.add('btn-secondary');
-                const icon = btn.querySelector('i') || btn;
-                icon.className = 'bi bi-heart';
-            }
-            showToast('Removed from wishlist', 'success');
-        }
-    })
-    .catch(() => showToast('Error', 'error'));
-}
-
-/* Toast Notification */
+/* ===== Toast ===== */
+let toastIdCounter = 0;
 function showToast(message, type) {
+    const id = ++toastIdCounter;
     const toast = document.createElement('div');
     toast.className = `toast-notification toast-${type}`;
-    toast.textContent = message;
+    toast.id = 'toast-' + id;
+    toast.innerHTML = `<span>${message}</span><button class="toast-close" onclick="dismissToast('${id}')">&times;</button>`;
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 2500);
+    setTimeout(() => dismissToast(id), 4000);
 }
 
-/* Mark Review Helpful */
+function dismissToast(id) {
+    const el = document.getElementById('toast-' + id);
+    if (el) {
+        el.classList.add('toast-dismissing');
+        setTimeout(() => el.remove(), 300);
+    }
+}
+
+/* ===== Mark Helpful ===== */
 function markHelpful(reviewId, helpful) {
-    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+    const token = getToken();
     if (!token) return;
 
     fetch('/Products/MarkHelpful', {
@@ -100,16 +85,17 @@ function markHelpful(reviewId, helpful) {
     .catch(() => {});
 }
 
-/* Check Wishlist Status on Page Load */
+/* ===== Check Wishlist on Page Load ===== */
 document.addEventListener('DOMContentLoaded', function () {
     const productIdEl = document.getElementById('product-id');
-    if (productIdEl) {
+    const token = getToken();
+    if (productIdEl && token) {
         checkWishlistStatus(parseInt(productIdEl.value));
     }
 });
 
 function checkWishlistStatus(productId) {
-    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+    const token = getToken();
     if (!token || !productId) return;
 
     fetch('/Wishlist/CheckIsInWishlist', {

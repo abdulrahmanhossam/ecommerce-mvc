@@ -194,6 +194,7 @@ namespace ECommerceProject.Controllers
 
         [HttpPost]
         [Authorize]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> MarkHelpful(int reviewId, bool helpful)
         {
             try
@@ -225,21 +226,10 @@ namespace ECommerceProject.Controllers
             }
         }
 
-        // ✅ Helper Method (الطريقة الصحيحة)
         private async Task<bool> HasPurchasedProduct(string userId, int productId)
         {
-            // جلب طلبات المستخدم
-            var userOrders = await _unitOfWork.Orders.GetAsync(o => o.UserId == userId);
-            var orderIds = userOrders.Select(o => o.Id).ToList();
-
-            if (!orderIds.Any())
-                return false;
-
-            // جلب OrderItems للطلبات دي
-            var orderItems = await _unitOfWork.OrderItems.GetAsync(
-                oi => orderIds.Contains(oi.OrderId) && oi.ProductId == productId);
-
-            return orderItems.Any();
+            return await _unitOfWork.OrderItems.GetQueryable(asNoTracking: true)
+                .AnyAsync(oi => oi.ProductId == productId && oi.Order.UserId == userId);
         }
 
         public async Task<IActionResult> ByCategory(int id, int page = 1)

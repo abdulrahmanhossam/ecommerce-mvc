@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using ECommerceProject.Data.Interfaces;
 using ECommerceProject.Models.Entities;
 using ECommerceProject.Models.Enums;
@@ -39,75 +40,68 @@ public class AdminController : Controller
     // Dashboard
     public async Task<IActionResult> Dashboard()
     {
-        var allOrders = (await _unitOfWork.Orders.GetAllAsync()).ToList();
-        
-        ViewBag.TotalProducts = await _unitOfWork.Products.CountAsync();
-        ViewBag.TotalCategories = await _unitOfWork.Categories.CountAsync();
-        ViewBag.TotalOrders = allOrders.Count;
+        var orderQuery = _unitOfWork.Orders.GetQueryable(asNoTracking: true);
+
+        ViewBag.TotalProducts = await _unitOfWork.Products.CountAsync(p => p.IsActive);
+        ViewBag.TotalCategories = await _unitOfWork.Categories.CountAsync(c => c.IsActive);
+        ViewBag.TotalOrders = await orderQuery.CountAsync();
         ViewBag.TotalUsers = await _unitOfWork.Users.CountAsync();
 
-        // Total Revenue
-        ViewBag.TotalRevenue = allOrders.Sum(o => o.TotalAmount);
+        ViewBag.TotalRevenue = await orderQuery.SumAsync(o => o.TotalAmount);
 
-        // Pending Orders (Pending, Paid, Processing)
-        ViewBag.PendingOrders = allOrders.Count(o => 
-            o.Status == OrderStatus.Pending || 
-            o.Status == OrderStatus.Paid || 
+        ViewBag.PendingOrders = await orderQuery.CountAsync(o =>
+            o.Status == OrderStatus.Pending ||
+            o.Status == OrderStatus.Paid ||
             o.Status == OrderStatus.Processing);
 
-        // Completed Orders (Delivered)
-        ViewBag.CompletedOrders = allOrders.Count(o => o.Status == OrderStatus.Delivered);
+        ViewBag.CompletedOrders = await orderQuery.CountAsync(o => o.Status == OrderStatus.Delivered);
 
-        // Low Stock Products
         ViewBag.LowStockProducts = await _unitOfWork.Products.CountAsync(p => p.Stock < 10 && p.IsActive);
 
-        // Sales by status
-        var salesByStatus = allOrders
+        var salesByStatus = await orderQuery
             .GroupBy(o => o.Status)
             .Select(g => new { Status = g.Key.ToString(), Count = g.Count(), Total = g.Sum(o => o.TotalAmount) })
-            .ToList();
+            .ToListAsync();
         ViewBag.SalesByStatus = salesByStatus;
 
-        // Top Products (by quantity sold)
-        var allProducts = (await _unitOfWork.Products.GetAllAsync())
-            .ToDictionary(p => p.Id, p => p.Name);
-
-        var topProductGroups = (await _unitOfWork.OrderItems.GetAllAsync())
+        var top5ProductIds = await _unitOfWork.OrderItems.GetQueryable(asNoTracking: true)
             .GroupBy(oi => oi.ProductId)
             .Select(g => new { ProductId = g.Key, TotalQuantity = g.Sum(oi => oi.Quantity), TotalSales = g.Sum(oi => oi.TotalPrice) })
             .OrderByDescending(x => x.TotalQuantity)
             .Take(5)
-            .ToList();
+            .ToListAsync();
 
-        var topProductsList = new List<(int ProductId, string Name, int Quantity, decimal Sales)>();
-        foreach (var item in topProductGroups)
-        {
-            topProductsList.Add((
+        var prodIds = top5ProductIds.Select(x => x.ProductId).ToList();
+        var productNames = await _unitOfWork.Products.GetQueryable(asNoTracking: true)
+            .Where(p => prodIds.Contains(p.Id))
+            .Select(p => new { p.Id, p.Name })
+            .ToDictionaryAsync(p => p.Id, p => p.Name);
+
+        var topProductsList = top5ProductIds
+            .Select(item => (
                 item.ProductId,
-                allProducts.GetValueOrDefault(item.ProductId, "Unknown"),
+                productNames.GetValueOrDefault(item.ProductId, "Unknown"),
                 item.TotalQuantity,
-                item.TotalSales
-            ));
-        }
+                item.TotalSales))
+            .ToList();
         ViewBag.TopProducts = topProductsList;
 
-        // Orders by Payment Method
-        var ordersByPayment = allOrders
+        var ordersByPayment = await orderQuery
             .GroupBy(o => o.PaymentMethod)
             .Select(g => new { Method = g.Key.ToString(), Count = g.Count(), Total = g.Sum(o => o.TotalAmount) })
-            .ToList();
+            .ToListAsync();
         ViewBag.OrdersByPayment = ordersByPayment;
 
-        // جلب آخر 5 طلبات مع User info
-        var recentOrders = allOrders.OrderByDescending(o => o.OrderDate).Take(5).ToList();
+        var recentOrders = await orderQuery.OrderByDescending(o => o.OrderDate).Take(5).ToListAsync();
         var userIds = recentOrders.Select(o => o.UserId).Distinct().ToList();
-        var userDict = (await _unitOfWork.Users.GetAsync(u => userIds.Contains(u.Id)))
-            .ToDictionary(u => u.Id, u => u.FullName);
+        var userDict = await _unitOfWork.Users.GetQueryable(asNoTracking: true)
+            .Where(u => userIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.FullName })
+            .ToDictionaryAsync(u => u.Id, u => u.FullName);
 
         foreach (var order in recentOrders)
         {
-            userDict.TryGetValue(order.UserId, out var name);
-            order.User = new ApplicationUser { FullName = name ?? "Unknown" };
+            order.User = new ApplicationUser { FullName = userDict.GetValueOrDefault(order.UserId, "Unknown") };
         }
         ViewBag.RecentOrders = recentOrders;
 
@@ -122,12 +116,19 @@ public class AdminController : Controller
             .OrderByDescending(u => u.CreatedDate);
         var users = await PaginatedList<ApplicationUser>.CreateAsync(query, page, 15);
 
+        var userIds = users.Items.Select(u => u.Id).ToList();
+        var orderCounts = await _unitOfWork.Orders.GetQueryable(asNoTracking: true)
+            .Where(o => userIds.Contains(o.UserId))
+            .GroupBy(o => o.UserId)
+            .Select(g => new { UserId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.UserId, x => x.Count);
+
         var usersWithRoles = new List<(ApplicationUser User, IList<string> Roles, int OrderCount)>();
 
         foreach (var user in users.Items)
         {
             var roles = await _userManager.GetRolesAsync(user);
-            var orderCount = await _unitOfWork.Orders.CountAsync(o => o.UserId == user.Id);
+            var orderCount = orderCounts.GetValueOrDefault(user.Id, 0);
             usersWithRoles.Add((user, roles, orderCount));
         }
 
@@ -422,17 +423,19 @@ public class AdminController : Controller
 
     public async Task<IActionResult> Categories()
     {
-        var categories = await _unitOfWork.Categories.GetAllAsync();
-        var categoriesList = categories.OrderBy(c => c.Name).ToList();
+        var categoriesList = (await _unitOfWork.Categories.GetAllAsync())
+            .OrderBy(c => c.Name).ToList();
 
-        // إحصائيات لكل Category
-        var categoriesWithStats = new List<(Category Category, int ProductCount)>();
+        var catIds = categoriesList.Select(c => c.Id).ToList();
+        var productCounts = await _unitOfWork.Products.GetQueryable(asNoTracking: true)
+            .Where(p => catIds.Contains(p.CategoryId))
+            .GroupBy(p => p.CategoryId)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.CategoryId, x => x.Count);
 
-        foreach (var category in categoriesList)
-        {
-            var productCount = await _unitOfWork.Products.CountAsync(p => p.CategoryId == category.Id);
-            categoriesWithStats.Add((category, productCount));
-        }
+        var categoriesWithStats = categoriesList
+            .Select(c => (c, productCounts.GetValueOrDefault(c.Id, 0)))
+            .ToList();
 
         ViewBag.CategoriesWithStats = categoriesWithStats;
 
@@ -665,23 +668,21 @@ public class AdminController : Controller
             return NotFound();
 
         // جلب Order Items مع المنتجات
-        var orderItems = await _unitOfWork.OrderItems.GetAsync(oi => oi.OrderId == id);
-        var orderItemsWithProducts = new List<(OrderItem Item, Product Product)>();
-
-        foreach (var item in orderItems)
-        {
-            var product = await _unitOfWork.Products.GetByIdAsync(item.ProductId);
-            if (product != null)
-            {
-                orderItemsWithProducts.Add((item, product));
-            }
-        }
+        var orderItemsWithProducts = (await _unitOfWork.OrderItems.GetQueryable(asNoTracking: true)
+            .Where(oi => oi.OrderId == id)
+            .Join(_unitOfWork.Products.GetQueryable(asNoTracking: true),
+                oi => oi.ProductId,
+                p => p.Id,
+                (oi, p) => new { oi, p })
+            .ToListAsync())
+            .Select(x => (x.oi, x.p))
+            .ToList();
 
         ViewBag.OrderItems = orderItemsWithProducts;
 
         // جلب User
-        var user = await _unitOfWork.Users.GetAsync(u => u.Id == order.UserId);
-        ViewBag.User = user.FirstOrDefault();
+        var orderUser = await _unitOfWork.Users.GetFirstOrDefaultAsync(u => u.Id == order.UserId);
+        ViewBag.User = orderUser;
 
         // جلب Payment
         var payment = await _unitOfWork.Payments.GetFirstOrDefaultAsync(p => p.OrderId == id);

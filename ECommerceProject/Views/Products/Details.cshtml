@@ -14,12 +14,12 @@
         </ol>
     </nav>
 
-    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 3rem;">
+    <div class="detail-grid">
         <!-- Product Image -->
         <div>
-            <div class="card" style="overflow: hidden;">
-                <img src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/no-image.jpg" : Model.ImageUrl)" 
-                     alt="@Model.Name" style="width: 100%; aspect-ratio: 1; object-fit: cover;" loading="lazy">
+            <div class="card detail-image">
+                <img src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/no-image.jpg" : Model.ImageUrl)"
+                     alt="@Model.Name" loading="lazy">
             </div>
         </div>
 
@@ -38,10 +38,10 @@
                 }
             </div>
 
-            <h2 style="margin-bottom: 1rem;">@Model.Name</h2>
-            
+            <h2 class="mb-4">@Model.Name</h2>
+
             <div class="flex items-center gap-sm mb-4">
-                <span class="product-price" style="font-size: 1.75rem;">@Model.Price.ToString("C")</span>
+                <span class="detail-price">@Model.Price.ToString("C")</span>
             </div>
 
             <p class="text-muted mb-4">@Model.Description</p>
@@ -62,14 +62,14 @@
             @if (variants != null && variants.Any())
             {
                 <div class="mb-4">
-                    <h5 style="margin-bottom: 1rem;">Available Options</h5>
+                    <h5 class="mb-3">Available Options</h5>
                     <div class="grid grid-2" style="gap: 0.75rem;">
                         @foreach (var variant in variants)
                         {
                             var isOutOfStock = variant.Stock <= 0;
-                            <label class="variant-option @(isOutOfStock ? "disabled" : "")" 
+                            <label class="variant-option @(isOutOfStock ? "disabled" : "")"
                                    onclick="selectVariant(this, @variant.Id, @variant.AdditionalPrice.ToString("0.00"))">
-                                <input type="radio" name="variant" value="@variant.Id" 
+                                <input type="radio" name="variant" value="@variant.Id"
                                        class="d-none" @(isOutOfStock ? "disabled" : "")>
                                 <div class="variant-content">
                                     <div class="variant-info">
@@ -106,19 +106,19 @@
                 <form asp-controller="Cart" asp-action="AddToCart" method="post" id="addToCartForm">
                     <input type="hidden" name="productId" value="@Model.Id" />
                     <input type="hidden" name="variantId" id="selectedVariantId" value="" />
-                    
-                    <div class="form-group" style="max-width: 200px; margin-bottom: 1rem;">
+
+                    <div class="form-group" style="max-width: 200px;">
                         <label class="form-label">Quantity</label>
-                        <input type="number" name="quantity" class="form-control" 
+                        <input type="number" name="quantity" class="form-control"
                                value="1" min="1" max="@Model.Stock" required>
                     </div>
-                    
+
                     <div class="flex gap-sm">
                         <button type="submit" class="btn btn-primary btn-lg flex-fill" id="addToCartBtn">
                             <i class="bi bi-cart-plus"></i>
                             Add to Cart
                         </button>
-                        <button type="button" class="icon-btn btn-lg" 
+                        <button type="button" class="icon-btn btn-lg"
                                 onclick="toggleWishlist(@Model.Id, this)" id="wishlistBtn">
                             <i class="bi bi-heart"></i>
                         </button>
@@ -154,18 +154,18 @@
     <section class="section">
         <div class="card">
             <div class="card-body" style="padding: 2rem;">
-                <h3 style="margin-bottom: 1.5rem;">
+                <h3 class="mb-4">
                     <i class="bi bi-star-fill" style="color: var(--accent);"></i>
                     Customer Reviews
                 </h3>
-                
+
                 @if (ViewBag.TotalReviews > 0)
                 {
-                    <div class="grid" style="grid-template-columns: 300px 1fr; gap: 2rem; margin-bottom: 2rem;">
-                        <div class="text-center" style="padding: 2rem; background: var(--bg-tertiary); border-radius: var(--radius-lg);">
-                            <h1 style="font-size: 3rem; font-weight: 700; color: var(--accent); margin-bottom: 0.5rem;">
+                    <div class="review-summary-grid">
+                        <div class="review-score-card">
+                            <div class="review-score">
                                 @ViewBag.AverageRating.ToString("F1")
-                            </h1>
+                            </div>
                             <div class="rating justify-center mb-2">
                                 @for (int i = 1; i <= 5; i++)
                                 {
@@ -178,7 +178,8 @@
                         <div>
                             @for (int stars = 5; stars >= 1; stars--)
                             {
-                                var count = stars switch {
+                                var count = stars switch
+                                {
                                     5 => ViewBag.FiveStars,
                                     4 => ViewBag.FourStars,
                                     3 => ViewBag.ThreeStars,
@@ -186,18 +187,18 @@
                                     _ => ViewBag.OneStar
                                 };
                                 var percent = ViewBag.TotalReviews > 0 ? (double)count / ViewBag.TotalReviews * 100 : 0;
-                                <div class="flex items-center gap-sm mb-2">
-                                    <span style="min-width: 40px;">@stars <i class="bi bi-star-fill"></i></span>
-                                    <div style="flex: 1; height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden;">
-                                        <div style="width: @percent%; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s;"></div>
+                                <div class="review-bar-row">
+                                    <span class="review-bar-label">@stars <i class="bi bi-star-fill"></i></span>
+                                    <div class="review-bar-track">
+                                        <div class="review-bar-fill" style="width: @percent%;"></div>
                                     </div>
-                                    <span class="text-muted" style="min-width: 30px;">@count</span>
+                                    <span class="review-bar-count">@count</span>
                                 </div>
                             }
                         </div>
                     </div>
 
-                    <hr style="border-color: var(--border-subtle); margin: 2rem 0;">
+                    <hr class="review-divider">
                 }
 
                 <!-- Add Review Form -->
@@ -206,17 +207,17 @@
                     @if (!ViewBag.HasReviewed)
                     {
                         <div class="mb-4">
-                            <h5 style="margin-bottom: 1rem;">Write a Review</h5>
+                            <h5 class="mb-3">Write a Review</h5>
                             <form asp-controller="Products" asp-action="AddReview" method="post">
                                 <input type="hidden" name="ProductId" value="@Model.Id" />
-                                
+
                                 <div class="form-group">
                                     <label class="form-label">Rating</label>
-                                    <div class="rating" style="font-size: 1.5rem;">
+                                    <div class="rating-input">
                                         @for (int i = 5; i >= 1; i--)
                                         {
-                                            <input type="radio" name="Rating" value="@i" id="star@(i)" required style="display: none;">
-                                            <label for="star@(i)" style="cursor: pointer; color: var(--accent);">★</label>
+                                            <input type="radio" name="Rating" value="@i" id="star@(i)" required>
+                                            <label for="star@(i)" class="rating-star"><i class="bi bi-star-fill"></i></label>
                                         }
                                     </div>
                                 </div>
@@ -238,7 +239,7 @@
                                 </button>
                             </form>
                         </div>
-                        <hr style="border-color: var(--border-subtle); margin: 2rem 0;">
+                        <hr class="review-divider">
                     }
                     else
                     {
@@ -260,16 +261,16 @@
                 @if (ViewBag.Reviews != null)
                 {
                     var reviews = ViewBag.Reviews as List<ECommerceProject.Models.Entities.ProductReview>;
-                    
+
                     @if (reviews != null && reviews.Any())
                     {
-                        <h5 style="margin-bottom: 1rem;">Customer Reviews (@reviews.Count)</h5>
-                        
+                        <h5 class="mb-3">Customer Reviews (@reviews.Count)</h5>
+
                         @foreach (var review in reviews)
                         {
-                            <div class="card" style="margin-bottom: 1rem;">
+                            <div class="card review-card">
                                 <div class="card-body">
-                                    <div class="flex justify-between items-start mb-2">
+                                    <div class="review-header">
                                         <div>
                                             <div class="rating mb-1">
                                                 @for (int i = 1; i <= 5; i++)
@@ -279,20 +280,20 @@
                                             </div>
                                             @if (!string.IsNullOrEmpty(review.Title))
                                             {
-                                                <h6 style="margin-bottom: 0.25rem;">@review.Title</h6>
+                                                <h6 class="mb-1">@review.Title</h6>
                                             }
                                         </div>
-                                        <span class="text-muted" style="font-size: 0.85rem;">@review.CreatedDate.ToString("dd MMM yyyy")</span>
+                                        <span class="review-date">@review.CreatedDate.ToString("dd MMM yyyy")</span>
                                     </div>
 
-                                    <p class="mb-2" style="color: var(--text-secondary);">@review.Comment</p>
+                                    <p class="review-text">@review.Comment</p>
 
-                                    <div class="flex items-center gap-md" style="font-size: 0.85rem; color: var(--text-muted);">
+                                    <div class="review-actions">
                                         <span>
                                             <strong>@review.User?.FullName</strong>
                                             @if (review.IsVerifiedPurchase)
                                             {
-                                                <span class="badge badge-success" style="margin-left: 0.5rem;">✓ Verified</span>
+                                                <span class="badge badge-success review-verified">&#10003; Verified</span>
                                             }
                                         </span>
 
@@ -329,7 +330,7 @@
                 {
                     <div class="product-card">
                         <div class="image-wrapper">
-                            <img src="@(string.IsNullOrEmpty(relatedProduct.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : relatedProduct.ImageUrl)" 
+                            <img src="@(string.IsNullOrEmpty(relatedProduct.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : relatedProduct.ImageUrl)"
                                  alt="@relatedProduct.Name" loading="lazy"
                                  onerror="this.src='https://placehold.co/400x300?text=No+Image'">
                         </div>
@@ -348,7 +349,7 @@
             </div>
         </section>
     }
-}
+</div>
 
 @section Scripts {
     <input type="hidden" id="product-id" value="@Model.Id" />
@@ -361,9 +362,9 @@
 
         var basePrice = @Model.Price.ToString("0.00");
         var total = basePrice + parseFloat(additionalPrice);
-        var priceEl = document.querySelector('.product-price');
+        var priceEl = document.querySelector('.detail-price');
         if (priceEl) {
-            priceEl.innerHTML = '$' + total.toFixed(2);
+            priceEl.textContent = '$' + total.toFixed(2);
         }
     }
     </script>

@@ -26,30 +26,23 @@ public class AIAssistantController : ControllerBase
 
         try
         {
-            _logger.LogInformation("AI Assistant request for product: {ProductName}", request.ProductName);
-
             var response = await _geminiService.GetProductAssistantResponseAsync(
-                request.ProductName,
+                request.ProductName ?? "",
                 request.ProductDescription ?? "",
                 request.Question
             );
 
             return Ok(new { success = true, response });
         }
-        catch (TimeoutException)
-        {
-            _logger.LogWarning("AI Assistant timeout for product: {ProductName}", request.ProductName);
-            return StatusCode(504, new { success = false, message = "Request timed out. Please try again." });
-        }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "AI Assistant API error");
-            return StatusCode(502, new { success = false, message = "AI service temporarily unavailable. Please try again later." });
+            _logger.LogError(ex, "Gemini API error");
+            return StatusCode(429, new { success = false, message = ex.Message });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "AI Assistant unexpected error");
-            return StatusCode(500, new { success = false, message = "An unexpected error occurred. Please try again." });
+            return StatusCode(500, new { success = false, message = "An unexpected error occurred." });
         }
     }
 }

@@ -8,7 +8,7 @@
 <section class="hero">
     <div class="hero-background" aria-hidden="true"></div>
     <div class="container">
-        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: var(--space-2xl); align-items: center;">
+        <div class="hero-grid">
             <div class="hero-content animate-fade-in-up">
                 <span class="hero-badge">
                     <i class="bi bi-stars" aria-hidden="true"></i>
@@ -66,12 +66,11 @@
                 <h2>Shop by Category</h2>
                 <p>Browse our curated categories</p>
             </header>
-            <div class="grid grid-3" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+            <div class="grid grid-auto-200">
                 @for (int i = 0; i < Math.Min(categories.Count, 6); i++)
                 {
-                    <a asp-controller="Products" asp-action="ByCategory" asp-route-id="@categories[i].Id" 
-                       class="category-card animate-fade-in-up"
-                       style="animation-delay: @(100 + i * 50)ms"
+                    <a asp-controller="Products" asp-action="ByCategory" asp-route-id="@categories[i].Id"
+                       class="category-card animate-fade-in-up stagger-@(i + 1)"
                        aria-label="Browse @categories[i].Name products">
                         <i class="bi bi-tag-fill" aria-hidden="true"></i>
                         <span>@categories[i].Name</span>
@@ -91,17 +90,19 @@
                 <h2>Featured Products</h2>
                 <p>Handpicked selections for you</p>
             </header>
-            <div class="grid grid-4" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+            <div class="grid grid-auto-fill">
                 @foreach (var product in featuredProducts)
                 {
                     <article class="product-card animate-fade-in-up">
                         <div class="image-wrapper">
-                            @if (product.IsFeatured)
-                            {
-                                <span class="badge badge-danger">Featured</span>
-                            }
+                            <div class="badge-wrapper">
+                                @if (product.IsFeatured)
+                                {
+                                    <span class="badge badge-danger">Featured</span>
+                                }
+                            </div>
                             <a asp-controller="Products" asp-action="Details" asp-route-id="@product.Id">
-                                <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : product.ImageUrl)" 
+                                <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : product.ImageUrl)"
                                      alt="@product.Name"
                                      loading="lazy"
                                      onerror="this.src='https://placehold.co/400x300?text=No+Image'">
@@ -112,7 +113,7 @@
                         </div>
                         <div class="card-content">
                             <h3 class="product-title">
-                                <a asp-controller="Products" asp-action="Details" asp-route-id="@product.Id" style="color: inherit; text-decoration: none;">
+                                <a asp-controller="Products" asp-action="Details" asp-route-id="@product.Id" class="product-title-link">
                                     @product.Name
                                 </a>
                             </h3>
@@ -146,15 +147,14 @@
 <!-- ==================== Newsletter ==================== -->
 <section class="section">
     <div class="container">
-        <div class="card" style="background: linear-gradient(135deg, var(--accent) 0%, #a88520 100%); border: none;">
-            <div style="padding: var(--space-2xl); text-align: center; color: var(--bg-primary);">
-                <h3 style="color: var(--bg-primary); margin-bottom: var(--space-sm);">Stay in the Loop</h3>
-                <p style="opacity: 0.7; margin-bottom: var(--space-lg);">Get exclusive offers and new arrivals</p>
-                <form asp-controller="Home" asp-action="Subscribe" method="post" class="flex justify-center gap-sm" style="max-width: 400px; margin: 0 auto;">
+        <div class="card newsletter-card">
+            <div class="newsletter-inner">
+                <h3>Stay in the Loop</h3>
+                <p>Get exclusive offers and new arrivals</p>
+                <form asp-controller="Home" asp-action="Subscribe" method="post" class="newsletter-form">
                     @Html.AntiForgeryToken()
-                    <input type="email" name="email" class="form-control" placeholder="Enter your email" required 
-                           style="background: rgba(255,255,255,0.9); border: none; color: var(--bg-primary);">
-                    <button type="submit" class="btn" style="background: var(--bg-primary); color: var(--accent);">
+                    <input type="email" name="email" class="form-control newsletter-input" placeholder="Enter your email" required>
+                    <button type="submit" class="btn newsletter-btn">
                         Subscribe
                     </button>
                 </form>
@@ -162,4 +162,3 @@
         </div>
     </div>
 </section>
-

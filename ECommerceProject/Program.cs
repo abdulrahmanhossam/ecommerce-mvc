@@ -55,7 +55,10 @@ builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddHttpClient("Gemini", client =>
 {
     client.Timeout = TimeSpan.FromSeconds(30);
-    client.DefaultRequestHeaders.Add("Accept", "application/json");
+})
+.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    MaxConnectionsPerServer = 5
 });
 builder.Services.AddScoped<IGeminiService, GeminiService>();
 
@@ -69,11 +72,17 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
+// Caching
+builder.Services.AddMemoryCache();
+builder.Services.AddResponseCaching();
+
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// إضافة Runtime Compilation عشان نشوف التغييرات في Views بدون Build
-builder.Services.AddRazorPages().AddRazorRuntimeCompilation();
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddRazorPages().AddRazorRuntimeCompilation();
+}
 
 var app = builder.Build();
 
@@ -86,6 +95,8 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+app.UseResponseCaching();
 
 app.UseRouting();
 

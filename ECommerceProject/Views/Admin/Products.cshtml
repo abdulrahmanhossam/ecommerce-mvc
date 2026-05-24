@@ -8,7 +8,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2><i class="bi bi-box-seam"></i> Manage Products</h2>
-            <p class="text-muted" style="font-size: 0.85rem;">Showing @Model.TotalCount products</p>
+            <p class="text-muted small">Showing @Model.TotalCount products</p>
         </div>
         <a asp-action="CreateProduct" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Add New Product
@@ -36,8 +36,7 @@
                             <tr>
                                 <td>
 <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "https://via.placeholder.com/50" : product.ImageUrl)" 
-                                             alt="@product.Name" loading="lazy"
-                                             style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;">
+                                             alt="@product.Name" loading="lazy" class="img-thumb-sm">
                                 </td>
                                 <td>
                                     <strong>@product.Name</strong>

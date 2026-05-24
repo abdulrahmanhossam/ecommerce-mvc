@@ -243,7 +243,6 @@ namespace ECommerceProject.Controllers
                     };
 
                     await _unitOfWork.Orders.AddAsync(order);
-                    await _unitOfWork.SaveAsync();
 
                     var payment = new Payment
                     {
@@ -256,7 +255,7 @@ namespace ECommerceProject.Controllers
                     };
 
                     await _unitOfWork.Payments.AddAsync(payment);
-                    await _unitOfWork.SaveAsync();
+                    await _unitOfWork.SaveAsync(); // Single save: Order + Payment created
 
                     if (model.PaymentMethod == PaymentMethod.Stripe ||
                         model.PaymentMethod == PaymentMethod.CreditCard)
@@ -286,10 +285,6 @@ namespace ECommerceProject.Controllers
                             return RedirectToAction("Index");
                         }
                     }
-
-                    payment.Status = PaymentStatus.Pending;
-                    _unitOfWork.Payments.Update(payment);
-                    await _unitOfWork.SaveAsync();
 
                     _unitOfWork.ShoppingCarts.DeleteRange(cartItems);
                     await _unitOfWork.SaveAsync();
@@ -371,7 +366,6 @@ namespace ECommerceProject.Controllers
                     payment.Status = PaymentStatus.Completed;
                     payment.PaymentDate = DateTime.Now;
                     _unitOfWork.Payments.Update(payment);
-                    await _unitOfWork.SaveAsync();
                 }
 
                 order.Status = OrderStatus.Paid;
@@ -440,6 +434,7 @@ namespace ECommerceProject.Controllers
 
         // POST: Checkout/ValidatePromoCode
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ValidatePromoCode([FromBody] ValidatePromoCodeRequest request)
         {
             try

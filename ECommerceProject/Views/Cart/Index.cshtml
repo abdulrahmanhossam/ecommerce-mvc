@@ -5,28 +5,28 @@
 }
 
 <div class="py-4">
-    <h2 style="margin-bottom: 1.5rem;">Shopping Cart</h2>
+    <h2 class="mb-4">Shopping Cart</h2>
 
     @if (cartItems != null && cartItems.Any())
     {
-        <div class="grid" style="grid-template-columns: 1fr 360px; gap: 2rem; align-items: start;">
+        <div class="cart-layout">
             <!-- Cart Items -->
             <div>
                 @foreach (var item in cartItems)
                 {
                     <div class="cart-item">
                         <div class="cart-item-image">
-                            <img src="@(string.IsNullOrEmpty(item.Product.ImageUrl) ? "https://placehold.co/100x100?text=No+Image" : item.Product.ImageUrl)" 
+                            <img src="@(string.IsNullOrEmpty(item.Product.ImageUrl) ? "https://placehold.co/100x100?text=No+Image" : item.Product.ImageUrl)"
                                  alt="@item.Product.Name" loading="lazy"
                                  onerror="this.src='https://placehold.co/100x100?text=No+Image'">
                         </div>
-                        
+
                         <div class="cart-item-details">
                             <h5 class="cart-item-title">@item.Product.Name</h5>
                             @if (item.Cart.ProductVariant != null)
                             {
                                 var v = item.Cart.ProductVariant;
-                                <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 2px;">
+                                <p class="cart-item-meta">
                                     @if (!string.IsNullOrEmpty(v.Size) && !string.IsNullOrEmpty(v.Color))
                                     {
                                         <span>@v.Size / @v.Color</span>
@@ -41,7 +41,7 @@
                                     }
                                 </p>
                             }
-                            <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 0;">
+                            <p class="cart-item-price">
                                 @item.Product.Price.ToString("C") each
                             </p>
                         </div>
@@ -54,9 +54,9 @@
                                     <i class="bi bi-dash"></i>
                                 </button>
                             </form>
-                            
+
                             <span class="quantity-value">@item.Cart.Quantity</span>
-                            
+
                             <form asp-action="UpdateQuantity" method="post" class="d-inline">
                                 <input type="hidden" name="cartId" value="@item.Cart.Id" />
                                 <input type="hidden" name="quantity" value="@(item.Cart.Quantity + 1)" />
@@ -66,7 +66,7 @@
                             </form>
                         </div>
 
-                        <div style="min-width: 100px; text-align: right;">
+                        <div class="cart-item-total">
                             <span class="product-price">@((item.Product.Price * item.Cart.Quantity).ToString("C"))</span>
                         </div>
 
@@ -79,13 +79,13 @@
                     </div>
                 }
 
-                <div class="flex justify-between items-center mt-4">
+                <div class="cart-footer">
                     <a asp-action="Index" asp-controller="Products" class="btn btn-ghost">
                         <i class="bi bi-arrow-left"></i>
                         Continue Shopping
                     </a>
                     <form asp-action="ClearCart" method="post">
-                        <button type="submit" class="btn btn-ghost text-danger" onclick="return confirm('Clear entire cart?')">
+                        <button type="submit" class="btn btn-ghost btn-text-danger" onclick="return confirm('Clear entire cart?')">
                             <i class="bi bi-trash"></i>
                             Clear Cart
                         </button>
@@ -97,7 +97,7 @@
             <div>
                 <div class="cart-summary">
                     <h4>Order Summary</h4>
-                    
+
                     <div class="cart-summary-row">
                         <span>Subtotal</span>
                         <span>@total.ToString("C")</span>
@@ -115,7 +115,7 @@
                         <span>@((total * 1.14m).ToString("C"))</span>
                     </div>
 
-                    <div class="flex flex-col gap-sm mt-4">
+                    <div class="cart-actions mt-4">
                         <a asp-controller="Checkout" asp-action="Index" class="btn btn-primary btn-lg w-100">
                             <i class="bi bi-credit-card"></i>
                             Checkout
@@ -128,13 +128,13 @@
 
                 <!-- Promo Code -->
                 <div class="card mt-3">
-                    <div class="card-body">
-                        <p style="font-size: 0.9rem; font-weight: 500; margin-bottom: 0.75rem;">Have a promo code?</p>
-                        <div class="flex gap-sm">
+                    <div class="card-body cart-promo">
+                        <p>Have a promo code?</p>
+                        <div class="cart-promo-row">
                             <input type="text" id="cart-promo-code" class="form-control text-uppercase" placeholder="Enter code">
                             <button class="btn btn-secondary" onclick="applyCartPromo()">Apply</button>
                         </div>
-                        <div id="cart-promo-message" class="mt-2" style="font-size: 0.85rem;"></div>
+                        <div id="cart-promo-message" class="cart-promo-msg"></div>
                     </div>
                 </div>
             </div>

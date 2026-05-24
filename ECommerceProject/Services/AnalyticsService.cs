@@ -22,61 +22,44 @@ namespace ECommerceProject.Services
         public async Task<SalesAnalyticsViewModel> GetSalesAnalyticsAsync()
         {
             var model = new SalesAnalyticsViewModel();
+            var orderQuery = _unitOfWork.Orders.GetQueryable(asNoTracking: true);
+            var now = DateTime.Now;
+            var thisMonthStart = new DateTime(now.Year, now.Month, 1);
+            var lastMonthStart = thisMonthStart.AddMonths(-1);
 
-            // Get all orders and items
-            var ordersList = await _unitOfWork.Orders.GetQueryable(asNoTracking: true)
-                .ToListAsync();
-
-            var orderItemsList = await _unitOfWork.OrderItems.GetQueryable(asNoTracking: true)
-                .ToListAsync();
-
-            // Preload reference data into dictionaries to avoid N+1 queries
-            var productsDict = (await _unitOfWork.Products.GetQueryable(asNoTracking: true)
-                .ToListAsync())
-                .ToDictionary(p => p.Id);
-
-            var categoriesDict = (await _unitOfWork.Categories.GetQueryable(asNoTracking: true)
-                .ToListAsync())
-                .ToDictionary(c => c.Id);
-
-            // Overview Stats
-            model.TotalOrders = ordersList.Count;
-            model.TotalRevenue = ordersList.Sum(o => o.TotalAmount);
+            // Overview Stats (server-side aggregation)
+            model.TotalOrders = await orderQuery.CountAsync();
+            model.TotalRevenue = await orderQuery.SumAsync(o => o.TotalAmount);
             model.AverageOrderValue = model.TotalOrders > 0 ? model.TotalRevenue / model.TotalOrders : 0;
 
             var customerRole = await _userManager.GetUsersInRoleAsync("Customer");
             model.TotalCustomers = customerRole.Count;
 
             // This Month vs Last Month
-            var now = DateTime.Now;
-            var thisMonthStart = new DateTime(now.Year, now.Month, 1);
-            var lastMonthStart = thisMonthStart.AddMonths(-1);
-            var lastMonthEnd = thisMonthStart.AddDays(-1);
-
-            var thisMonthOrders = ordersList.Where(o => o.OrderDate >= thisMonthStart).ToList();
-            var lastMonthOrders = ordersList.Where(o => o.OrderDate >= lastMonthStart && o.OrderDate <= lastMonthEnd).ToList();
-
-            model.OrdersThisMonth = thisMonthOrders.Count;
-            model.OrdersLastMonth = lastMonthOrders.Count;
-            model.OrdersGrowthPercentage = lastMonthOrders.Count > 0
+            model.OrdersThisMonth = await orderQuery.CountAsync(o => o.OrderDate >= thisMonthStart);
+            model.OrdersLastMonth = await orderQuery.CountAsync(
+                o => o.OrderDate >= lastMonthStart && o.OrderDate < thisMonthStart);
+            model.OrdersGrowthPercentage = model.OrdersLastMonth > 0
                 ? (int)(((model.OrdersThisMonth - model.OrdersLastMonth) / (decimal)model.OrdersLastMonth) * 100)
                 : 100;
 
-            model.RevenueThisMonth = thisMonthOrders.Sum(o => o.TotalAmount);
-            model.RevenueLastMonth = lastMonthOrders.Sum(o => o.TotalAmount);
+            model.RevenueThisMonth = await orderQuery.Where(o => o.OrderDate >= thisMonthStart).SumAsync(o => o.TotalAmount);
+            model.RevenueLastMonth = await orderQuery
+                .Where(o => o.OrderDate >= lastMonthStart && o.OrderDate < thisMonthStart)
+                .SumAsync(o => o.TotalAmount);
             model.RevenueGrowthPercentage = model.RevenueLastMonth > 0
                 ? (model.RevenueThisMonth - model.RevenueLastMonth) / model.RevenueLastMonth * 100
                 : 100;
 
             // Orders by Status
-            model.PendingOrders = ordersList.Count(o => o.Status == OrderStatus.Pending);
-            model.PaidOrders = ordersList.Count(o => o.Status == OrderStatus.Paid);
-            model.ShippedOrders = ordersList.Count(o => o.Status == OrderStatus.Shipped);
-            model.DeliveredOrders = ordersList.Count(o => o.Status == OrderStatus.Delivered);
-            model.CancelledOrders = ordersList.Count(o => o.Status == OrderStatus.Cancelled);
+            model.PendingOrders = await orderQuery.CountAsync(o => o.Status == OrderStatus.Pending);
+            model.PaidOrders = await orderQuery.CountAsync(o => o.Status == OrderStatus.Paid);
+            model.ShippedOrders = await orderQuery.CountAsync(o => o.Status == OrderStatus.Shipped);
+            model.DeliveredOrders = await orderQuery.CountAsync(o => o.Status == OrderStatus.Delivered);
+            model.CancelledOrders = await orderQuery.CountAsync(o => o.Status == OrderStatus.Cancelled);
 
-            // Top Selling Products
-            var productSales = orderItemsList
+            // Top Selling Products (server-side aggregation)
+            var topProducts = await _unitOfWork.OrderItems.GetQueryable(asNoTracking: true)
                 .GroupBy(oi => oi.ProductId)
                 .Select(g => new
                 {
@@ -85,9 +68,16 @@ namespace ECommerceProject.Services
                     TotalRevenue = g.Sum(oi => oi.TotalPrice)
                 })
                 .OrderByDescending(x => x.QuantitySold)
-                .Take(10);
+                .Take(10)
+                .ToListAsync();
 
-            foreach (var ps in productSales)
+            var prodIds = topProducts.Select(x => x.ProductId).ToList();
+            var productsDict = await _unitOfWork.Products.GetQueryable(asNoTracking: true)
+                .Where(p => prodIds.Contains(p.Id))
+                .Select(p => new { p.Id, p.Name, p.ImageUrl })
+                .ToDictionaryAsync(p => p.Id);
+
+            foreach (var ps in topProducts)
             {
                 if (productsDict.TryGetValue(ps.ProductId, out var product))
                 {
@@ -102,12 +92,8 @@ namespace ECommerceProject.Services
                 }
             }
 
-            // Top Customers
-            var usersDict = (await _unitOfWork.Users.GetQueryable(asNoTracking: true)
-                .ToListAsync())
-                .ToDictionary(u => u.Id);
-
-            var customerSales = ordersList
+            // Top Customers (server-side aggregation)
+            var topCustomers = await orderQuery
                 .GroupBy(o => o.UserId)
                 .Select(g => new
                 {
@@ -116,9 +102,16 @@ namespace ECommerceProject.Services
                     TotalSpent = g.Sum(o => o.TotalAmount)
                 })
                 .OrderByDescending(x => x.TotalSpent)
-                .Take(10);
+                .Take(10)
+                .ToListAsync();
 
-            foreach (var cs in customerSales)
+            var custIds = topCustomers.Select(x => x.UserId).ToList();
+            var usersDict = await _unitOfWork.Users.GetQueryable(asNoTracking: true)
+                .Where(u => custIds.Contains(u.Id))
+                .Select(u => new { u.Id, u.FullName, u.Email })
+                .ToDictionaryAsync(u => u.Id);
+
+            foreach (var cs in topCustomers)
             {
                 if (usersDict.TryGetValue(cs.UserId, out var user))
                 {
@@ -133,18 +126,28 @@ namespace ECommerceProject.Services
                 }
             }
 
-            // Category Performance
-            var categorySales = orderItemsList
-                .Join(productsDict.Values, oi => oi.ProductId, p => p.Id, (oi, p) => new { oi, p })
-                .GroupBy(x => x.p.CategoryId)
+            // Category Performance (server-side aggregation)
+            var catPerformance = await _unitOfWork.OrderItems.GetQueryable(asNoTracking: true)
+                .Join(_unitOfWork.Products.GetQueryable(asNoTracking: true),
+                    oi => oi.ProductId,
+                    p => p.Id,
+                    (oi, p) => new { oi, p.CategoryId })
+                .GroupBy(x => x.CategoryId)
                 .Select(g => new
                 {
                     CategoryId = g.Key,
                     ProductsSold = g.Sum(x => x.oi.Quantity),
                     Revenue = g.Sum(x => x.oi.TotalPrice)
-                });
+                })
+                .ToListAsync();
 
-            foreach (var cs in categorySales)
+            var catIds = catPerformance.Select(x => x.CategoryId).ToList();
+            var categoriesDict = await _unitOfWork.Categories.GetQueryable(asNoTracking: true)
+                .Where(c => catIds.Contains(c.Id))
+                .Select(c => new { c.Id, c.Name })
+                .ToDictionaryAsync(c => c.Id);
+
+            foreach (var cs in catPerformance)
             {
                 if (categoriesDict.TryGetValue(cs.CategoryId, out var category))
                 {
@@ -158,10 +161,8 @@ namespace ECommerceProject.Services
                 }
             }
 
-            // Daily Sales (Last 30 Days)
+            // Daily & Monthly Sales
             model.DailySales = await GetDailySalesAsync(30);
-
-            // Monthly Sales (Last 12 Months)
             model.MonthlySales = await GetMonthlySalesAsync(12);
 
             return model;

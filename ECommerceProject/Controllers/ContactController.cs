@@ -12,6 +12,7 @@ namespace ECommerceProject.Controllers
             _emailService = emailService;
         }
 
+        [ResponseCache(Duration = 3600)]
         public IActionResult Index()
         {
             return View();
