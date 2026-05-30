@@ -4,6 +4,5 @@ namespace ECommerceProject.Services.Interfaces
     {
         Task<string> UploadImageAsync(IFormFile file, string folder);
         Task<bool> DeleteImageAsync(string imagePath);
-        string GetImageUrl(string fileName, string folder);
     }
 }

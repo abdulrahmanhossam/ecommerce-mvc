@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore.Storage;
 using ECommerceProject.Data.Context;
 using ECommerceProject.Data.Interfaces;
 using ECommerceProject.Models.Entities;
-using Microsoft.AspNetCore.Identity;
 
 namespace ECommerceProject.Data.Repositories
 {
@@ -23,7 +22,7 @@ namespace ECommerceProject.Data.Repositories
         public IRepository<PromoCode> PromoCodes { get; private set; }
         public IRepository<Wishlist> Wishlists { get; private set; }
 
-        public UnitOfWork(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public UnitOfWork(ApplicationDbContext context)
         {
             _context = context;
             Categories = new Repository<Category>(_context);

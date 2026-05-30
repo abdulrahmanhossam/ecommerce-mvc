@@ -69,9 +69,5 @@ namespace ECommerceProject.Services
             }
         }
 
-        public string GetImageUrl(string fileName, string folder)
-        {
-            return $"/images/{folder}/{fileName}";
-        }
     }
 }

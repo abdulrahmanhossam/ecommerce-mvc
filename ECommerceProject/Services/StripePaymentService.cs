@@ -1,6 +1,5 @@
 using Stripe;
 using Stripe.Checkout;
-using Microsoft.Extensions.Options;
 using ECommerceProject.Services.Interfaces;
 
 namespace ECommerceProject.Services
@@ -17,45 +16,6 @@ namespace ECommerceProject.Services
             _domain = configuration["Stripe:Domain"] ?? throw new ArgumentNullException("Stripe Domain");
             _logger = logger;
             StripeConfiguration.ApiKey = _secretKey;
-        }
-
-        public async Task<string> CreatePaymentIntentAsync(decimal amount, string currency = "usd")
-        {
-            try
-            {
-                var options = new PaymentIntentCreateOptions
-                {
-                    Amount = (long)(amount * 100), // Stripe يستخدم cents
-                    Currency = currency,
-                    PaymentMethodTypes = new List<string> { "card" },
-                };
-
-                var service = new PaymentIntentService();
-                var paymentIntent = await service.CreateAsync(options);
-
-                return paymentIntent.ClientSecret;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Stripe Error: {ex.Message}");
-                throw;
-            }
-        }
-
-        public async Task<bool> ConfirmPaymentAsync(string paymentIntentId)
-        {
-            try
-            {
-                var service = new PaymentIntentService();
-                var paymentIntent = await service.GetAsync(paymentIntentId);
-
-                return paymentIntent.Status == "succeeded";
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Stripe Error: {ex.Message}");
-                return false;
-            }
         }
 
         public async Task<string> CreateCheckoutSessionAsync(int orderId, decimal amount, List<string> productNames)

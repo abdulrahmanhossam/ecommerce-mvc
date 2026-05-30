@@ -16,11 +16,6 @@ namespace ECommerceProject.Data.Repositories
             _dbSet = context.Set<T>();
         }
 
-        public IQueryable<T> GetQueryable()
-        {
-            return _dbSet;
-        }
-
         public IQueryable<T> GetQueryable(bool asNoTracking)
         {
             return asNoTracking ? _dbSet.AsNoTracking() : _dbSet;
@@ -41,20 +36,6 @@ namespace ECommerceProject.Data.Repositories
         public async Task<IEnumerable<T>> GetAllAsync()
         {
             return await _dbSet.ToListAsync();
-        }
-
-        public async Task<IEnumerable<T>> GetAllAsync(params Expression<Func<T, object>>[] includes)
-        {
-            var query = GetQueryable();
-            query = ApplyIncludes(query, includes);
-            return await query.ToListAsync();
-        }
-
-        public async Task<IEnumerable<T>> GetAllAsync(bool asNoTracking, params Expression<Func<T, object>>[] includes)
-        {
-            var query = GetQueryable(asNoTracking);
-            query = ApplyIncludes(query, includes);
-            return await query.ToListAsync();
         }
 
         public async Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>> filter)
@@ -81,13 +62,6 @@ namespace ECommerceProject.Data.Repositories
             return await _dbSet.FindAsync(id);
         }
 
-        public async Task<T?> GetByIdAsync(int id, params Expression<Func<T, object>>[] includes)
-        {
-            var query = GetQueryable();
-            query = ApplyIncludes(query, includes);
-            return await query.FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id);
-        }
-
         public async Task<T?> GetByIdAsync(int id, bool asNoTracking, params Expression<Func<T, object>>[] includes)
         {
             var query = GetQueryable(asNoTracking);
@@ -98,13 +72,6 @@ namespace ECommerceProject.Data.Repositories
         public async Task<T?> GetFirstOrDefaultAsync(Expression<Func<T, bool>> filter)
         {
             return await _dbSet.FirstOrDefaultAsync(filter);
-        }
-
-        public async Task<T?> GetFirstOrDefaultAsync(Expression<Func<T, bool>> filter, params Expression<Func<T, object>>[] includes)
-        {
-            var query = _dbSet.Where(filter);
-            query = ApplyIncludes(query, includes);
-            return await query.FirstOrDefaultAsync();
         }
 
         public async Task<T?> GetFirstOrDefaultAsync(Expression<Func<T, bool>> filter, bool asNoTracking, params Expression<Func<T, object>>[] includes)
@@ -132,11 +99,6 @@ namespace ECommerceProject.Data.Repositories
         public void DeleteRange(IEnumerable<T> entities)
         {
             _dbSet.RemoveRange(entities);
-        }
-
-        public async Task<int> SaveAsync()
-        {
-            return await _context.SaveChangesAsync();
         }
 
         public async Task<bool> AnyAsync(Expression<Func<T, bool>> filter)
