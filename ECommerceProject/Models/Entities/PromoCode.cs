@@ -33,6 +33,9 @@ namespace ECommerceProject.Models.Entities
 
         public int UsageCount { get; set; } = 0;
 
+        [Timestamp]
+        public byte[] RowVersion { get; set; } = [];
+
         public int? UsageLimitPerUser { get; set; }
 
         public bool IsActive { get; set; } = true;

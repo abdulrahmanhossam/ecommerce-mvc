@@ -60,3 +60,17 @@ dotnet ef migrations add <MigrationName>
 dotnet ef database update
 dotnet ef migrations list
 ```
+
+## Anchored Architecture Decisions (May 2026)
+
+### Repository AsNoTracking
+`IRepository<T>` has overloads for all read methods with `asNoTracking` parameter (default `false`). Callers performing read-only GET operations should pass `asNoTracking: true`. Existing write paths pass nothing (tracking on).
+
+### Concurrency Tokens
+- `Product`, `ProductVariant`, and `PromoCode` entities have `[Timestamp] byte[] RowVersion` for optimistic concurrency
+- Prevents stock overselling when two users checkout the same product simultaneously
+- Prevents promo code `UsageCount` race conditions
+- Migration: `AddConcurrencyTokens` (run `dotnet ef database update` to apply)
+
+### AdminController N+1 Fixed
+`Users()` page batches role lookups using `RoleManager<IdentityRole>` + `GetUsersInRoleAsync()` per role (not per user). Injected via DI alongside existing `UserManager<ApplicationUser>`.

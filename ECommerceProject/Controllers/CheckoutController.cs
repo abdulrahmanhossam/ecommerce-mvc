@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -25,19 +26,22 @@ namespace ECommerceProject.Controllers
         private readonly IEmailService _emailService;
         private readonly IPaymentService _paymentService;
         private readonly ILogger<CheckoutController> _logger;
+        private readonly IWebHostEnvironment _env;
 
         public CheckoutController(
             IUnitOfWork unitOfWork,
             UserManager<ApplicationUser> userManager,
             IEmailService emailService,
             IPaymentService paymentService,
-            ILogger<CheckoutController> logger)
+            ILogger<CheckoutController> logger,
+            IWebHostEnvironment env)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
             _emailService = emailService;
             _paymentService = paymentService;
             _logger = logger;
+            _env = env;
         }
 
         // GET: Checkout
@@ -99,15 +103,27 @@ namespace ECommerceProject.Controllers
 
             if (!ModelState.IsValid)
             {
-                var cartItems = await _unitOfWork.ShoppingCarts.GetAsync(
-                    c => c.UserId == userId,
-                    c => c.Product);
+                try
+                {
+                    var cartItems = await _unitOfWork.ShoppingCarts.GetAsync(
+                        c => c.UserId == userId,
+                        c => c.Product);
 
-                var subtotal = cartItems.Sum(item => item.Product.Price * item.Quantity);
+                    var subtotal = cartItems
+                        .Where(ci => ci.Product != null)
+                        .Sum(item => item.Product!.Price * item.Quantity);
 
-                ViewBag.Subtotal = subtotal;
-                ViewBag.Tax = subtotal * 0.14m;
-                ViewBag.Total = subtotal * 1.14m;
+                    ViewBag.Subtotal = subtotal;
+                    ViewBag.Tax = subtotal * 0.14m;
+                    ViewBag.Total = subtotal * 1.14m;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to load cart for validation re-render");
+                    ViewBag.Subtotal = 0m;
+                    ViewBag.Tax = 0m;
+                    ViewBag.Total = 0m;
+                }
 
                 return View("Index", model);
             }
@@ -246,71 +262,81 @@ namespace ECommerceProject.Controllers
 
                     var payment = new Payment
                     {
-                        OrderId = order.Id,
                         Amount = totalAmount,
                         PaymentDate = DateTime.Now,
                         PaymentMethod = model.PaymentMethod,
                         Status = PaymentStatus.Pending,
-                        TransactionId = $"PENDING-{order.Id}-{DateTime.Now.Ticks}"
+                        TransactionId = $"PENDING-{DateTime.Now.Ticks}"
                     };
 
-                    await _unitOfWork.Payments.AddAsync(payment);
+                    order.Payment = payment;
                     await _unitOfWork.SaveAsync(); // Single save: Order + Payment created
 
-                    if (model.PaymentMethod == PaymentMethod.Stripe ||
-                        model.PaymentMethod == PaymentMethod.CreditCard)
+                    // For Cash on Delivery, no external payment gateway needed
+                    if (model.PaymentMethod is PaymentMethod.CashOnDelivery or PaymentMethod.PayPal)
                     {
+                        // Complete the order immediately — no redirect to external gateway
+                        _unitOfWork.ShoppingCarts.DeleteRange(cartItems);
+                        await _unitOfWork.SaveAsync();
+                        await transaction.CommitAsync();
+
+                        TempData["SuccessMessage"] = "Order placed successfully!";
+
                         try
                         {
-                            var productNames = cartItemList
-                                .Select(ci => ci.Product.Name)
-                                .ToList();
-
-                            var checkoutUrl = await _paymentService.CreateCheckoutSessionAsync(
-                                order.Id,
-                                totalAmount,
-                                productNames);
-
-                            _unitOfWork.ShoppingCarts.DeleteRange(cartItems);
-                            await _unitOfWork.SaveAsync();
-
-                            await transaction.CommitAsync();
-                            return Redirect(checkoutUrl);
+                            var user = await _userManager.FindByIdAsync(userId);
+                            if (user != null)
+                            {
+                                await _emailService.SendOrderConfirmationEmailAsync(
+                                    user.Email!,
+                                    user.FullName,
+                                    order.Id,
+                                    totalAmount);
+                            }
                         }
                         catch (Exception ex)
                         {
-                            await transaction.RollbackAsync();
-                            _logger.LogError(ex, "Stripe payment error");
-                            TempData["ErrorMessage"] = "Payment gateway error. Please try again.";
-                            return RedirectToAction("Index");
+                            _logger.LogWarning(ex, "Failed to send order confirmation email");
                         }
+
+                        return RedirectToAction("OrderConfirmation", new { orderId = order.Id });
                     }
 
-                    _unitOfWork.ShoppingCarts.DeleteRange(cartItems);
-                    await _unitOfWork.SaveAsync();
-
-                    await transaction.CommitAsync();
-
-                    TempData["SuccessMessage"] = "Order placed successfully!";
-
+                    // Stripe / CreditCard — redirect to payment gateway
                     try
                     {
-                        var user = await _userManager.FindByIdAsync(userId);
-                        if (user != null)
-                        {
-                            await _emailService.SendOrderConfirmationEmailAsync(
-                                user.Email!,
-                                user.FullName,
-                                order.Id,
-                                totalAmount);
-                        }
+                        var productNames = cartItemList
+                            .Where(ci => ci.Product != null)
+                            .Select(ci => ci.Product!.Name)
+                            .ToList();
+
+                        var checkoutUrl = await _paymentService.CreateCheckoutSessionAsync(
+                            order.Id,
+                            totalAmount,
+                            productNames);
+
+                        _unitOfWork.ShoppingCarts.DeleteRange(cartItems);
+                        await _unitOfWork.SaveAsync();
+
+                        await transaction.CommitAsync();
+                        return Redirect(checkoutUrl);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex, "Failed to send order confirmation email");
+                        await transaction.RollbackAsync();
+                        _logger.LogError(ex, "Payment gateway error for method {PaymentMethod}", model.PaymentMethod);
+                        TempData["ErrorMessage"] = "Payment gateway error. Please try again.";
+                        return RedirectToAction("Index");
                     }
+                }
+                catch (DbUpdateException dbEx)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(dbEx, "Database error placing order for user {UserId}", userId);
 
-                    return RedirectToAction("OrderConfirmation", new { orderId = order.Id });
+                    var innerMsg = dbEx.InnerException?.Message ?? dbEx.Message;
+                    ModelState.AddModelError(string.Empty, $"DB ERROR: {innerMsg}");
+                    return View("Index", model);
                 }
                 catch
                 {
@@ -321,6 +347,13 @@ namespace ECommerceProject.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error placing order for user {UserId}", userId);
+
+                if (_env.IsDevelopment())
+                {
+                    ModelState.AddModelError(string.Empty, $"DEV ERROR: {ex.Message}");
+                    return View("Index", model);
+                }
+
                 TempData["ErrorMessage"] = "An error occurred while placing your order. Please try again.";
                 return RedirectToAction("Index");
             }
@@ -338,12 +371,12 @@ namespace ECommerceProject.Controllers
             }
 
             var orderItems = await _unitOfWork.OrderItems.GetAsync(
-                oi => oi.OrderId == orderId,
+                oi => oi.OrderId == orderId, asNoTracking: true,
                 oi => oi.Product);
 
             ViewBag.OrderItems = orderItems.Select(oi => (oi, oi.Product)).ToList();
 
-            var payment = await _unitOfWork.Payments.GetFirstOrDefaultAsync(p => p.OrderId == orderId);
+            var payment = await _unitOfWork.Payments.GetFirstOrDefaultAsync(p => p.OrderId == orderId, asNoTracking: true);
             ViewBag.Payment = payment;
 
             return View(order);
@@ -375,20 +408,23 @@ namespace ECommerceProject.Controllers
                 TempData["SuccessMessage"] = "Payment successful! Your order has been confirmed.";
 
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var user = await _userManager.FindByIdAsync(userId);
-                if (user != null)
+                if (!string.IsNullOrEmpty(userId))
                 {
-                    try
+                    var user = await _userManager.FindByIdAsync(userId);
+                    if (user != null)
                     {
-                        await _emailService.SendOrderConfirmationEmailAsync(
-                            user.Email!,
-                            user.FullName,
-                            order.Id,
-                            order.TotalAmount);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Failed to send order confirmation email for PaymentSuccess");
+                        try
+                        {
+                            await _emailService.SendOrderConfirmationEmailAsync(
+                                user.Email!,
+                                user.FullName,
+                                order.Id,
+                                order.TotalAmount);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Failed to send order confirmation email for PaymentSuccess");
+                        }
                     }
                 }
 

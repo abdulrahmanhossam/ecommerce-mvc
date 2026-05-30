@@ -245,20 +245,49 @@ namespace ECommerceProject.Controllers
                 return Json(new { success = false, message = "Product not found" });
             }
 
-            if (product.Stock < request.Quantity)
+            // التحقق من الـ Variant
+            ProductVariant? selectedVariant = null;
+            if (request.VariantId.HasValue)
             {
-                return Json(new { success = false, message = $"Only {product.Stock} units available" });
+                selectedVariant = await _unitOfWork.ProductVariants.GetFirstOrDefaultAsync(
+                    v => v.Id == request.VariantId && v.ProductId == request.ProductId && v.IsActive);
+
+                if (selectedVariant == null)
+                {
+                    return Json(new { success = false, message = "Selected option not available" });
+                }
+
+                if (selectedVariant.Stock < request.Quantity)
+                {
+                    return Json(new { success = false, message = $"Only {selectedVariant.Stock} units available for this option" });
+                }
+            }
+            else
+            {
+                // إذا كان للمنتج Variants، يجب اختيار واحد
+                var hasVariants = await _unitOfWork.ProductVariants.AnyAsync(
+                    v => v.ProductId == request.ProductId && v.IsActive);
+                if (hasVariants)
+                {
+                    return Json(new { success = false, message = "Please select product options" });
+                }
+            }
+
+            var availableStock = selectedVariant?.Stock ?? product.Stock;
+            if (availableStock < request.Quantity)
+            {
+                return Json(new { success = false, message = $"Only {availableStock} units available" });
             }
 
             var existingCartItem = await _unitOfWork.ShoppingCarts.GetFirstOrDefaultAsync(
-                c => c.UserId == userId && c.ProductId == request.ProductId);
+                c => c.UserId == userId && c.ProductId == request.ProductId && c.ProductVariantId == request.VariantId);
 
             if (existingCartItem != null)
             {
                 var newQuantity = existingCartItem.Quantity + request.Quantity;
-                if (newQuantity > product.Stock)
+                if (newQuantity > availableStock)
                 {
-                    return Json(new { success = false, message = $"Cannot add more than {product.Stock} units" });
+                    return Json(new { success = false, message = $"Cannot add more than {availableStock} units" });
                 }
                 existingCartItem.Quantity = newQuantity;
                 _unitOfWork.ShoppingCarts.Update(existingCartItem);
@@ -269,6 +298,7 @@ namespace ECommerceProject.Controllers
                 {
                     UserId = userId,
                     ProductId = request.ProductId,
+                    ProductVariantId = request.VariantId,
                     Quantity = request.Quantity,
                     AddedDate = DateTime.Now
                 };
@@ -287,5 +317,6 @@ namespace ECommerceProject.Controllers
     {
         public int ProductId { get; set; }
         public int Quantity { get; set; }
+        public int? VariantId { get; set; }
     }
 }

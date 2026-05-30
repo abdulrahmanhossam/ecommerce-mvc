@@ -26,7 +26,7 @@ namespace ECommerceProject.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            var orders = await _unitOfWork.Orders.GetAsync(o => o.UserId == userId);
+            var orders = await _unitOfWork.Orders.GetAsync(o => o.UserId == userId, asNoTracking: true);
             var ordersList = orders.OrderByDescending(o => o.OrderDate).ToList();
 
             return View(ordersList);
@@ -42,7 +42,7 @@ namespace ECommerceProject.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            var order = await _unitOfWork.Orders.GetByIdAsync(id);
+            var order = await _unitOfWork.Orders.GetByIdAsync(id, asNoTracking: true);
 
             if (order == null || order.UserId != userId)
             {
@@ -59,7 +59,7 @@ namespace ECommerceProject.Controllers
                 .ToList();
 
             // جلب Payment
-            var payment = await _unitOfWork.Payments.GetFirstOrDefaultAsync(p => p.OrderId == id);
+            var payment = await _unitOfWork.Payments.GetFirstOrDefaultAsync(p => p.OrderId == id, asNoTracking: true);
             ViewBag.Payment = payment;
 
             return View(order);

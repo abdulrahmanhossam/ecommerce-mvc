@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ECommerceProject.Services.Interfaces;
 
@@ -5,6 +6,7 @@ namespace ECommerceProject.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class AIAssistantController : ControllerBase
 {
     private readonly IGeminiService _geminiService;

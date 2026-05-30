@@ -35,6 +35,9 @@ namespace ECommerceProject.Models.Entities
 
         public bool IsFeatured { get; set; } = false; // منتج مميز
 
+        [Timestamp]
+        public byte[] RowVersion { get; set; } = [];
+
         // Navigation Properties
         [ForeignKey("CategoryId")]
         public virtual Category Category { get; set; } = null!;

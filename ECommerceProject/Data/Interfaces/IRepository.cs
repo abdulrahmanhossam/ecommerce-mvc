@@ -12,17 +12,25 @@ namespace ECommerceProject.Data.Interfaces
 
         Task<IEnumerable<T>> GetAllAsync(params Expression<Func<T, object>>[] includes);
 
+        Task<IEnumerable<T>> GetAllAsync(bool asNoTracking, params Expression<Func<T, object>>[] includes);
+
         Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>> filter);
 
         Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>> filter, params Expression<Func<T, object>>[] includes);
+
+        Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>> filter, bool asNoTracking, params Expression<Func<T, object>>[] includes);
 
         Task<T?> GetByIdAsync(int id);
 
         Task<T?> GetByIdAsync(int id, params Expression<Func<T, object>>[] includes);
 
+        Task<T?> GetByIdAsync(int id, bool asNoTracking, params Expression<Func<T, object>>[] includes);
+
         Task<T?> GetFirstOrDefaultAsync(Expression<Func<T, bool>> filter);
 
         Task<T?> GetFirstOrDefaultAsync(Expression<Func<T, bool>> filter, params Expression<Func<T, object>>[] includes);
+
+        Task<T?> GetFirstOrDefaultAsync(Expression<Func<T, bool>> filter, bool asNoTracking, params Expression<Func<T, object>>[] includes);
 
         Task AddAsync(T entity);
 

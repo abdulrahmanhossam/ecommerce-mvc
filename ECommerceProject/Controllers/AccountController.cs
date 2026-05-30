@@ -192,10 +192,16 @@ namespace ECommerceProject.Controllers
                 new { token, email = user.Email },
                 protocol: Request.Scheme);
 
+            if (string.IsNullOrEmpty(callbackUrl) || string.IsNullOrEmpty(user.Email))
+            {
+                _logger.LogError("Failed to generate password reset callback URL for user {Email}", user.Email);
+                return RedirectToAction(nameof(ForgotPasswordConfirmation));
+            }
+
             // إرسال Email
             try
             {
-                await _emailService.SendPasswordResetEmailAsync(user.Email!, callbackUrl!);
+                await _emailService.SendPasswordResetEmailAsync(user.Email, callbackUrl);
             }
             catch (Exception ex)
             {
@@ -267,6 +273,7 @@ namespace ECommerceProject.Controllers
 
         // ==================== PROFILE MANAGEMENT ====================
 
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> Profile()
         {
@@ -292,7 +299,7 @@ namespace ECommerceProject.Controllers
             };
 
             // جلب إحصائيات المستخدم
-            var orders = (await _unitOfWork.Orders.GetAsync(o => o.UserId == userId)).ToList();
+            var orders = (await _unitOfWork.Orders.GetAsync(o => o.UserId == userId, asNoTracking: true)).ToList();
             ViewBag.TotalOrders = orders.Count;
             ViewBag.TotalSpent = orders.Sum(o => o.TotalAmount);
             ViewBag.PendingOrders = orders.Count(o => 
@@ -314,6 +321,7 @@ namespace ECommerceProject.Controllers
             return View(model);
         }
 
+        [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Profile(ProfileViewModel model)
@@ -321,19 +329,30 @@ namespace ECommerceProject.Controllers
             if (!ModelState.IsValid)
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var orders = (await _unitOfWork.Orders.GetAsync(o => o.UserId == userId!)).ToList();
+                if (string.IsNullOrEmpty(userId))
+                    return RedirectToAction(nameof(Login));
+
+                var orders = (await _unitOfWork.Orders.GetAsync(o => o.UserId == userId, asNoTracking: true)).ToList();
                 ViewBag.TotalOrders = orders.Count;
                 ViewBag.TotalSpent = orders.Sum(o => o.TotalAmount);
                 ViewBag.PendingOrders = orders.Count(o => 
                     o.Status == ECommerceProject.Models.Enums.OrderStatus.Pending || 
                     o.Status == ECommerceProject.Models.Enums.OrderStatus.Paid || 
                     o.Status == ECommerceProject.Models.Enums.OrderStatus.Processing);
+                ViewBag.CompletedOrders = orders.Count(o => o.Status == ECommerceProject.Models.Enums.OrderStatus.Delivered);
+                ViewBag.WishlistCount = await _unitOfWork.Wishlists.CountAsync(w => w.UserId == userId);
+                ViewBag.CartCount = await _unitOfWork.ShoppingCarts.CountAsync(c => c.UserId == userId);
+                ViewBag.RecentOrders = orders.OrderByDescending(o => o.OrderDate).Take(3).ToList();
+                ViewBag.MemberSince = (await _userManager.FindByIdAsync(userId))?.CreatedDate;
 
                 return View(model);
             }
 
-            var userId2 = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _userManager.FindByIdAsync(userId2!);
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(currentUserId))
+                return RedirectToAction(nameof(Login));
+
+            var user = await _userManager.FindByIdAsync(currentUserId);
 
             if (user == null)
                 return NotFound();
@@ -358,22 +377,29 @@ namespace ECommerceProject.Controllers
                 ModelState.AddModelError(string.Empty, error.Description);
             }
 
-            var orders2 = await _unitOfWork.Orders.GetAsync(o => o.UserId == userId2!);
+            var orders2 = await _unitOfWork.Orders.GetAsync(o => o.UserId == currentUserId, asNoTracking: true);
             ViewBag.TotalOrders = orders2.Count();
             ViewBag.TotalSpent = orders2.Sum(o => o.TotalAmount);
             ViewBag.PendingOrders = orders2.Count(o => o.Status == ECommerceProject.Models.Enums.OrderStatus.Pending);
+            ViewBag.CompletedOrders = orders2.Count(o => o.Status == ECommerceProject.Models.Enums.OrderStatus.Delivered);
+            ViewBag.WishlistCount = await _unitOfWork.Wishlists.CountAsync(w => w.UserId == currentUserId);
+            ViewBag.CartCount = await _unitOfWork.ShoppingCarts.CountAsync(c => c.UserId == currentUserId);
+            ViewBag.RecentOrders = orders2.OrderByDescending(o => o.OrderDate).Take(3).ToList();
+            ViewBag.MemberSince = user.CreatedDate;
 
             return View(model);
         }
 
         // ==================== CHANGE PASSWORD ====================
 
+        [Authorize]
         [HttpGet]
         public IActionResult ChangePassword()
         {
             return View();
         }
 
+        [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
@@ -382,7 +408,10 @@ namespace ECommerceProject.Controllers
                 return View(model);
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _userManager.FindByIdAsync(userId!);
+            if (string.IsNullOrEmpty(userId))
+                return RedirectToAction(nameof(Login));
+
+            var user = await _userManager.FindByIdAsync(userId);
 
             if (user == null)
                 return NotFound();
@@ -408,29 +437,45 @@ namespace ECommerceProject.Controllers
 
         // ==================== DELETE ACCOUNT ====================
 
+        [Authorize]
         [HttpGet]
         public IActionResult DeleteAccount()
         {
             return View();
         }
 
+        [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAccountConfirmed()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _userManager.FindByIdAsync(userId!);
+            if (string.IsNullOrEmpty(userId))
+                return RedirectToAction(nameof(Login));
+
+            var user = await _userManager.FindByIdAsync(userId);
 
             if (user == null)
                 return NotFound();
 
-            // حذف العربة
-            var cartItems = await _unitOfWork.ShoppingCarts.GetAsync(c => c.UserId == userId!);
+            // حذف البيانات المرتبطة قبل حذف المستخدم (FK constraints)
+            var cartItems = await _unitOfWork.ShoppingCarts.GetAsync(c => c.UserId == userId);
             if (cartItems.Any())
-            {
                 _unitOfWork.ShoppingCarts.DeleteRange(cartItems);
-                await _unitOfWork.SaveAsync();
-            }
+
+            var wishlistItems = await _unitOfWork.Wishlists.GetAsync(w => w.UserId == userId);
+            if (wishlistItems.Any())
+                _unitOfWork.Wishlists.DeleteRange(wishlistItems);
+
+            var reviews = await _unitOfWork.ProductReviews.GetAsync(r => r.UserId == userId);
+            if (reviews.Any())
+                _unitOfWork.ProductReviews.DeleteRange(reviews);
+
+            var orders = await _unitOfWork.Orders.GetAsync(o => o.UserId == userId);
+            if (orders.Any())
+                _unitOfWork.Orders.DeleteRange(orders);
+
+            await _unitOfWork.SaveAsync();
 
             // حذف المستخدم
             var result = await _userManager.DeleteAsync(user);

@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ECommerceProject.Data.Interfaces;
 using ECommerceProject.Models.Entities;
 using ECommerceProject.Models.Enums;
 using ECommerceProject.Models.ViewModels;
-using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 using ECommerceProject.Services.Interfaces;
 
@@ -17,7 +17,7 @@ public class AdminController : Controller
     private readonly IUnitOfWork _unitOfWork;
 
     private readonly UserManager<ApplicationUser> _userManager;
-
+    private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IAnalyticsService _analyticsService;
 
     private readonly IImageService _imageService;
@@ -26,12 +26,14 @@ public class AdminController : Controller
     public AdminController(
         IUnitOfWork unitOfWork,
         UserManager<ApplicationUser> userManager,
+        RoleManager<IdentityRole> roleManager,
         IAnalyticsService analyticsService,
         IImageService imageService,
         ILogger<AdminController> logger)
     {
         _unitOfWork = unitOfWork;
         _userManager = userManager;
+        _roleManager = roleManager;
         _analyticsService = analyticsService;
         _imageService = imageService;
         _logger = logger;
@@ -123,11 +125,25 @@ public class AdminController : Controller
             .Select(g => new { UserId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.UserId, x => x.Count);
 
+        var allRoles = await _roleManager.Roles.Select(r => r.Name!).ToListAsync();
+        var userRolesDict = new Dictionary<string, List<string>>();
+
+        foreach (var role in allRoles)
+        {
+            var usersInRole = await _userManager.GetUsersInRoleAsync(role);
+            foreach (var u in usersInRole)
+            {
+                if (!userRolesDict.ContainsKey(u.Id))
+                    userRolesDict[u.Id] = [];
+                userRolesDict[u.Id].Add(role);
+            }
+        }
+
         var usersWithRoles = new List<(ApplicationUser User, IList<string> Roles, int OrderCount)>();
 
         foreach (var user in users.Items)
         {
-            var roles = await _userManager.GetRolesAsync(user);
+            var roles = userRolesDict.GetValueOrDefault(user.Id, []) as IList<string>;
             var orderCount = orderCounts.GetValueOrDefault(user.Id, 0);
             usersWithRoles.Add((user, roles, orderCount));
         }
@@ -652,7 +668,7 @@ public class AdminController : Controller
         var orders = await PaginatedList<Order>.CreateAsync(query, page, 15);
 
         var userIds = orders.Items.Select(o => o.UserId).Distinct().ToList();
-        var userNames = (await _unitOfWork.Users.GetAsync(u => userIds.Contains(u.Id)))
+        var userNames = (await _unitOfWork.Users.GetAsync(u => userIds.Contains(u.Id), asNoTracking: true))
             .ToDictionary(u => u.Id, u => u.FullName);
         ViewBag.UserNames = userNames;
 
@@ -662,30 +678,29 @@ public class AdminController : Controller
     [HttpGet]
     public async Task<IActionResult> OrderDetails(int id)
     {
-        var order = await _unitOfWork.Orders.GetByIdAsync(id);
+        var order = await _unitOfWork.Orders.GetByIdAsync(id, asNoTracking: true);
 
         if (order == null)
             return NotFound();
 
         // جلب Order Items مع المنتجات
-        var orderItemsWithProducts = (await _unitOfWork.OrderItems.GetQueryable(asNoTracking: true)
+        var orderItemsWithProducts = await _unitOfWork.OrderItems.GetQueryable(asNoTracking: true)
             .Where(oi => oi.OrderId == id)
-            .Join(_unitOfWork.Products.GetQueryable(asNoTracking: true),
-                oi => oi.ProductId,
-                p => p.Id,
-                (oi, p) => new { oi, p })
-            .ToListAsync())
-            .Select(x => (x.oi, x.p))
+            .Include(oi => oi.Product)
+            .ToListAsync();
+
+        var orderItemsWithProducts2 = orderItemsWithProducts
+            .Select(oi => (oi, oi.Product))
             .ToList();
 
-        ViewBag.OrderItems = orderItemsWithProducts;
+        ViewBag.OrderItems = orderItemsWithProducts2;
 
         // جلب User
-        var orderUser = await _unitOfWork.Users.GetFirstOrDefaultAsync(u => u.Id == order.UserId);
+        var orderUser = await _unitOfWork.Users.GetFirstOrDefaultAsync(u => u.Id == order.UserId, asNoTracking: true);
         ViewBag.User = orderUser;
 
         // جلب Payment
-        var payment = await _unitOfWork.Payments.GetFirstOrDefaultAsync(p => p.OrderId == id);
+        var payment = await _unitOfWork.Payments.GetFirstOrDefaultAsync(p => p.OrderId == id, asNoTracking: true);
         ViewBag.Payment = payment;
 
         return View(order);

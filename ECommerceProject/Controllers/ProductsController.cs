@@ -60,7 +60,7 @@ namespace ECommerceProject.Controllers
             int pageSize = 12;
             var products = await PaginatedList<Product>.CreateAsync(query, page, pageSize);
 
-            var categories = await _unitOfWork.Categories.GetAsync(c => c.IsActive);
+            var categories = await _unitOfWork.Categories.GetAsync(c => c.IsActive, asNoTracking: true);
             ViewBag.Categories = categories.ToList();
             ViewBag.SelectedCategoryId = categoryId;
             ViewBag.SearchTerm = searchTerm;
@@ -74,25 +74,25 @@ namespace ECommerceProject.Controllers
         // GET: Products/Details/5
         public async Task<IActionResult> Details(int id)
         {
-            var product = await _unitOfWork.Products.GetByIdAsync(id);
+            var product = await _unitOfWork.Products.GetByIdAsync(id, asNoTracking: true);
 
             if (product == null || !product.IsActive)
             {
                 return NotFound();
             }
 
-            var category = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId);
+            var category = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId, asNoTracking: true);
             ViewBag.Category = category;
 
-            var variants = await _unitOfWork.ProductVariants.GetAsync(v => v.ProductId == id);
-            ViewBag.Variants = variants.ToList();
+            var variants = await _unitOfWork.ProductVariants.GetAsync(v => v.ProductId == id, asNoTracking: true);
+            ViewBag.ProductVariants = variants.ToList();
 
             var relatedProducts = await _unitOfWork.Products.GetAsync(
-                p => p.CategoryId == product.CategoryId && p.Id != id && p.IsActive);
+                p => p.CategoryId == product.CategoryId && p.Id != id && p.IsActive, asNoTracking: true);
             ViewBag.RelatedProducts = relatedProducts.Take(4).ToList();
 
             var reviews = await _unitOfWork.ProductReviews.GetAsync(
-                r => r.ProductId == id && r.IsApproved);
+                r => r.ProductId == id && r.IsApproved, asNoTracking: true);
             var reviewsList = reviews.OrderByDescending(r => r.CreatedDate).ToList();
             ViewBag.Reviews = reviewsList;
 
@@ -234,7 +234,7 @@ namespace ECommerceProject.Controllers
 
         public async Task<IActionResult> ByCategory(int id, int page = 1)
         {
-            var category = await _unitOfWork.Categories.GetByIdAsync(id);
+            var category = await _unitOfWork.Categories.GetByIdAsync(id, asNoTracking: true);
 
             if (category == null || !category.IsActive)
             {
@@ -246,7 +246,7 @@ namespace ECommerceProject.Controllers
                 .OrderByDescending(p => p.CreatedDate);
             var products = await PaginatedList<Product>.CreateAsync(query, page, 12);
 
-            var categories = await _unitOfWork.Categories.GetAsync(c => c.IsActive);
+            var categories = await _unitOfWork.Categories.GetAsync(c => c.IsActive, asNoTracking: true);
             ViewBag.Categories = categories.ToList();
             ViewBag.SelectedCategoryId = id;
             ViewBag.SearchTerm = null;
