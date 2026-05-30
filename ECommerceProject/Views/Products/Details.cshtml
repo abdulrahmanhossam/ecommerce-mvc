@@ -1,30 +1,35 @@
 @model ECommerceProject.Models.Entities.Product
 @{
     ViewData["Title"] = Model.Name;
-    var variants = ViewBag.ProductVariants as List<ECommerceProject.Models.Entities.ProductVariant>;
+    var variants        = ViewBag.ProductVariants as List<ECommerceProject.Models.Entities.ProductVariant>;
     var relatedProducts = ViewBag.RelatedProducts as List<ECommerceProject.Models.Entities.Product>;
 }
 
 <div class="py-4">
+    <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
             <li class="breadcrumb-item"><a asp-action="Index">Products</a></li>
-            <li class="breadcrumb-item active">@Model.Name</li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
         </ol>
     </nav>
 
+    <!-- ==================== Product Detail ==================== -->
     <div class="detail-grid">
         <!-- Product Image -->
-        <div>
-            <div class="card detail-image">
-                <img src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/no-image.jpg" : Model.ImageUrl)"
-                     alt="@Model.Name" loading="lazy">
+        <div class="detail-image-wrap">
+            <div class="detail-image">
+                <img src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "https://placehold.co/800x800?text=No+Image" : Model.ImageUrl)"
+                     alt="@Model.Name"
+                     loading="lazy"
+                     onerror="this.src='https://placehold.co/800x800?text=No+Image'">
             </div>
         </div>
 
         <!-- Product Info -->
         <div>
+            <!-- Badges -->
             <div class="flex items-center gap-sm mb-3">
                 @if (Model.IsFeatured)
                 {
@@ -38,16 +43,17 @@
                 }
             </div>
 
-            <h2 class="mb-4">@Model.Name</h2>
+            <h1 class="mb-3">@Model.Name</h1>
 
-            <div class="flex items-center gap-sm mb-4">
+            <div class="mb-4">
                 <span class="detail-price">@Model.Price.ToString("C")</span>
             </div>
 
-            <p class="text-muted mb-4">@Model.Description</p>
+            <p class="text-secondary mb-4">@Model.Description</p>
 
+            <!-- Availability -->
             <div class="flex items-center gap-md mb-4">
-                <span class="text-secondary">Availability:</span>
+                <span class="text-muted">Availability:</span>
                 @if (Model.Stock > 0)
                 {
                     <span class="badge badge-success">In Stock (@Model.Stock available)</span>
@@ -63,7 +69,7 @@
             {
                 <div class="mb-4">
                     <h5 class="mb-3">Available Options</h5>
-                    <div class="grid grid-2" style="gap: 0.75rem;">
+                    <div class="grid grid-2" id="variantsGrid">
                         @foreach (var variant in variants)
                         {
                             var isOutOfStock = variant.Stock <= 0;
@@ -100,27 +106,38 @@
                 </div>
             }
 
-            <!-- Add to Cart Form -->
+            <!-- Add to Cart -->
             @if (User.Identity?.IsAuthenticated == true && Model.Stock > 0)
             {
                 <form asp-controller="Cart" asp-action="AddToCart" method="post" id="addToCartForm">
-                    <input type="hidden" name="productId" value="@Model.Id" />
-                    <input type="hidden" name="variantId" id="selectedVariantId" value="" />
+                    <input type="hidden" name="productId"  value="@Model.Id" />
+                    <input type="hidden" name="variantId"  id="selectedVariantId" value="" />
 
-                    <div class="form-group" style="max-width: 200px;">
-                        <label class="form-label">Quantity</label>
-                        <input type="number" name="quantity" class="form-control"
-                               value="1" min="1" max="@Model.Stock" required>
+                    <div class="form-group quantity-field mb-4">
+                        <label class="form-label" for="quantityInput">Quantity</label>
+                        <input type="number"
+                               id="quantityInput"
+                               name="quantity"
+                               class="form-control"
+                               value="1"
+                               min="1"
+                               max="@Model.Stock"
+                               required>
                     </div>
 
-                    <div class="flex gap-sm">
+                    <div class="flex gap-sm mb-4">
                         <button type="submit" class="btn btn-primary btn-lg flex-fill" id="addToCartBtn">
-                            <i class="bi bi-cart-plus"></i>
+                            <i class="bi bi-cart-plus" aria-hidden="true"></i>
                             Add to Cart
                         </button>
-                        <button type="button" class="icon-btn btn-lg"
-                                onclick="toggleWishlist(@Model.Id, this)" id="wishlistBtn">
-                            <i class="bi bi-heart"></i>
+                        <button type="button"
+                                class="icon-btn"
+                                onclick="toggleWishlist(@Model.Id, this)"
+                                id="wishlistBtn"
+                                title="Add to wishlist"
+                                aria-label="Toggle wishlist"
+                                style="width:48px;height:48px;font-size:1.1rem;">
+                            <i class="bi bi-heart" aria-hidden="true"></i>
                         </button>
                     </div>
                 </form>
@@ -128,34 +145,34 @@
             else if (User.Identity?.IsAuthenticated != true)
             {
                 <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    Please <a asp-controller="Account" asp-action="Login">login</a> to add products to cart.
+                    <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                    Please <a asp-controller="Account" asp-action="Login">sign in</a> to add products to your cart.
                 </div>
             }
             else
             {
                 <div class="alert alert-danger">
-                    <i class="bi bi-x-circle"></i>
+                    <i class="bi bi-x-circle" aria-hidden="true"></i>
                     This product is currently out of stock.
                 </div>
             }
 
-            <!-- AI Product Assistant Button -->
-            <div class="mt-4">
-                <button type="button" class="ai-assistant-btn" onclick="openAIModal('@Html.Raw(Model.Name.Replace("'", "\\'"))', '@Html.Raw(Model.Description?.Replace("'", "\\'").Replace("\n", " ").Replace("\r", ""))')">
-                    <i class="bi bi-sparkles"></i>
-                    Ask AI Assistant
-                </button>
-            </div>
+            <!-- AI Assistant -->
+            <button type="button"
+                    class="ai-assistant-btn"
+                    onclick="openAIModal('@Html.Raw(Model.Name.Replace("'", "\\'"))', '@Html.Raw(Model.Description?.Replace("'", "\\'").Replace("\n", " ").Replace("\r", ""))')">
+                <i class="bi bi-sparkles" aria-hidden="true"></i>
+                Ask AI Assistant
+            </button>
         </div>
     </div>
 
-    <!-- Reviews Section -->
+    <!-- ==================== Reviews ==================== -->
     <section class="section">
         <div class="card">
-            <div class="card-body" style="padding: 2rem;">
+            <div class="card-body" style="padding: var(--space-xl);">
                 <h3 class="mb-4">
-                    <i class="bi bi-star-fill" style="color: var(--accent);"></i>
+                    <i class="bi bi-star-fill text-accent" aria-hidden="true"></i>
                     Customer Reviews
                 </h3>
 
@@ -163,16 +180,14 @@
                 {
                     <div class="review-summary-grid">
                         <div class="review-score-card">
-                            <div class="review-score">
-                                @ViewBag.AverageRating.ToString("F1")
-                            </div>
+                            <div class="review-score">@ViewBag.AverageRating.ToString("F1")</div>
                             <div class="rating justify-center mb-2">
                                 @for (int i = 1; i <= 5; i++)
                                 {
-                                    <i class="bi bi-star-fill @(i <= Math.Round((double)ViewBag.AverageRating) ? "" : "empty")"></i>
+                                    <i class="bi bi-star-fill @(i <= Math.Round((double)ViewBag.AverageRating) ? "" : "empty")" aria-hidden="true"></i>
                                 }
                             </div>
-                            <p class="text-muted">Based on @ViewBag.TotalReviews reviews</p>
+                            <p class="text-muted mb-0">Based on @ViewBag.TotalReviews @(ViewBag.TotalReviews == 1 ? "review" : "reviews")</p>
                         </div>
 
                         <div>
@@ -188,20 +203,19 @@
                                 };
                                 var percent = ViewBag.TotalReviews > 0 ? (double)count / ViewBag.TotalReviews * 100 : 0;
                                 <div class="review-bar-row">
-                                    <span class="review-bar-label">@stars <i class="bi bi-star-fill"></i></span>
-                                    <div class="review-bar-track">
-                                        <div class="review-bar-fill" style="width: @percent%;"></div>
+                                    <span class="review-bar-label">@stars <i class="bi bi-star-fill" aria-hidden="true"></i></span>
+                                    <div class="review-bar-track" role="progressbar" aria-valuenow="@((int)percent)" aria-valuemin="0" aria-valuemax="100">
+                                        <div class="review-bar-fill" style="width: @percent.ToString("F1")%;"></div>
                                     </div>
                                     <span class="review-bar-count">@count</span>
                                 </div>
                             }
                         </div>
                     </div>
-
                     <hr class="review-divider">
                 }
 
-                <!-- Add Review Form -->
+                <!-- Write a Review -->
                 @if (User.Identity!.IsAuthenticated)
                 {
                     @if (!ViewBag.HasReviewed)
@@ -213,28 +227,31 @@
 
                                 <div class="form-group">
                                     <label class="form-label">Rating</label>
-                                    <div class="rating-input">
+                                    <div class="rating-input" role="group" aria-label="Rating">
                                         @for (int i = 5; i >= 1; i--)
                                         {
                                             <input type="radio" name="Rating" value="@i" id="star@(i)" required>
-                                            <label for="star@(i)" class="rating-star"><i class="bi bi-star-fill"></i></label>
+                                            <label for="star@(i)" class="rating-star" aria-label="@i star@(i > 1 ? "s" : "")">
+                                                <i class="bi bi-star-fill" aria-hidden="true"></i>
+                                            </label>
                                         }
                                     </div>
                                 </div>
 
                                 <div class="form-group">
-                                    <label class="form-label">Title (Optional)</label>
-                                    <input type="text" name="Title" class="form-control" maxlength="100">
+                                    <label class="form-label" for="reviewTitle">Title (Optional)</label>
+                                    <input type="text" id="reviewTitle" name="Title" class="form-control" maxlength="100" placeholder="Summarize your experience">
                                 </div>
 
                                 <div class="form-group">
-                                    <label class="form-label">Your Review</label>
-                                    <textarea name="Comment" class="form-control" rows="4" required minlength="10" maxlength="2000"
-                                              placeholder="Share your thoughts"></textarea>
+                                    <label class="form-label" for="reviewComment">Your Review</label>
+                                    <textarea id="reviewComment" name="Comment" class="form-control" rows="4"
+                                              required minlength="10" maxlength="2000"
+                                              placeholder="Share your thoughts about this product"></textarea>
                                 </div>
 
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-send"></i>
+                                    <i class="bi bi-send" aria-hidden="true"></i>
                                     Submit Review
                                 </button>
                             </form>
@@ -244,7 +261,7 @@
                     else
                     {
                         <div class="alert alert-warning mb-4">
-                            <i class="bi bi-info-circle"></i>
+                            <i class="bi bi-info-circle" aria-hidden="true"></i>
                             You have already reviewed this product.
                         </div>
                     }
@@ -252,8 +269,8 @@
                 else
                 {
                     <div class="alert alert-warning mb-4">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        Please <a asp-controller="Account" asp-action="Login">login</a> to write a review.
+                        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                        Please <a asp-controller="Account" asp-action="Login">sign in</a> to write a review.
                     </div>
                 }
 
@@ -275,7 +292,7 @@
                                             <div class="rating mb-1">
                                                 @for (int i = 1; i <= 5; i++)
                                                 {
-                                                    <i class="bi bi-star-fill @(i <= review.Rating ? "" : "empty")"></i>
+                                                    <i class="bi bi-star-fill @(i <= review.Rating ? "" : "empty")" aria-hidden="true"></i>
                                                 }
                                             </div>
                                             @if (!string.IsNullOrEmpty(review.Title))
@@ -299,12 +316,12 @@
 
                                         @if (User.Identity!.IsAuthenticated)
                                         {
-                                            <button class="btn btn-ghost btn-sm" onclick="markHelpful(@review.Id, true)">
-                                                <i class="bi bi-hand-thumbs-up"></i>
+                                            <button class="btn btn-ghost btn-sm" onclick="markHelpful(@review.Id, true)" aria-label="Mark as helpful">
+                                                <i class="bi bi-hand-thumbs-up" aria-hidden="true"></i>
                                                 <span id="helpful-@review.Id">@review.HelpfulCount</span>
                                             </button>
-                                            <button class="btn btn-ghost btn-sm" onclick="markHelpful(@review.Id, false)">
-                                                <i class="bi bi-hand-thumbs-down"></i>
+                                            <button class="btn btn-ghost btn-sm" onclick="markHelpful(@review.Id, false)" aria-label="Mark as not helpful">
+                                                <i class="bi bi-hand-thumbs-down" aria-hidden="true"></i>
                                                 <span id="nothelpful-@review.Id">@review.NotHelpfulCount</span>
                                             </button>
                                         }
@@ -313,12 +330,22 @@
                             </div>
                         }
                     }
+                    else
+                    {
+                        <div class="empty-state" style="padding: var(--space-xl) 0;">
+                            <div class="empty-state-icon">
+                                <i class="bi bi-chat-square-text" aria-hidden="true"></i>
+                            </div>
+                            <h4>No reviews yet</h4>
+                            <p>Be the first to share your experience with this product</p>
+                        </div>
+                    }
                 }
             </div>
         </div>
     </section>
 
-    <!-- Related Products -->
+    <!-- ==================== Related Products ==================== -->
     @if (relatedProducts != null && relatedProducts.Any())
     {
         <section class="section">
@@ -328,23 +355,31 @@
             <div class="grid grid-4">
                 @foreach (var relatedProduct in relatedProducts)
                 {
-                    <div class="product-card">
+                    <article class="product-card">
                         <div class="image-wrapper">
-                            <img src="@(string.IsNullOrEmpty(relatedProduct.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : relatedProduct.ImageUrl)"
-                                 alt="@relatedProduct.Name" loading="lazy"
-                                 onerror="this.src='https://placehold.co/400x300?text=No+Image'">
+                            <a asp-action="Details" asp-route-id="@relatedProduct.Id">
+                                <img src="@(string.IsNullOrEmpty(relatedProduct.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : relatedProduct.ImageUrl)"
+                                     alt="@relatedProduct.Name"
+                                     loading="lazy"
+                                     onerror="this.src='https://placehold.co/400x300?text=No+Image'">
+                            </a>
                         </div>
                         <div class="card-content">
-                            <h5 class="product-title">@relatedProduct.Name</h5>
-                            <span class="product-price">@relatedProduct.Price.ToString("C")</span>
+                            <h3 class="product-title">
+                                <a asp-action="Details" asp-route-id="@relatedProduct.Id" class="product-title-link">
+                                    @relatedProduct.Name
+                                </a>
+                            </h3>
+                            <div class="price-stock-row">
+                                <span class="product-price">@relatedProduct.Price.ToString("C")</span>
+                            </div>
                         </div>
                         <div class="card-actions">
                             <a asp-action="Details" asp-route-id="@relatedProduct.Id" class="btn btn-secondary btn-sm w-100">
-                                <i class="bi bi-eye"></i>
-                                View
+                                <i class="bi bi-eye" aria-hidden="true"></i> View
                             </a>
                         </div>
-                    </div>
+                    </article>
                 }
             </div>
         </section>
@@ -360,9 +395,9 @@
         el.querySelector('input[type="radio"]').checked = true;
         document.getElementById('selectedVariantId').value = variantId;
 
-        var basePrice = @Model.Price.ToString("0.00");
-        var total = basePrice + parseFloat(additionalPrice);
-        var priceEl = document.querySelector('.detail-price');
+        const basePrice = @Model.Price.ToString("0.00");
+        const total = basePrice + parseFloat(additionalPrice);
+        const priceEl = document.querySelector('.detail-price');
         if (priceEl) {
             priceEl.textContent = '$' + total.toFixed(2);
         }

@@ -1,4 +1,4 @@
-﻿@inject IMemoryCache MemoryCache
+@inject IMemoryCache MemoryCache
 @inject ECommerceProject.Data.Interfaces.IUnitOfWork UnitOfWork
 @{
     var navCategories = await MemoryCache.GetOrCreateAsync("NavCategories", async entry =>
@@ -7,12 +7,16 @@
         entry.SlidingExpiration = TimeSpan.FromMinutes(2);
         return (await UnitOfWork.Categories.GetAsync(c => c.IsActive)).ToList();
     });
-    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+    var currentAction     = ViewContext.RouteData.Values["action"]?.ToString();
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
     bool IsActive(string ctrl, string action) => currentController == ctrl && currentAction == action;
+
+    // ── FOUC Fix: resolve theme from cookie BEFORE the HTML is sent to the browser ──
+    var themeCookie = Context.Request.Cookies["theme"];
+    var activeTheme = (themeCookie == "light") ? "light" : "dark";
 }
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="@activeTheme">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -103,7 +107,7 @@
                 <!-- Actions -->
                 <div class="nav-actions">
                     <button class="icon-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme">
-                        <i class="bi bi-moon-stars"></i>
+                        <i class="bi @(activeTheme == "dark" ? "bi-sun" : "bi-moon-stars")"></i>
                     </button>
 
                     @if (User.Identity?.IsAuthenticated == true)
@@ -321,21 +325,25 @@
 
     <script>
         /* ==================== Theme Toggle ==================== */
+        function setThemeCookie(theme) {
+            // 1 year expiry, SameSite=Lax, path=/ so every page sees it
+            const maxAge = 365 * 24 * 60 * 60;
+            document.cookie = `theme=${theme};max-age=${maxAge};path=/;SameSite=Lax`;
+        }
+
         function toggleTheme() {
-            const html = document.documentElement;
-            const currentTheme = html.getAttribute('data-bs-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            const html     = document.documentElement;
+            const newTheme = html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
             html.setAttribute('data-bs-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
+            setThemeCookie(newTheme);
             updateThemeIcon(newTheme);
         }
 
         function updateThemeIcon(theme) {
             const btn = document.getElementById('themeToggleBtn');
-            if (btn) {
-                const icon = btn.querySelector('i');
-                if (icon) icon.className = theme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
-            }
+            if (!btn) return;
+            const icon = btn.querySelector('i');
+            if (icon) icon.className = theme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
         }
 
         /* ==================== Mobile Menu ==================== */
@@ -347,13 +355,6 @@
             icon.className = isOpen ? 'bi bi-x' : 'bi bi-list';
             btn.setAttribute('aria-expanded', isOpen);
         }
-
-        /* ==================== Initialize ==================== */
-        (function() {
-            const savedTheme = localStorage.getItem('theme') || 'dark';
-            document.documentElement.setAttribute('data-bs-theme', savedTheme);
-            updateThemeIcon(savedTheme);
-        })();
 
         /* ==================== Global AI Assistant ==================== */
         let currentProductName = '';

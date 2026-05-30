@@ -4,61 +4,84 @@
     var wishlistCount = ViewBag.WishlistCount as int? ?? 0;
 }
 
-<div class="py-4">
-    <div class="flex items-center justify-between mb-4">
-        <h2>
-            <i class="bi bi-heart-fill" style="color: var(--danger);"></i>
-            Wishlist
-        </h2>
-        <span class="badge badge-primary">@wishlistCount items</span>
+<div class="py-5">
+    <!-- Page Header -->
+    <div class="page-header-row">
+        <div class="flex items-center gap-md">
+            <h1 class="page-title mb-0">
+                <i class="bi bi-heart-fill text-danger"></i>
+                Wishlist
+            </h1>
+        </div>
+        <span class="item-count-badge">
+            @wishlistCount @(wishlistCount == 1 ? "item" : "items")
+        </span>
     </div>
 
     @if (!Model.Any())
     {
         <div class="empty-state">
-            <i class="bi bi-heart"></i>
+            <div class="empty-state-icon">
+                <i class="bi bi-heart" aria-hidden="true"></i>
+            </div>
             <h4>Your wishlist is empty</h4>
-            <p>Start adding products you love</p>
+            <p>Save products you love and come back to them anytime</p>
             <a asp-controller="Products" asp-action="Index" class="btn btn-primary">
-                <i class="bi bi-bag"></i>
+                <i class="bi bi-bag" aria-hidden="true"></i>
                 Browse Products
             </a>
         </div>
     }
     else
     {
-        <div class="grid grid-3">
+        <div class="grid grid-auto-fill mt-4">
             @foreach (var item in Model)
             {
-                <div class="product-card" data-product-id="@item.Product.Id">
+                <article class="product-card" data-product-id="@item.Product.Id">
                     <div class="image-wrapper">
-<img src="@(string.IsNullOrEmpty(item.Product.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : item.Product.ImageUrl)" 
-                             alt="@item.Product.Name" loading="lazy"
-                             onerror="this.src='https://placehold.co/400x300?text=No+Image'">
+                        <a asp-controller="Products" asp-action="Details" asp-route-id="@item.Product.Id">
+                            <img src="@(string.IsNullOrEmpty(item.Product.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : item.Product.ImageUrl)"
+                                 alt="@item.Product.Name"
+                                 loading="lazy"
+                                 onerror="this.src='https://placehold.co/400x300?text=No+Image'">
+                        </a>
                     </div>
                     <div class="card-content">
-                        <h5 class="product-title">@item.Product.Name</h5>
-                        <p class="product-desc">@(item.Product.Description?.Length > 60 ? item.Product.Description.Substring(0, 60) + "..." : item.Product.Description)</p>
-                        <div class="flex items-center justify-between">
+                        <h3 class="product-title">
+                            <a asp-controller="Products" asp-action="Details" asp-route-id="@item.Product.Id" class="product-title-link">
+                                @item.Product.Name
+                            </a>
+                        </h3>
+                        <p class="product-desc">
+                            @(item.Product.Description?.Length > 65 ? item.Product.Description.Substring(0, 65) + "…" : item.Product.Description)
+                        </p>
+                        <div class="price-stock-row">
                             <span class="product-price">@item.Product.Price.ToString("C")</span>
                             <span class="badge @(item.Product.Stock > 0 ? "badge-success" : "badge-danger")">
-                                @(item.Product.Stock > 0 ? "In Stock" : "Out")
+                                @(item.Product.Stock > 0 ? "In Stock" : "Out of Stock")
                             </span>
                         </div>
                     </div>
                     <div class="card-actions">
                         @if (item.Product.Stock > 0)
                         {
-                            <button class="btn btn-primary btn-sm flex-fill" onclick="addToCartFromWishlist(@item.Product.Id)">
-                                <i class="bi bi-cart-plus"></i>
-                                Add
+                            <button class="btn btn-primary btn-sm flex-fill" onclick="addToCartFromWishlist(@item.Product.Id, this)" aria-label="Add @item.Product.Name to cart">
+                                <i class="bi bi-cart-plus" aria-hidden="true"></i>
+                                Add to Cart
                             </button>
                         }
-                        <button class="icon-btn" onclick="removeFromWishlist(@item.Product.Id)">
-                            <i class="bi bi-trash"></i>
+                        else
+                        {
+                            <span class="btn btn-secondary btn-sm flex-fill" style="cursor:default;opacity:.6;">
+                                <i class="bi bi-clock" aria-hidden="true"></i>
+                                Unavailable
+                            </span>
+                        }
+                        <button class="icon-btn" onclick="removeFromWishlist(@item.Product.Id, this)" aria-label="Remove @item.Product.Name from wishlist" title="Remove from wishlist">
+                            <i class="bi bi-trash" aria-hidden="true"></i>
                         </button>
                     </div>
-                </div>
+                </article>
             }
         </div>
     }
@@ -66,9 +89,10 @@
 
 @section Scripts {
     <script>
-        function removeFromWishlist(productId) {
-            if (!confirm('Remove this item?')) return;
-            
+        function removeFromWishlist(productId, btn) {
+            btn.disabled = true;
+            const card = btn.closest('[data-product-id]');
+
             fetch('@Url.Action("Remove", "Wishlist")', {
                 method: 'POST',
                 headers: {
@@ -77,15 +101,27 @@
                 },
                 body: JSON.stringify({ productId: productId })
             })
-            .then(response => response.json())
+            .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    location.reload();
+                    card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.95)';
+                    setTimeout(() => { card.remove(); checkEmpty(); }, 350);
+                    showToast('Removed from wishlist', 'success');
+                } else {
+                    btn.disabled = false;
+                    showToast('Could not remove item', 'error');
                 }
-            });
+            })
+            .catch(() => { btn.disabled = false; showToast('Network error', 'error'); });
         }
 
-        function addToCartFromWishlist(productId) {
+        function addToCartFromWishlist(productId, btn) {
+            btn.disabled = true;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="ai-spinner"></span>';
+
             fetch('@Url.Action("Add", "Cart")', {
                 method: 'POST',
                 headers: {
@@ -94,21 +130,28 @@
                 },
                 body: JSON.stringify({ productId: productId, quantity: 1 })
             })
-            .then(response => response.json())
+            .then(r => r.json())
             .then(data => {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
                 if (data.success) {
                     showToast('Added to cart!', 'success');
-                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Could not add to cart', 'error');
                 }
+            })
+            .catch(() => {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                showToast('Network error', 'error');
             });
         }
 
-        function showToast(message, type) {
-            const toast = document.createElement('div');
-            toast.className = `toast-notification toast-${type}`;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 2500);
+        function checkEmpty() {
+            const grid = document.querySelector('.grid');
+            if (grid && grid.children.length === 0) {
+                location.reload();
+            }
         }
     </script>
 }

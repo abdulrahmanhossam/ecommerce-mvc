@@ -2,38 +2,42 @@
 @model PaginatedList<ECommerceProject.Models.Entities.Product>
 @{
     ViewData["Title"] = "Products";
-    var categories = ViewBag.Categories as List<ECommerceProject.Models.Entities.Category>;
+    var categories         = ViewBag.Categories as List<ECommerceProject.Models.Entities.Category>;
     var selectedCategoryId = ViewBag.SelectedCategoryId as int?;
-    var searchTerm = ViewBag.SearchTerm as string;
-    var minPrice = ViewBag.MinPrice as decimal?;
-    var maxPrice = ViewBag.MaxPrice as decimal?;
-    var sortBy = ViewBag.SortBy as string;
+    var searchTerm         = ViewBag.SearchTerm as string;
+    var minPrice           = ViewBag.MinPrice as decimal?;
+    var maxPrice           = ViewBag.MaxPrice as decimal?;
+    var sortBy             = ViewBag.SortBy as string;
 }
 
 <!-- ==================== Page Header ==================== -->
-<div class="flex items-center justify-between mb-4">
+<div class="page-header-row mb-4">
     <div>
-        <h1 class="mb-1">Products</h1>
-        <p class="text-muted mb-0">Browse our collection</p>
+        <h1 class="page-title mb-1">Products</h1>
+        <p class="page-subtitle">Browse our collection</p>
     </div>
-    <span class="badge badge-primary">@Model.TotalCount items</span>
+    <span class="item-count-badge">@Model.TotalCount items</span>
 </div>
 
 <!-- ==================== Filters ==================== -->
 <div class="card mb-4">
-    <div class="card-body filter-card-body">
-        <form asp-action="Index" method="get" class="filter-form">
+    <div class="filter-card-body">
+        <form asp-action="Index" method="get" class="filter-form" id="filterForm">
             <!-- Search -->
             <div class="form-group filter-search">
-                <label class="form-label">Search</label>
-                <input type="text" name="searchTerm" class="form-control"
-                       placeholder="Search products..." value="@searchTerm">
+                <label class="form-label" for="searchInput">Search</label>
+                <input type="text"
+                       id="searchInput"
+                       name="searchTerm"
+                       class="form-control"
+                       placeholder="Search products…"
+                       value="@searchTerm">
             </div>
 
             <!-- Category -->
             <div class="form-group filter-min-width">
-                <label class="form-label">Category</label>
-                <select name="categoryId" class="form-select">
+                <label class="form-label" for="categorySelect">Category</label>
+                <select id="categorySelect" name="categoryId" class="form-select">
                     <option value="">All Categories</option>
                     @if (categories != null)
                     {
@@ -52,31 +56,31 @@
                 <label class="form-label">Price Range</label>
                 <div class="filter-group-flex">
                     <input type="number" name="minPrice" class="form-control"
-                           placeholder="Min" value="@minPrice" step="0.01">
+                           placeholder="Min" value="@minPrice" step="0.01" min="0" aria-label="Minimum price">
                     <input type="number" name="maxPrice" class="form-control"
-                           placeholder="Max" value="@maxPrice" step="0.01">
+                           placeholder="Max" value="@maxPrice" step="0.01" min="0" aria-label="Maximum price">
                 </div>
             </div>
 
             <!-- Sort -->
             <div class="form-group filter-min-width-sm">
-                <label class="form-label">Sort By</label>
-                <select name="sortBy" class="form-select" onchange="this.form.submit()">
-                    <option value="newest" selected="@(sortBy == "newest" || sortBy == null)">Newest</option>
-                    <option value="price_asc" selected="@(sortBy == "price_asc")">Price: Low to High</option>
+                <label class="form-label" for="sortSelect">Sort By</label>
+                <select id="sortSelect" name="sortBy" class="form-select" onchange="this.form.submit()">
+                    <option value="newest"     selected="@(sortBy == "newest" || sortBy == null)">Newest</option>
+                    <option value="price_asc"  selected="@(sortBy == "price_asc")">Price: Low to High</option>
                     <option value="price_desc" selected="@(sortBy == "price_desc")">Price: High to Low</option>
-                    <option value="name_asc" selected="@(sortBy == "name_asc")">Name: A to Z</option>
-                    <option value="name_desc" selected="@(sortBy == "name_desc")">Name: Z to A</option>
+                    <option value="name_asc"   selected="@(sortBy == "name_asc")">Name: A to Z</option>
+                    <option value="name_desc"  selected="@(sortBy == "name_desc")">Name: Z to A</option>
                 </select>
             </div>
 
-            <!-- Submit -->
-            <div class="form-group">
+            <!-- Actions -->
+            <div class="form-group flex gap-sm items-center">
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-funnel"></i> Filter
+                    <i class="bi bi-funnel" aria-hidden="true"></i> Filter
                 </button>
                 <a asp-action="Index" class="btn btn-ghost">
-                    <i class="bi bi-x"></i> Clear
+                    <i class="bi bi-x" aria-hidden="true"></i> Clear
                 </a>
             </div>
         </form>
@@ -109,15 +113,17 @@
                     <!-- Wishlist Button -->
                     <button class="icon-btn icon-btn-card"
                             onclick="event.preventDefault(); toggleWishlist(@product.Id, this)"
-                            title="Add to wishlist">
-                        <i class="bi bi-heart"></i>
+                            title="Add to wishlist"
+                            aria-label="Toggle wishlist for @product.Name">
+                        <i class="bi bi-heart" aria-hidden="true"></i>
                     </button>
 
                     <!-- AI Button -->
                     <button class="ai-card-btn"
                             onclick="event.preventDefault(); openAIModal('@Html.Raw(product.Name.Replace("'", "\\'"))', '@Html.Raw(product.Description?.Replace("'", "\\'").Replace("\n", " ").Replace("\r", ""))')"
-                            title="Ask AI about this product">
-                        <i class="bi bi-sparkles"></i>
+                            title="Ask AI about this product"
+                            aria-label="Ask AI about @product.Name">
+                        <i class="bi bi-sparkles" aria-hidden="true"></i>
                     </button>
                 </div>
 
@@ -129,12 +135,12 @@
                         </a>
                     </h3>
                     <p class="product-desc">
-                        @(product.Description?.Length > 60 ? product.Description.Substring(0, 60) + "..." : product.Description)
+                        @(product.Description?.Length > 65 ? product.Description.Substring(0, 65) + "…" : product.Description)
                     </p>
-                    <div class="flex items-center justify-between">
+                    <div class="price-stock-row">
                         <span class="product-price">@product.Price.ToString("C")</span>
                         <span class="badge @(product.Stock > 0 ? "badge-success" : "badge-danger")">
-                            @(product.Stock > 0 ? "In Stock" : "Out")
+                            @(product.Stock > 0 ? "In Stock" : "Sold Out")
                         </span>
                     </div>
                 </div>
@@ -142,7 +148,7 @@
                 <!-- Actions -->
                 <div class="card-actions">
                     <a asp-action="Details" asp-route-id="@product.Id" class="btn btn-secondary btn-sm flex-fill">
-                        <i class="bi bi-eye"></i> View
+                        <i class="bi bi-eye" aria-hidden="true"></i> View
                     </a>
                 </div>
             </article>
@@ -150,50 +156,48 @@
     </div>
 
     <!-- ==================== Pagination ==================== -->
-    <div class="flex items-center justify-between mt-5">
-        <p class="text-muted page-info">
-            Showing @((Model.PageIndex - 1) * 12 + 1) - @Math.Min(Model.PageIndex * 12, Model.TotalCount) of @Model.TotalCount
+    <div class="flex items-center justify-between flex-wrap gap-md mt-5">
+        <p class="page-info">
+            Showing @((Model.PageIndex - 1) * 12 + 1)–@Math.Min(Model.PageIndex * 12, Model.TotalCount) of @Model.TotalCount
         </p>
 
         @if (Model.TotalPages > 1)
         {
-            <nav class="pagination">
+            <nav class="pagination" aria-label="Product pages">
                 <a class="page-link @(Model.HasPreviousPage ? "" : "disabled")"
                    href="@Url.Action("Index", new { categoryId = selectedCategoryId, searchTerm, minPrice, maxPrice, sortBy, page = Model.PageIndex - 1 })"
-                   @(Model.HasPreviousPage ? "" : "tabindex='-1'")>
-                    <i class="bi bi-chevron-left"></i>
+                   @(Model.HasPreviousPage ? "" : "tabindex='-1' aria-disabled='true'")
+                   aria-label="Previous page">
+                    <i class="bi bi-chevron-left" aria-hidden="true"></i>
                 </a>
 
                 @{
                     var startPage = Math.Max(1, Model.PageIndex - 2);
-                    var endPage = Math.Min(Model.TotalPages, Model.PageIndex + 2);
+                    var endPage   = Math.Min(Model.TotalPages, Model.PageIndex + 2);
                     if (startPage > 1)
                     {
                         <a class="page-link" href="@Url.Action("Index", new { categoryId = selectedCategoryId, searchTerm, minPrice, maxPrice, sortBy, page = 1 })">1</a>
-                        if (startPage > 2)
-                        {
-                            <span class="page-link disabled">...</span>
-                        }
+                        if (startPage > 2) { <span class="page-link disabled" aria-hidden="true">…</span> }
                     }
                     for (int i = startPage; i <= endPage; i++)
                     {
                         <a class="page-link @(i == Model.PageIndex ? "active" : "")"
-                           href="@Url.Action("Index", new { categoryId = selectedCategoryId, searchTerm, minPrice, maxPrice, sortBy, page = i })">@i</a>
+                           href="@Url.Action("Index", new { categoryId = selectedCategoryId, searchTerm, minPrice, maxPrice, sortBy, page = i })"
+                           aria-label="Page @i"
+                           @(i == Model.PageIndex ? "aria-current='page'" : "")>@i</a>
                     }
                     if (endPage < Model.TotalPages)
                     {
-                        if (endPage < Model.TotalPages - 1)
-                        {
-                            <span class="page-link disabled">...</span>
-                        }
+                        if (endPage < Model.TotalPages - 1) { <span class="page-link disabled" aria-hidden="true">…</span> }
                         <a class="page-link" href="@Url.Action("Index", new { categoryId = selectedCategoryId, searchTerm, minPrice, maxPrice, sortBy, page = Model.TotalPages })">@Model.TotalPages</a>
                     }
                 }
 
                 <a class="page-link @(Model.HasNextPage ? "" : "disabled")"
                    href="@Url.Action("Index", new { categoryId = selectedCategoryId, searchTerm, minPrice, maxPrice, sortBy, page = Model.PageIndex + 1 })"
-                   @(Model.HasNextPage ? "" : "tabindex='-1'")>
-                    <i class="bi bi-chevron-right"></i>
+                   @(Model.HasNextPage ? "" : "tabindex='-1' aria-disabled='true'")
+                   aria-label="Next page">
+                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
                 </a>
             </nav>
         }
@@ -201,14 +205,13 @@
 }
 else
 {
-    <!-- Empty State -->
     <div class="empty-state">
-        <i class="bi bi-inbox"></i>
+        <div class="empty-state-icon">
+            <i class="bi bi-inbox" aria-hidden="true"></i>
+        </div>
         <h4>No products found</h4>
-        <p>Try adjusting your filters</p>
-        <a asp-action="Index" class="btn btn-primary">
-            Clear Filters
-        </a>
+        <p>Try adjusting your search or filter criteria</p>
+        <a asp-action="Index" class="btn btn-primary">Clear All Filters</a>
     </div>
 }
 
@@ -216,6 +219,18 @@ else
     @Html.AntiForgeryToken()
 </form>
 
-<!-- ==================== Scripts ==================== -->
 @section Scripts {
+    <script>
+        // Wishlist state sync on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            if (!token) return;
+
+            const wishlistBtns = document.querySelectorAll('.icon-btn-card');
+            wishlistBtns.forEach(btn => {
+                const card = btn.closest('[data-product-id]') || btn.closest('article');
+                // No per-card check here — full check happens on detail page
+            });
+        });
+    </script>
 }

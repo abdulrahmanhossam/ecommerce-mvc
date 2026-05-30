@@ -2,27 +2,38 @@
     ViewData["Title"] = "Shopping Cart";
     var cartItems = ViewBag.CartItems as List<(ECommerceProject.Models.Entities.ShoppingCart Cart, ECommerceProject.Models.Entities.Product Product)>;
     var total = ViewBag.Total as decimal? ?? 0;
+    var tax   = total * 0.14m;
+    var grand = total * 1.14m;
 }
 
-<div class="py-4">
-    <h2 class="mb-4">Shopping Cart</h2>
+<div class="py-5">
+    <h1 class="page-title mb-5">Shopping Cart</h1>
 
     @if (cartItems != null && cartItems.Any())
     {
         <div class="cart-layout">
-            <!-- Cart Items -->
+            <!-- ── Cart Items ── -->
             <div>
                 @foreach (var item in cartItems)
                 {
                     <div class="cart-item">
+                        <!-- Thumbnail -->
                         <div class="cart-item-image">
-                            <img src="@(string.IsNullOrEmpty(item.Product.ImageUrl) ? "https://placehold.co/100x100?text=No+Image" : item.Product.ImageUrl)"
-                                 alt="@item.Product.Name" loading="lazy"
-                                 onerror="this.src='https://placehold.co/100x100?text=No+Image'">
+                            <a asp-controller="Products" asp-action="Details" asp-route-id="@item.Product.Id">
+                                <img src="@(string.IsNullOrEmpty(item.Product.ImageUrl) ? "https://placehold.co/160x160?text=No+Image" : item.Product.ImageUrl)"
+                                     alt="@item.Product.Name"
+                                     loading="lazy"
+                                     onerror="this.src='https://placehold.co/160x160?text=No+Image'">
+                            </a>
                         </div>
 
+                        <!-- Info -->
                         <div class="cart-item-details">
-                            <h5 class="cart-item-title">@item.Product.Name</h5>
+                            <h5 class="cart-item-title">
+                                <a asp-controller="Products" asp-action="Details" asp-route-id="@item.Product.Id" class="product-title-link">
+                                    @item.Product.Name
+                                </a>
+                            </h5>
                             @if (item.Cart.ProductVariant != null)
                             {
                                 var v = item.Cart.ProductVariant;
@@ -41,62 +52,62 @@
                                     }
                                 </p>
                             }
-                            <p class="cart-item-price">
-                                @item.Product.Price.ToString("C") each
-                            </p>
+                            <p class="cart-item-price">@item.Product.Price.ToString("C") each</p>
                         </div>
 
+                        <!-- Quantity -->
                         <div class="quantity-input">
                             <form asp-action="UpdateQuantity" method="post" class="d-inline">
-                                <input type="hidden" name="cartId" value="@item.Cart.Id" />
-                                <input type="hidden" name="quantity" value="@(item.Cart.Quantity - 1)" />
-                                <button type="submit" class="quantity-btn" @(item.Cart.Quantity <= 1 ? "disabled" : "")>
-                                    <i class="bi bi-dash"></i>
+                                <input type="hidden" name="cartId"    value="@item.Cart.Id" />
+                                <input type="hidden" name="quantity"  value="@(item.Cart.Quantity - 1)" />
+                                <button type="submit" class="quantity-btn" @(item.Cart.Quantity <= 1 ? "disabled" : "") aria-label="Decrease quantity">
+                                    <i class="bi bi-dash" aria-hidden="true"></i>
                                 </button>
                             </form>
-
-                            <span class="quantity-value">@item.Cart.Quantity</span>
-
+                            <span class="quantity-value" aria-label="Quantity: @item.Cart.Quantity">@item.Cart.Quantity</span>
                             <form asp-action="UpdateQuantity" method="post" class="d-inline">
-                                <input type="hidden" name="cartId" value="@item.Cart.Id" />
-                                <input type="hidden" name="quantity" value="@(item.Cart.Quantity + 1)" />
-                                <button type="submit" class="quantity-btn" @(item.Cart.Quantity >= item.Product.Stock ? "disabled" : "")>
-                                    <i class="bi bi-plus"></i>
+                                <input type="hidden" name="cartId"    value="@item.Cart.Id" />
+                                <input type="hidden" name="quantity"  value="@(item.Cart.Quantity + 1)" />
+                                <button type="submit" class="quantity-btn" @(item.Cart.Quantity >= item.Product.Stock ? "disabled" : "") aria-label="Increase quantity">
+                                    <i class="bi bi-plus" aria-hidden="true"></i>
                                 </button>
                             </form>
                         </div>
 
+                        <!-- Line total -->
                         <div class="cart-item-total">
                             <span class="product-price">@((item.Product.Price * item.Cart.Quantity).ToString("C"))</span>
                         </div>
 
+                        <!-- Remove -->
                         <form asp-action="RemoveItem" method="post">
                             <input type="hidden" name="cartId" value="@item.Cart.Id" />
-                            <button type="submit" class="icon-btn" onclick="return confirm('Remove this item?')">
-                                <i class="bi bi-trash"></i>
+                            <button type="submit" class="icon-btn btn-text-danger" onclick="return confirm('Remove this item from your cart?')" title="Remove item" aria-label="Remove @item.Product.Name">
+                                <i class="bi bi-trash" aria-hidden="true"></i>
                             </button>
                         </form>
                     </div>
                 }
 
+                <!-- Footer actions -->
                 <div class="cart-footer">
                     <a asp-action="Index" asp-controller="Products" class="btn btn-ghost">
-                        <i class="bi bi-arrow-left"></i>
+                        <i class="bi bi-arrow-left" aria-hidden="true"></i>
                         Continue Shopping
                     </a>
                     <form asp-action="ClearCart" method="post">
-                        <button type="submit" class="btn btn-ghost btn-text-danger" onclick="return confirm('Clear entire cart?')">
-                            <i class="bi bi-trash"></i>
+                        <button type="submit" class="btn btn-ghost btn-text-danger" onclick="return confirm('Clear your entire cart?')">
+                            <i class="bi bi-trash" aria-hidden="true"></i>
                             Clear Cart
                         </button>
                     </form>
                 </div>
             </div>
 
-            <!-- Order Summary -->
+            <!-- ── Order Summary ── -->
             <div>
                 <div class="cart-summary">
-                    <h4>Order Summary</h4>
+                    <p class="cart-summary-title">Order Summary</p>
 
                     <div class="cart-summary-row">
                         <span>Subtotal</span>
@@ -108,16 +119,16 @@
                     </div>
                     <div class="cart-summary-row">
                         <span>Tax (14%)</span>
-                        <span>@((total * 0.14m).ToString("C"))</span>
+                        <span>@tax.ToString("C")</span>
                     </div>
                     <div class="cart-summary-row total">
                         <span>Total</span>
-                        <span>@((total * 1.14m).ToString("C"))</span>
+                        <span>@grand.ToString("C")</span>
                     </div>
 
-                    <div class="cart-actions mt-4">
+                    <div class="cart-actions">
                         <a asp-controller="Checkout" asp-action="Index" class="btn btn-primary btn-lg w-100">
-                            <i class="bi bi-credit-card"></i>
+                            <i class="bi bi-credit-card" aria-hidden="true"></i>
                             Checkout
                         </a>
                         <a asp-action="Index" asp-controller="Products" class="btn btn-ghost w-100">
@@ -128,36 +139,44 @@
 
                 <!-- Promo Code -->
                 <div class="card mt-3">
-                    <div class="card-body cart-promo">
-                        <p>Have a promo code?</p>
+                    <div class="card-body">
+                        <p class="cart-promo-label">Have a promo code?</p>
                         <div class="cart-promo-row">
-                            <input type="text" id="cart-promo-code" class="form-control text-uppercase" placeholder="Enter code">
+                            <input type="text"
+                                   id="cart-promo-code"
+                                   class="form-control text-uppercase-input"
+                                   placeholder="Enter code"
+                                   aria-label="Promo code">
                             <button class="btn btn-secondary" onclick="applyCartPromo()">Apply</button>
                         </div>
-                        <div id="cart-promo-message" class="cart-promo-msg"></div>
+                        <div id="cart-promo-message" class="cart-promo-msg" aria-live="polite"></div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <script>
-        function applyCartPromo() {
-            const code = document.getElementById('cart-promo-code')?.value.trim();
-            if (!code) return;
-            window.location.href = '@Url.Action("Index", "Checkout")' + '?promoCode=' + encodeURIComponent(code);
-        }
-        </script>
     }
     else
     {
         <div class="empty-state">
-            <i class="bi bi-cart-x"></i>
+            <div class="empty-state-icon">
+                <i class="bi bi-cart-x" aria-hidden="true"></i>
+            </div>
             <h4>Your cart is empty</h4>
-            <p>Add some products to get started</p>
+            <p>Add some products to get started on your order</p>
             <a asp-controller="Products" asp-action="Index" class="btn btn-primary">
-                <i class="bi bi-bag"></i>
+                <i class="bi bi-bag" aria-hidden="true"></i>
                 Start Shopping
             </a>
         </div>
     }
 </div>
+
+@section Scripts {
+    <script>
+        function applyCartPromo() {
+            const code = document.getElementById('cart-promo-code')?.value.trim();
+            if (!code) return;
+            window.location.href = '@Url.Action("Index", "Checkout")' + '?promoCode=' + encodeURIComponent(code);
+        }
+    </script>
+}
