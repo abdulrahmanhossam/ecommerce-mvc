@@ -23,6 +23,8 @@
 <div class="card mb-4">
     <div class="filter-card-body">
         <form asp-action="Index" method="get" class="filter-form" id="filterForm">
+            <input type="hidden" name="page" id="pageInput" value="1" />
+
             <!-- Search -->
             <div class="form-group filter-search">
                 <label class="form-label" for="searchInput">Search</label>
@@ -65,7 +67,7 @@
             <!-- Sort -->
             <div class="form-group filter-min-width-sm">
                 <label class="form-label" for="sortSelect">Sort By</label>
-                <select id="sortSelect" name="sortBy" class="form-select" onchange="this.form.submit()">
+                <select id="sortSelect" name="sortBy" class="form-select">
                     <option value="newest"     selected="@(sortBy == "newest" || sortBy == null)">Newest</option>
                     <option value="price_asc"  selected="@(sortBy == "price_asc")">Price: Low to High</option>
                     <option value="price_desc" selected="@(sortBy == "price_desc")">Price: High to Low</option>
@@ -87,133 +89,17 @@
     </div>
 </div>
 
+<!-- ==================== Loading Spinner ==================== -->
+<div id="loadingOverlay" class="loading-overlay" style="display:none;">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+
 <!-- ==================== Products Grid ==================== -->
-@if (Model.Items.Any())
-{
-    <div class="grid grid-auto-fill">
-        @foreach (var product in Model.Items)
-        {
-            <article class="product-card">
-                <!-- Image -->
-                <div class="image-wrapper">
-                    <div class="badge-wrapper">
-                        @if (product.IsFeatured)
-                        {
-                            <span class="badge badge-danger">Featured</span>
-                        }
-                    </div>
-
-                    <a asp-action="Details" asp-route-id="@product.Id">
-                        <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : product.ImageUrl)"
-                             alt="@product.Name"
-                             loading="lazy"
-                             onerror="this.src='https://placehold.co/400x300?text=No+Image'">
-                    </a>
-
-                    <!-- Wishlist Button -->
-                    <button class="icon-btn icon-btn-card"
-                            onclick="event.preventDefault(); toggleWishlist(@product.Id, this)"
-                            title="Add to wishlist"
-                            aria-label="Toggle wishlist for @product.Name">
-                        <i class="bi bi-heart" aria-hidden="true"></i>
-                    </button>
-
-                    <!-- AI Button -->
-                    <button class="ai-card-btn"
-                            onclick="event.preventDefault(); openAIModal('@Html.Raw(product.Name.Replace("'", "\\'"))', '@Html.Raw(product.Description?.Replace("'", "\\'").Replace("\n", " ").Replace("\r", ""))')"
-                            title="Ask AI about this product"
-                            aria-label="Ask AI about @product.Name">
-                        <i class="bi bi-sparkles" aria-hidden="true"></i>
-                    </button>
-                </div>
-
-                <!-- Content -->
-                <div class="card-content">
-                    <h3 class="product-title">
-                        <a asp-action="Details" asp-route-id="@product.Id" class="product-title-link">
-                            @product.Name
-                        </a>
-                    </h3>
-                    <p class="product-desc">
-                        @(product.Description?.Length > 65 ? product.Description.Substring(0, 65) + "…" : product.Description)
-                    </p>
-                    <div class="price-stock-row">
-                        <span class="product-price">@product.Price.ToString("C")</span>
-                        <span class="badge @(product.Stock > 0 ? "badge-success" : "badge-danger")">
-                            @(product.Stock > 0 ? "In Stock" : "Sold Out")
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Actions -->
-                <div class="card-actions">
-                    <a asp-action="Details" asp-route-id="@product.Id" class="btn btn-secondary btn-sm flex-fill">
-                        <i class="bi bi-eye" aria-hidden="true"></i> View
-                    </a>
-                </div>
-            </article>
-        }
-    </div>
-
-    <!-- ==================== Pagination ==================== -->
-    <div class="flex items-center justify-between flex-wrap gap-md mt-5">
-        <p class="page-info">
-            Showing @((Model.PageIndex - 1) * 12 + 1)–@Math.Min(Model.PageIndex * 12, Model.TotalCount) of @Model.TotalCount
-        </p>
-
-        @if (Model.TotalPages > 1)
-        {
-            <nav class="pagination" aria-label="Product pages">
-                <a class="page-link @(Model.HasPreviousPage ? "" : "disabled")"
-                   href="@Url.Action("Index", new { categoryId = selectedCategoryId, searchTerm, minPrice, maxPrice, sortBy, page = Model.PageIndex - 1 })"
-                   @(Model.HasPreviousPage ? "" : "tabindex='-1' aria-disabled='true'")
-                   aria-label="Previous page">
-                    <i class="bi bi-chevron-left" aria-hidden="true"></i>
-                </a>
-
-                @{
-                    var startPage = Math.Max(1, Model.PageIndex - 2);
-                    var endPage   = Math.Min(Model.TotalPages, Model.PageIndex + 2);
-                    if (startPage > 1)
-                    {
-                        <a class="page-link" href="@Url.Action("Index", new { categoryId = selectedCategoryId, searchTerm, minPrice, maxPrice, sortBy, page = 1 })">1</a>
-                        if (startPage > 2) { <span class="page-link disabled" aria-hidden="true">…</span> }
-                    }
-                    for (int i = startPage; i <= endPage; i++)
-                    {
-                        <a class="page-link @(i == Model.PageIndex ? "active" : "")"
-                           href="@Url.Action("Index", new { categoryId = selectedCategoryId, searchTerm, minPrice, maxPrice, sortBy, page = i })"
-                           aria-label="Page @i"
-                           @(i == Model.PageIndex ? "aria-current='page'" : "")>@i</a>
-                    }
-                    if (endPage < Model.TotalPages)
-                    {
-                        if (endPage < Model.TotalPages - 1) { <span class="page-link disabled" aria-hidden="true">…</span> }
-                        <a class="page-link" href="@Url.Action("Index", new { categoryId = selectedCategoryId, searchTerm, minPrice, maxPrice, sortBy, page = Model.TotalPages })">@Model.TotalPages</a>
-                    }
-                }
-
-                <a class="page-link @(Model.HasNextPage ? "" : "disabled")"
-                   href="@Url.Action("Index", new { categoryId = selectedCategoryId, searchTerm, minPrice, maxPrice, sortBy, page = Model.PageIndex + 1 })"
-                   @(Model.HasNextPage ? "" : "tabindex='-1' aria-disabled='true'")
-                   aria-label="Next page">
-                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
-                </a>
-            </nav>
-        }
-    </div>
-}
-else
-{
-    <div class="empty-state">
-        <div class="empty-state-icon">
-            <i class="bi bi-inbox" aria-hidden="true"></i>
-        </div>
-        <h4>No products found</h4>
-        <p>Try adjusting your search or filter criteria</p>
-        <a asp-action="Index" class="btn btn-primary">Clear All Filters</a>
-    </div>
-}
+<div id="productGridContainer">
+    <partial name="_ProductGrid" model="Model" />
+</div>
 
 <form id="antiforgery-form" method="post" class="d-none">
     @Html.AntiForgeryToken()
@@ -221,15 +107,75 @@ else
 
 @section Scripts {
     <script>
-        // Wishlist state sync on page load
-        document.addEventListener('DOMContentLoaded', function () {
-            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-            if (!token) return;
+        let currentPage = @(Model.PageIndex);
+        let debounceTimer;
 
-            const wishlistBtns = document.querySelectorAll('.icon-btn-card');
-            wishlistBtns.forEach(btn => {
-                const card = btn.closest('[data-product-id]') || btn.closest('article');
-                // No per-card check here — full check happens on detail page
+        function getFilterParams() {
+            const form = document.getElementById('filterForm');
+            const data = new FormData(form);
+            const params = new URLSearchParams();
+            for (const [key, value] of data) {
+                if (value) params.set(key, value);
+            }
+            params.set('page', currentPage);
+            return params.toString();
+        }
+
+        async function loadProducts() {
+            const container = document.getElementById('productGridContainer');
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.display = 'flex';
+
+            try {
+                const params = getFilterParams();
+                const response = await fetch('@Url.Action("Filter", "Products")?' + params, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const html = await response.text();
+                container.innerHTML = html;
+                history.replaceState(null, '', '@Url.Action("Index", "Products")?' + params);
+            } catch {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon"><i class="bi bi-exclamation-triangle"></i></div><h4>Failed to load products</h4><p>Please try again.</p></div>';
+            } finally {
+                overlay.style.display = 'none';
+            }
+        }
+
+        function loadPage(page) {
+            currentPage = page;
+            loadProducts();
+        }
+
+        function debouncedLoad() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                currentPage = 1;
+                loadProducts();
+            }, 300);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('filterForm');
+
+            document.getElementById('categorySelect').addEventListener('change', debouncedLoad);
+            document.getElementById('sortSelect').addEventListener('change', debouncedLoad);
+
+            document.querySelectorAll('input[name="minPrice"], input[name="maxPrice"]').forEach(input => {
+                input.addEventListener('input', debouncedLoad);
+            });
+
+            document.getElementById('searchInput').addEventListener('input', function () {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    currentPage = 1;
+                    loadProducts();
+                }, 400);
+            });
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                currentPage = 1;
+                loadProducts();
             });
         });
     </script>

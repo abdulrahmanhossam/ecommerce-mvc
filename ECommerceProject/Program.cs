@@ -45,6 +45,9 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 // Stripe Payment Service
 builder.Services.AddScoped<IPaymentService, StripePaymentService>();
 
+// Stripe Settings (Options pattern)
+builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
+
 // Analytics Service
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 

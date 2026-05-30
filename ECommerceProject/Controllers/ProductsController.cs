@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using ECommerceProject.Data.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using ECommerceProject.Models.Entities;
@@ -11,10 +12,12 @@ namespace ECommerceProject.Controllers
     public class ProductsController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMemoryCache _memoryCache;
 
-        public ProductsController(IUnitOfWork unitOfWork)
+        public ProductsController(IUnitOfWork unitOfWork, IMemoryCache memoryCache)
         {
             _unitOfWork = unitOfWork;
+            _memoryCache = memoryCache;
         }
 
         // GET: Products
@@ -23,30 +26,56 @@ namespace ECommerceProject.Controllers
         {
             var query = _unitOfWork.Products.GetQueryable(asNoTracking: true).Where(p => p.IsActive);
 
+            ApplyFilters(ref query, categoryId, searchTerm, minPrice, maxPrice, sortBy);
+
+            int pageSize = 12;
+            var products = await PaginatedList<Product>.CreateAsync(query, page, pageSize);
+
+            var categories = await GetCachedCategoriesAsync();
+            ViewBag.Categories = categories;
+            ViewBag.SelectedCategoryId = categoryId;
+            ViewBag.SearchTerm = searchTerm;
+            ViewBag.MinPrice = minPrice;
+            ViewBag.MaxPrice = maxPrice;
+            ViewBag.SortBy = sortBy;
+
+            if (Request.Headers.XRequestedWith == "XMLHttpRequest")
+                return PartialView("_ProductGrid", products);
+
+            return View(products);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Filter(int? categoryId, string? searchTerm, decimal? minPrice, decimal? maxPrice,
+            string? sortBy, int page = 1)
+        {
+            var query = _unitOfWork.Products.GetQueryable(asNoTracking: true).Where(p => p.IsActive);
+
+            ApplyFilters(ref query, categoryId, searchTerm, minPrice, maxPrice, sortBy);
+
+            int pageSize = 12;
+            var products = await PaginatedList<Product>.CreateAsync(query, page, pageSize);
+
+            return PartialView("_ProductGrid", products);
+        }
+
+        private static void ApplyFilters(ref IQueryable<Product> query, int? categoryId, string? searchTerm,
+            decimal? minPrice, decimal? maxPrice, string? sortBy)
+        {
             if (categoryId.HasValue)
-            {
                 query = query.Where(p => p.CategoryId == categoryId.Value);
-            }
 
             if (!string.IsNullOrEmpty(searchTerm))
-            {
                 query = query.Where(p =>
                     p.Name.Contains(searchTerm) ||
-                    (p.Description != null && p.Description.Contains(searchTerm))
-                );
-            }
+                    (p.Description != null && p.Description.Contains(searchTerm)));
 
             if (minPrice.HasValue)
-            {
                 query = query.Where(p => p.Price >= minPrice.Value);
-            }
 
             if (maxPrice.HasValue)
-            {
                 query = query.Where(p => p.Price <= maxPrice.Value);
-            }
 
-            // Sorting
             query = sortBy switch
             {
                 "price_asc" => query.OrderBy(p => p.Price),
@@ -54,21 +83,18 @@ namespace ECommerceProject.Controllers
                 "name_asc" => query.OrderBy(p => p.Name),
                 "name_desc" => query.OrderByDescending(p => p.Name),
                 "newest" => query.OrderByDescending(p => p.CreatedDate),
-                _ => query.OrderByDescending(p => p.CreatedDate) // default: newest first
+                _ => query.OrderByDescending(p => p.CreatedDate)
             };
+        }
 
-            int pageSize = 12;
-            var products = await PaginatedList<Product>.CreateAsync(query, page, pageSize);
-
-            var categories = await _unitOfWork.Categories.GetAsync(c => c.IsActive, asNoTracking: true);
-            ViewBag.Categories = categories.ToList();
-            ViewBag.SelectedCategoryId = categoryId;
-            ViewBag.SearchTerm = searchTerm;
-            ViewBag.MinPrice = minPrice;
-            ViewBag.MaxPrice = maxPrice;
-            ViewBag.SortBy = sortBy;
-
-            return View(products);
+        private async Task<List<Category>> GetCachedCategoriesAsync()
+        {
+            return await _memoryCache.GetOrCreateAsync("ProductCategories", async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.SlidingExpiration = TimeSpan.FromMinutes(2);
+                return (await _unitOfWork.Categories.GetAsync(c => c.IsActive, asNoTracking: true)).ToList();
+            }) ?? [];
         }
 
         // GET: Products/Details/5
@@ -246,8 +272,8 @@ namespace ECommerceProject.Controllers
                 .OrderByDescending(p => p.CreatedDate);
             var products = await PaginatedList<Product>.CreateAsync(query, page, 12);
 
-            var categories = await _unitOfWork.Categories.GetAsync(c => c.IsActive, asNoTracking: true);
-            ViewBag.Categories = categories.ToList();
+            var categories = await GetCachedCategoriesAsync();
+            ViewBag.Categories = categories;
             ViewBag.SelectedCategoryId = id;
             ViewBag.SearchTerm = null;
             ViewBag.MinPrice = null;
@@ -255,6 +281,9 @@ namespace ECommerceProject.Controllers
             ViewBag.SortBy = "newest";
             ViewBag.CategoryName = category.Name;
             ViewBag.CategoryDescription = category.Description;
+
+            if (Request.Headers.XRequestedWith == "XMLHttpRequest")
+                return PartialView("_ProductGrid", products);
 
             return View("Index", products);
         }

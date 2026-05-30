@@ -91,9 +91,7 @@
                         <select asp-for="PaymentMethod" class="form-select" required>
                             <option value="">Select Payment</option>
                             <option value="1">Cash on Delivery</option>
-                            <option value="2">Credit Card</option>
-                            <option value="3">PayPal</option>
-                            <option value="4">Stripe</option>
+                            <option value="2">Credit Card (Stripe)</option>
                         </select>
                         <span asp-validation-for="PaymentMethod" class="text-danger"></span>
                     </div>

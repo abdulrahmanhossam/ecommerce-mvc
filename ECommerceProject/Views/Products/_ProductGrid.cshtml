@@ -1,0 +1,136 @@
+@using ECommerceProject.Models.ViewModels
+@using Microsoft.AspNetCore.Mvc.Routing
+@model PaginatedList<ECommerceProject.Models.Entities.Product>
+@{
+    var selectedCategoryId = ViewBag.SelectedCategoryId as int?;
+    var searchTerm         = ViewBag.SearchTerm as string;
+    var minPrice           = ViewBag.MinPrice as decimal?;
+    var maxPrice           = ViewBag.MaxPrice as decimal?;
+    var sortBy             = ViewBag.SortBy as string;
+    var pageSize           = 12;
+}
+
+<div class="product-count-bar">
+    <span class="item-count-badge">@Model.TotalCount items</span>
+</div>
+
+@if (Model.Items.Any())
+{
+    <div class="grid grid-auto-fill product-grid">
+        @foreach (var product in Model.Items)
+        {
+            <article class="product-card">
+                <div class="image-wrapper">
+                    <div class="badge-wrapper">
+                        @if (product.IsFeatured)
+                        {
+                            <span class="badge badge-danger">Featured</span>
+                        }
+                    </div>
+
+                    <a asp-action="Details" asp-route-id="@product.Id">
+                        <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "https://placehold.co/400x300?text=No+Image" : product.ImageUrl)"
+                             alt="@product.Name"
+                             loading="lazy"
+                             onerror="this.src='https://placehold.co/400x300?text=No+Image'">
+                    </a>
+
+                    <button class="icon-btn icon-btn-card"
+                            onclick="event.preventDefault(); toggleWishlist(@product.Id, this)"
+                            title="Add to wishlist"
+                            aria-label="Toggle wishlist for @product.Name">
+                        <i class="bi bi-heart" aria-hidden="true"></i>
+                    </button>
+
+                    <button class="ai-card-btn"
+                            onclick="event.preventDefault(); openAIModal('@Html.Raw(product.Name.Replace("'", "\\'"))', '@Html.Raw(product.Description?.Replace("'", "\\'").Replace("\n", " ").Replace("\r", ""))')"
+                            title="Ask AI about this product"
+                            aria-label="Ask AI about @product.Name">
+                        <i class="bi bi-sparkles" aria-hidden="true"></i>
+                    </button>
+                </div>
+
+                <div class="card-content">
+                    <h3 class="product-title">
+                        <a asp-action="Details" asp-route-id="@product.Id" class="product-title-link">
+                            @product.Name
+                        </a>
+                    </h3>
+                    <p class="product-desc">
+                        @(product.Description?.Length > 65 ? product.Description[..65] + "…" : product.Description)
+                    </p>
+                    <div class="price-stock-row">
+                        <span class="product-price">@product.Price.ToString("C")</span>
+                        <span class="badge @(product.Stock > 0 ? "badge-success" : "badge-danger")">
+                            @(product.Stock > 0 ? "In Stock" : "Sold Out")
+                        </span>
+                    </div>
+                </div>
+
+                <div class="card-actions">
+                    <a asp-action="Details" asp-route-id="@product.Id" class="btn btn-secondary btn-sm flex-fill">
+                        <i class="bi bi-eye" aria-hidden="true"></i> View
+                    </a>
+                </div>
+            </article>
+        }
+    </div>
+
+    <div class="flex items-center justify-between flex-wrap gap-md mt-5">
+        <p class="page-info">
+            Showing @((Model.PageIndex - 1) * pageSize + 1)–@Math.Min(Model.PageIndex * pageSize, Model.TotalCount) of @Model.TotalCount
+        </p>
+
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="pagination" aria-label="Product pages">
+                <button class="page-link @(Model.HasPreviousPage ? "" : "disabled")"
+                        onclick="loadPage(@(Model.PageIndex - 1))"
+                        @(Model.HasPreviousPage ? "" : "disabled")
+                        aria-label="Previous page">
+                    <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                </button>
+
+                @{
+                    var startPage = Math.Max(1, Model.PageIndex - 2);
+                    var endPage   = Math.Min(Model.TotalPages, Model.PageIndex + 2);
+                    if (startPage > 1)
+                    {
+                        <button class="page-link" onclick="loadPage(1)">1</button>
+                        if (startPage > 2) { <span class="page-link disabled" aria-hidden="true">…</span> }
+                    }
+                    for (int i = startPage; i <= endPage; i++)
+                    {
+                        <button class="page-link @(i == Model.PageIndex ? "active" : "")"
+                                onclick="loadPage(@i)"
+                                aria-label="Page @i"
+                                @(i == Model.PageIndex ? "aria-current='page'" : "")>@i</button>
+                    }
+                    if (endPage < Model.TotalPages)
+                    {
+                        if (endPage < Model.TotalPages - 1) { <span class="page-link disabled" aria-hidden="true">…</span> }
+                        <button class="page-link" onclick="loadPage(@Model.TotalPages)">@Model.TotalPages</button>
+                    }
+                }
+
+                <button class="page-link @(Model.HasNextPage ? "" : "disabled")"
+                        onclick="loadPage(@(Model.PageIndex + 1))"
+                        @(Model.HasNextPage ? "" : "disabled")
+                        aria-label="Next page">
+                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                </button>
+            </nav>
+        }
+    </div>
+}
+else
+{
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <i class="bi bi-inbox" aria-hidden="true"></i>
+        </div>
+        <h4>No products found</h4>
+        <p>Try adjusting your search or filter criteria</p>
+        <a asp-action="Index" class="btn btn-primary">Clear All Filters</a>
+    </div>
+}

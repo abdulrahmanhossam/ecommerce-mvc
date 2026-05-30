@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using ECommerceProject.Data.Interfaces;
 using ECommerceProject.Models.Entities;
 using ECommerceProject.Models.Enums;
 using ECommerceProject.Models.ViewModels;
+using ECommerceProject.Services;
 using ECommerceProject.Services.Interfaces;
 
 namespace ECommerceProject.Controllers
@@ -27,6 +29,7 @@ namespace ECommerceProject.Controllers
         private readonly IPaymentService _paymentService;
         private readonly ILogger<CheckoutController> _logger;
         private readonly IWebHostEnvironment _env;
+        private readonly StripeSettings _stripeSettings;
 
         public CheckoutController(
             IUnitOfWork unitOfWork,
@@ -34,7 +37,8 @@ namespace ECommerceProject.Controllers
             IEmailService emailService,
             IPaymentService paymentService,
             ILogger<CheckoutController> logger,
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            IOptions<StripeSettings> stripeSettings)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
@@ -42,6 +46,7 @@ namespace ECommerceProject.Controllers
             _paymentService = paymentService;
             _logger = logger;
             _env = env;
+            _stripeSettings = stripeSettings.Value;
         }
 
         // GET: Checkout
@@ -128,7 +133,9 @@ namespace ECommerceProject.Controllers
                 return View("Index", model);
             }
 
-            try
+            const int maxRetries = 3;
+
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
                 await using var transaction = await _unitOfWork.BeginTransactionAsync();
 
@@ -145,6 +152,32 @@ namespace ECommerceProject.Controllers
                     }
 
                     var cartItemList = cartItems.ToList();
+
+                    // --- Aggregate ALL stock failures before processing ---
+                    var outOfStockItems = cartItemList
+                        .Where(ci => ci.Product == null || !ci.Product.IsActive || ci.Product.Stock < ci.Quantity)
+                        .Select(ci => ci.Product?.Name ?? "Unknown")
+                        .ToList();
+
+                    if (outOfStockItems.Any())
+                    {
+                        await transaction.RollbackAsync();
+
+                        var cartItemsForView = await _unitOfWork.ShoppingCarts.GetAsync(
+                            c => c.UserId == userId,
+                            c => c.Product);
+                        var subtotalForView = cartItemsForView.Sum(ci => (ci.Product?.Price ?? 0) * ci.Quantity);
+                        ViewBag.Subtotal = subtotalForView;
+                        ViewBag.Tax = subtotalForView * 0.14m;
+                        ViewBag.Total = subtotalForView * 1.14m;
+
+                        foreach (var item in outOfStockItems)
+                        {
+                            ModelState.AddModelError(string.Empty, $"\"{item}\" does not have enough stock to fulfill your order.");
+                        }
+                        return View("Index", model);
+                    }
+
                     decimal subtotal = 0;
                     var orderItems = new List<OrderItem>();
 
@@ -154,12 +187,6 @@ namespace ECommerceProject.Controllers
 
                         if (product == null || !product.IsActive)
                             continue;
-
-                        if (product.Stock < cartItem.Quantity)
-                        {
-                            TempData["ErrorMessage"] = $"{product.Name} is out of stock!";
-                            return RedirectToAction("Index", "Cart");
-                        }
 
                         var itemTotal = product.Price * cartItem.Quantity;
                         subtotal += itemTotal;
@@ -272,10 +299,9 @@ namespace ECommerceProject.Controllers
                     order.Payment = payment;
                     await _unitOfWork.SaveAsync(); // Single save: Order + Payment created
 
-                    // For Cash on Delivery, no external payment gateway needed
-                    if (model.PaymentMethod is PaymentMethod.CashOnDelivery or PaymentMethod.PayPal)
+                    // Cash on Delivery — complete immediately, no external gateway
+                    if (model.PaymentMethod == PaymentMethod.CashOnDelivery)
                     {
-                        // Complete the order immediately — no redirect to external gateway
                         _unitOfWork.ShoppingCarts.DeleteRange(cartItems);
                         await _unitOfWork.SaveAsync();
                         await transaction.CommitAsync();
@@ -302,9 +328,43 @@ namespace ECommerceProject.Controllers
                         return RedirectToAction("OrderConfirmation", new { orderId = order.Id });
                     }
 
-                    // Stripe / CreditCard — redirect to payment gateway
+                    // Credit Card (Stripe) — redirect to payment gateway
                     try
                     {
+                        var hasApiKeys = !string.IsNullOrEmpty(_stripeSettings.SecretKey)
+                            && _stripeSettings.SecretKey != "sk_test_...";
+
+                        if (!hasApiKeys)
+                        {
+                            // Placeholder: mock success so the order flow can be verified
+                            _logger.LogWarning("Stripe keys not configured — using mock checkout");
+
+                            _unitOfWork.ShoppingCarts.DeleteRange(cartItems);
+                            await _unitOfWork.SaveAsync();
+                            await transaction.CommitAsync();
+
+                            TempData["SuccessMessage"] = "Order placed successfully! (Stripe mock — keys not configured)";
+
+                            try
+                            {
+                                var user = await _userManager.FindByIdAsync(userId);
+                                if (user != null)
+                                {
+                                    await _emailService.SendOrderConfirmationEmailAsync(
+                                        user.Email!,
+                                        user.FullName,
+                                        order.Id,
+                                        totalAmount);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Failed to send order confirmation email");
+                            }
+
+                            return RedirectToAction("OrderConfirmation", new { orderId = order.Id });
+                        }
+
                         var productNames = cartItemList
                             .Where(ci => ci.Product != null)
                             .Select(ci => ci.Product!.Name)
@@ -329,6 +389,20 @@ namespace ECommerceProject.Controllers
                         return RedirectToAction("Index");
                     }
                 }
+                catch (DbUpdateConcurrencyException) when (attempt < maxRetries)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogWarning("Concurrency conflict placing order (attempt {Attempt}/{MaxRetries})", attempt, maxRetries);
+                    await Task.Delay(100 * attempt);
+                    continue;
+                }
+                catch (DbUpdateConcurrencyException) when (attempt >= maxRetries)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError("Concurrency conflict placing order — max retries reached");
+                    TempData["ErrorMessage"] = "Sorry, some items were just purchased by another customer. Please review your cart and try again.";
+                    return RedirectToAction("Index");
+                }
                 catch (DbUpdateException dbEx)
                 {
                     await transaction.RollbackAsync();
@@ -343,20 +417,11 @@ namespace ECommerceProject.Controllers
                     await transaction.RollbackAsync();
                     throw;
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error placing order for user {UserId}", userId);
 
-                if (_env.IsDevelopment())
-                {
-                    ModelState.AddModelError(string.Empty, $"DEV ERROR: {ex.Message}");
-                    return View("Index", model);
-                }
-
-                TempData["ErrorMessage"] = "An error occurred while placing your order. Please try again.";
-                return RedirectToAction("Index");
             }
+
+            // Should never reach here — all paths in the loop return or throw
+            return RedirectToAction("Index");
         }
 
         // GET: Checkout/OrderConfirmation

@@ -25,7 +25,7 @@ namespace ECommerceProject.Models.Entities
         public PaymentStatus Status { get; set; } = PaymentStatus.Pending;
 
         [StringLength(200)]
-        public string? TransactionId { get; set; } // رقم العملية من Stripe/PayPal
+        public string? TransactionId { get; set; }
 
         [StringLength(1000)]
         public string? PaymentDetails { get; set; }

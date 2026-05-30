@@ -23,12 +23,12 @@ namespace ECommerceProject.Controllers
             _emailService = emailService;
         }
 
-        [ResponseCache(Duration = 300, Location = ResponseCacheLocation.Any)]
         public async Task<IActionResult> Index()
         {
             var featuredProducts = await _memoryCache.GetOrCreateAsync("FeaturedProducts", async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.SlidingExpiration = TimeSpan.FromMinutes(2);
                 return await _unitOfWork.Products.GetQueryable(asNoTracking: true)
                     .Where(p => p.IsFeatured && p.IsActive)
                     .OrderBy(p => p.Id)
@@ -38,7 +38,8 @@ namespace ECommerceProject.Controllers
 
             var categories = await _memoryCache.GetOrCreateAsync("HomeCategories", async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.SlidingExpiration = TimeSpan.FromMinutes(2);
                 return await _unitOfWork.Categories.GetQueryable(asNoTracking: true)
                     .Where(c => c.IsActive)
                     .OrderBy(c => c.Name)
