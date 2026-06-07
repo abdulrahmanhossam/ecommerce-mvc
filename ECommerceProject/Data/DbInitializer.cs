@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using ECommerceProject.Data.Context;
 using ECommerceProject.Models.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace ECommerceProject.Data;
 
@@ -10,6 +11,9 @@ public static class DbInitializer
         UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole> roleManager)
     {
+        // Correct any existing category/product images with placeholder paths
+        await CorrectExistingImagesAsync(context);
+
         // Create Roles
         if (!await roleManager.RoleExistsAsync("Admin"))
             await roleManager.CreateAsync(new IdentityRole("Admin"));
@@ -51,37 +55,37 @@ public static class DbInitializer
                 { 
                     Name = "Luxury Watches", 
                     Description = "Premium timepieces from world-renowned brands",
-                    ImageUrl = "/images/products/angela-bailey-jlo7Bf4tUoY-unsplash.jpg"
+                    ImageUrl = "/images/categories/cat_watches.png"
                 },
                 new Category 
                 { 
                     Name = "Fashion & Style", 
                     Description = "Trendy clothing and accessories",
-                    ImageUrl = "/images/products/chico__fotografo-eJFMPXcTtbU-unsplash.jpg"
+                    ImageUrl = "/images/categories/cat_fashion.png"
                 },
                 new Category 
                 { 
                     Name = "Smart Electronics", 
                     Description = "Latest gadgets and technology",
-                    ImageUrl = "/images/products/nathan-dumlao-5xyknPxKOq8-unsplash.jpg"
+                    ImageUrl = "/images/categories/cat_electronics.png"
                 },
                 new Category 
                 { 
                     Name = "Accessories", 
                     Description = "Premium accessories for every occasion",
-                    ImageUrl = "/images/products/the-drink-break-4sWDjeixAJU-unsplash.jpg"
+                    ImageUrl = "/images/categories/cat_accessories.png"
                 },
                 new Category 
                 { 
                     Name = "Lifestyle", 
                     Description = "Premium lifestyle products",
-                    ImageUrl = "/images/products/maxim-hopman-Hin-rzhOdWs-unsplash.jpg"
+                    ImageUrl = "/images/categories/cat_lifestyle.png"
                 },
                 new Category 
                 { 
                     Name = "Footwear", 
                     Description = "Elegant shoes for all occasions",
-                    ImageUrl = "/images/products/amanz-AoV1tpTXoHM-unsplash.jpg"
+                    ImageUrl = "/images/categories/cat_footwear.png"
                 }
             };
 
@@ -106,7 +110,7 @@ public static class DbInitializer
                     Price = 15999,
                     Stock = 15,
                     CategoryId = categoryLookup["Luxury Watches"],
-                    ImageUrl = "/images/products/angela-bailey-jlo7Bf4tUoY-unsplash.jpg",
+                    ImageUrl = "/images/products/gold_watch.png",
                     IsFeatured = true,
                     IsActive = true
                 },
@@ -117,7 +121,7 @@ public static class DbInitializer
                     Price = 12500,
                     Stock = 20,
                     CategoryId = categoryLookup["Luxury Watches"],
-                    ImageUrl = "/images/products/alison-wang-mou0S7ViElQ-unsplash.jpg",
+                    ImageUrl = "/images/products/silver_watch.png",
                     IsFeatured = true,
                     IsActive = true
                 },
@@ -128,7 +132,7 @@ public static class DbInitializer
                     Price = 22500,
                     Stock = 8,
                     CategoryId = categoryLookup["Luxury Watches"],
-                    ImageUrl = "/images/products/bram-van-oost-Yv8bUMDdhBA-unsplash.jpg",
+                    ImageUrl = "/images/products/diamond_watch.png",
                     IsFeatured = true,
                     IsActive = true
                 },
@@ -141,7 +145,7 @@ public static class DbInitializer
                     Price = 4500,
                     Stock = 25,
                     CategoryId = categoryLookup["Fashion & Style"],
-                    ImageUrl = "/images/products/chico__fotografo-eJFMPXcTtbU-unsplash.jpg",
+                    ImageUrl = "/images/products/wool_blazer.png",
                     IsFeatured = true,
                     IsActive = true
                 },
@@ -152,7 +156,7 @@ public static class DbInitializer
                     Price = 3800,
                     Stock = 18,
                     CategoryId = categoryLookup["Fashion & Style"],
-                    ImageUrl = "/images/products/igor-omilaev-lDWTfYhZ85w-unsplash.jpg",
+                    ImageUrl = "/images/products/evening_dress.png",
                     IsActive = true
                 },
                 new Product
@@ -162,7 +166,7 @@ public static class DbInitializer
                     Price = 5500,
                     Stock = 12,
                     CategoryId = categoryLookup["Fashion & Style"],
-                    ImageUrl = "/images/products/sandy-millar-S5pFhDxUXyw-unsplash.jpg",
+                    ImageUrl = "/images/products/designer_outfit.png",
                     IsFeatured = true,
                     IsActive = true
                 },
@@ -175,7 +179,7 @@ public static class DbInitializer
                     Price = 2800,
                     Stock = 50,
                     CategoryId = categoryLookup["Smart Electronics"],
-                    ImageUrl = "/images/products/nathan-dumlao-5xyknPxKOq8-unsplash.jpg",
+                    ImageUrl = "/images/products/wireless_earbuds.png",
                     IsFeatured = true,
                     IsActive = true
                 },
@@ -186,7 +190,7 @@ public static class DbInitializer
                     Price = 5500,
                     Stock = 35,
                     CategoryId = categoryLookup["Smart Electronics"],
-                    ImageUrl = "/images/products/nathan-dumlao-oPsUNgdfo2A-unsplash.jpg",
+                    ImageUrl = "/images/products/smartwatch_pro.png",
                     IsActive = true
                 },
                 new Product
@@ -196,7 +200,7 @@ public static class DbInitializer
                     Price = 1800,
                     Stock = 40,
                     CategoryId = categoryLookup["Smart Electronics"],
-                    ImageUrl = "/images/products/jerry-wang-qBrF1yu5Wys-unsplash.jpg",
+                    ImageUrl = "/images/categories/cat_electronics.png",
                     IsActive = true
                 },
                 
@@ -208,7 +212,7 @@ public static class DbInitializer
                     Price = 1200,
                     Stock = 30,
                     CategoryId = categoryLookup["Accessories"],
-                    ImageUrl = "/images/products/the-drink-break-4sWDjeixAJU-unsplash.jpg",
+                    ImageUrl = "/images/products/leather_wallet.png",
                     IsFeatured = true,
                     IsActive = true
                 },
@@ -219,7 +223,7 @@ public static class DbInitializer
                     Price = 2200,
                     Stock = 25,
                     CategoryId = categoryLookup["Accessories"],
-                    ImageUrl = "/images/products/chris-hardy-H5Ffv4I5ZMI-unsplash.jpg",
+                    ImageUrl = "/images/products/designer_outfit.png",
                     IsActive = true
                 },
                 new Product
@@ -229,7 +233,7 @@ public static class DbInitializer
                     Price = 850,
                     Stock = 45,
                     CategoryId = categoryLookup["Accessories"],
-                    ImageUrl = "/images/products/dmitry-chernyshov-mP7aPSUm7aE-unsplash.jpg",
+                    ImageUrl = "/images/products/designer_outfit.png",
                     IsActive = true
                 },
                 
@@ -241,7 +245,7 @@ public static class DbInitializer
                     Price = 950,
                     Stock = 60,
                     CategoryId = categoryLookup["Lifestyle"],
-                    ImageUrl = "/images/products/maxim-hopman-Hin-rzhOdWs-unsplash.jpg",
+                    ImageUrl = "/images/products/yoga_mat.png",
                     IsFeatured = true,
                     IsActive = true
                 },
@@ -252,7 +256,7 @@ public static class DbInitializer
                     Price = 1500,
                     Stock = 35,
                     CategoryId = categoryLookup["Lifestyle"],
-                    ImageUrl = "/images/products/milada-vigerova-p8Drpg_duLw-unsplash.jpg",
+                    ImageUrl = "/images/categories/cat_lifestyle.png",
                     IsActive = true
                 },
                 new Product
@@ -262,7 +266,7 @@ public static class DbInitializer
                     Price = 1100,
                     Stock = 28,
                     CategoryId = categoryLookup["Lifestyle"],
-                    ImageUrl = "/images/products/tobias-tullius-Fg15LdqpWrs-unsplash.jpg",
+                    ImageUrl = "/images/categories/cat_lifestyle.png",
                     IsActive = true
                 },
                 
@@ -274,7 +278,7 @@ public static class DbInitializer
                     Price = 3500,
                     Stock = 22,
                     CategoryId = categoryLookup["Footwear"],
-                    ImageUrl = "/images/products/amanz-AoV1tpTXoHM-unsplash.jpg",
+                    ImageUrl = "/images/products/leather_shoes.png",
                     IsFeatured = true,
                     IsActive = true
                 },
@@ -285,7 +289,7 @@ public static class DbInitializer
                     Price = 2800,
                     Stock = 40,
                     CategoryId = categoryLookup["Footwear"],
-                    ImageUrl = "/images/products/gulfer-ergin-LUGuCtvlk1Q-unsplash.jpg",
+                    ImageUrl = "/images/categories/cat_footwear.png",
                     IsActive = true
                 },
                 new Product
@@ -295,12 +299,79 @@ public static class DbInitializer
                     Price = 1900,
                     Stock = 35,
                     CategoryId = categoryLookup["Footwear"],
-                    ImageUrl = "/images/products/prince-akachi-iuqcmC4NVNo-unsplash.jpg",
+                    ImageUrl = "/images/categories/cat_footwear.png",
                     IsActive = true
                 }
             };
 
             context.Products.AddRange(products);
+            await context.SaveChangesAsync();
+        }
+    }
+
+    private static async Task CorrectExistingImagesAsync(ApplicationDbContext context)
+    {
+        // Category image mapping
+        var categoryImages = new Dictionary<string, string>
+        {
+            { "Luxury Watches", "/images/categories/cat_watches.png" },
+            { "Fashion & Style", "/images/categories/cat_fashion.png" },
+            { "Smart Electronics", "/images/categories/cat_electronics.png" },
+            { "Accessories", "/images/categories/cat_accessories.png" },
+            { "Lifestyle", "/images/categories/cat_lifestyle.png" },
+            { "Footwear", "/images/categories/cat_footwear.png" }
+        };
+
+        var categories = await context.Categories.ToListAsync();
+        bool categoriesChanged = false;
+        foreach (var cat in categories)
+        {
+            if (categoryImages.TryGetValue(cat.Name, out var correctUrl) && cat.ImageUrl != correctUrl)
+            {
+                cat.ImageUrl = correctUrl;
+                categoriesChanged = true;
+            }
+        }
+        if (categoriesChanged)
+        {
+            await context.SaveChangesAsync();
+        }
+
+        // Product image mapping
+        var productImages = new Dictionary<string, string>
+        {
+            { "Elegant Gold Watch", "/images/products/gold_watch.png" },
+            { "Classic Silver Timepiece", "/images/products/silver_watch.png" },
+            { "Diamond Accent Watch", "/images/products/diamond_watch.png" },
+            { "Premium Wool Blazer", "/images/products/wool_blazer.png" },
+            { "Silk Evening Dress", "/images/products/evening_dress.png" },
+            { "Designer Outfit Set", "/images/products/designer_outfit.png" },
+            { "Premium Wireless Earbuds", "/images/products/wireless_earbuds.png" },
+            { "Smart Watch Pro", "/images/products/smartwatch_pro.png" },
+            { "Portable Speaker", "/images/categories/cat_electronics.png" },
+            { "Leather Wallet Set", "/images/products/leather_wallet.png" },
+            { "Designer Sunglasses", "/images/products/designer_outfit.png" },
+            { "Leather Belt Set", "/images/products/designer_outfit.png" },
+            { "Premium Yoga Mat", "/images/products/yoga_mat.png" },
+            { "Essential Oil Set", "/images/categories/cat_lifestyle.png" },
+            { "Home Fragrance Set", "/images/categories/cat_lifestyle.png" },
+            { "Premium Leather Shoes", "/images/products/leather_shoes.png" },
+            { "Designer Sneakers", "/images/categories/cat_footwear.png" },
+            { "Casual Loafers", "/images/categories/cat_footwear.png" }
+        };
+
+        var products = await context.Products.ToListAsync();
+        bool productsChanged = false;
+        foreach (var prod in products)
+        {
+            if (productImages.TryGetValue(prod.Name, out var correctUrl) && prod.ImageUrl != correctUrl)
+            {
+                prod.ImageUrl = correctUrl;
+                productsChanged = true;
+            }
+        }
+        if (productsChanged)
+        {
             await context.SaveChangesAsync();
         }
     }

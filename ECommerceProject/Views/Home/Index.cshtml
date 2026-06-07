@@ -3,8 +3,17 @@
     var featuredProducts = ViewBag.FeaturedProducts as List<ECommerceProject.Models.Entities.Product>;
     var categories = ViewBag.Categories as List<ECommerceProject.Models.Entities.Category>;
 
-    // Cycle through icon set for category cards
-    string[] catIcons = { "bi-bag-heart", "bi-headphones", "bi-shoe", "bi-lamp", "bi-controller", "bi-camera" };
+    // Map category names to the correct Bootstrap Icons
+    Func<string, string> getCategoryIcon = (name) => name.ToLower() switch
+    {
+        "luxury watches" => "bi-watch",
+        "fashion & style" => "bi-handbag",
+        "smart electronics" => "bi-laptop",
+        "accessories" => "bi-gem",
+        "lifestyle" => "bi-flower1",
+        "footwear" => "bi-person-walking",
+        _ => "bi-tag"
+    };
 }
 
 <!-- ==================== Hero Section ==================== -->
@@ -80,14 +89,15 @@
             <div class="grid grid-auto-200">
                 @for (int i = 0; i < Math.Min(categories.Count, 6); i++)
                 {
-                    var icon = catIcons[i % catIcons.Length];
-                    <a asp-controller="Products" asp-action="ByCategory" asp-route-id="@categories[i].Id"
+                    var category = categories[i];
+                    var icon = getCategoryIcon(category.Name);
+                    <a asp-controller="Products" asp-action="ByCategory" asp-route-id="@category.Id"
                        class="category-card animate-fade-in-up stagger-@(i + 1)"
-                       aria-label="Browse @categories[i].Name products">
+                       aria-label="Browse @category.Name products">
                         <div class="category-card-icon">
                             <i class="bi @icon" aria-hidden="true"></i>
                         </div>
-                        <span>@categories[i].Name</span>
+                        <span>@category.Name</span>
                     </a>
                 }
             </div>
