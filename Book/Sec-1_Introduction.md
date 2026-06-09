@@ -174,16 +174,74 @@ Service registration uses the scoped lifetime because `IUnitOfWork` and the serv
 
 The middleware pipeline order is important. `UseAuthentication` and `UseAuthorization` are placed between `UseRouting` and `UseMapControllerRoute`. This ensures that the authorization middleware can inspect the route before deciding whether to allow access. `UseResponseCaching` is placed before `UseRouting` so that cached responses can be served without executing the MVC pipeline.
 
-## 1.6 Report Organization
+## 1.6 System Architecture & Primary User Interface
 
-This book is divided into five sections.
+The following system architecture flowchart illustrates the relationships between the client-side browser, MVC controllers, application business services, the repository/data access layer, SQL Server database, and external APIs (Google Gemini, Stripe, and SMTP).
 
-Section 1 (this section) introduces the project, defines the problem it solves, lists the objectives, and describes the scope and technology stack.
+```mermaid
+graph TD
+    classDef client fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
+    classDef controller fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
+    classDef service fill:#2ca02c,stroke:#1b5e20,stroke-width:2px,color:#fff;
+    classDef repository fill:#d62728,stroke:#b71c1c,stroke-width:2px,color:#fff;
+    classDef database fill:#9467bd,stroke:#4a148c,stroke-width:2px,color:#fff;
+    classDef external fill:#bcbd22,stroke:#827717,stroke-width:2px,color:#fff;
 
-Section 2 presents background research on existing E-commerce platforms including Amazon, Noon, and eBay. It analyzes each platform's business model, technical architecture, and limitations. It then compares these platforms to our system and identifies the competitive advantages of building a custom ASP.NET Core solution.
+    Client[Client Browser / Desktop & Mobile]:::client
 
-Section 3 describes the frontend implementation. It covers the Razor view structure, Bootstrap 5 layout, AJAX filtering, responsive design, and JavaScript features including the cart, wishlist, and the AI assistant modal.
+    subgraph "ASP.NET Core 10.0 MVC Monolithic Application"
+        Controllers[MVC Controllers<br/>Home, Products, Cart, Checkout, Admin, AI]:::controller
+        
+        subgraph "Services & Business Logic"
+            GeminiService[GeminiService<br/>IGeminiService]:::service
+            PaymentService[StripePaymentService<br/>IPaymentService]:::service
+            EmailService[EmailService<br/>IEmailService]:::service
+            AnalyticsService[AnalyticsService<br/>IAnalyticsService]:::service
+        end
+        
+        subgraph "Data Access Layer"
+            UoW[Unit of Work<br/>IUnitOfWork]:::repository
+            Repos[Generic Repositories<br/>IRepository&lt;T&gt;]:::repository
+        end
+    end
 
-Section 4 focuses on the AI integration. It explains how the Google Gemini API is called from ASP.NET Core, how the prompt is constructed, how rate limiting and errors are handled, and the security measures around the API.
+    SQLServer[(SQL Server Database<br/>ECommerceDb)]:::database
+    StripeAPI[Stripe Gateway API]:::external
+    GeminiAPI[Google Gemini API v1beta]:::external
+    GmailSMTP[Gmail SMTP Server]:::external
 
-Section 5 is the largest section and covers the backend architecture in detail. It includes the database schema with all entity models, the repository and unit of work patterns, controller logic for each module, authentication and authorization configuration, payment processing with Stripe and COD, concurrency control with row versioning, the analytics service, the email service, promo code validation, and security best practices.
+    %% Connections
+    Client <=>|HTTPS Request / HTML & AJAX| Controllers
+    
+    Controllers --> GeminiService
+    Controllers --> PaymentService
+    Controllers --> EmailService
+    Controllers --> AnalyticsService
+    Controllers --> UoW
+    
+    GeminiService --> GeminiAPI
+    PaymentService --> StripeAPI
+    EmailService --> GmailSMTP
+    
+    UoW --> Repos
+    Repos -->|EF Core 10.0 ORM| SQLServer
+```
+
+To provide an immediate understanding of the visual style and design aesthetics of the developed application, the homepage design is presented below. It features the responsive glassmorphism header, the hero banner with a dynamic visual ring, and the auto-fill grids for categories and featured products:
+
+![ShopHub E-Commerce Homepage](images/home.jpeg)
+
+---
+
+## 1.7 Report Organization
+
+This book is divided into seven detailed sections:
+
+- **Section 1** (this section) introduces the project, defines the problem it solves, lists the objectives, and describes the scope, technology stack, high-level architecture, and the primary user interface.
+- **Section 2** presents background research on existing E-commerce platforms including Amazon, Noon, and eBay. It analyzes their business models, technical architectures, and limitations, compares them to our custom system, and highlights our competitive advantages.
+- **Section 3** describes the frontend implementation. It covers the Razor view structure, Bootstrap 5 layout, AJAX filtering, responsive design, and JavaScript features including the cart, wishlist, and the AI assistant modal.
+- **Section 4** focuses on the AI integration. It explains how the Google Gemini API is called from ASP.NET Core, how the prompt is constructed, how rate limiting and errors are handled, and the security measures around the API.
+- **Section 5** covers the backend architecture in detail. It includes the database schema with all entity models, the repository and unit of work patterns, controller logic for each module, authentication and authorization configuration, payment processing with Stripe and COD, concurrency control with row versioning, and core support services.
+- **Section 6** details the Agile development methodology, including 36 user stories across 7 epics, and presents a complete visual walkthrough of the designed system's screens and step-by-step user interaction steps.
+- **Section 7** presents system modeling and diagrams, including the Entity-Relationship Diagram (ERD), System Use Case Diagram, Checkout Sequence Diagram, and the overall System Program Flowchart.
+

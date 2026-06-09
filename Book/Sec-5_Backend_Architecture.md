@@ -1,4 +1,4 @@
-# Sec-5: Backend Architecture — ASP.NET Core MVC E-Commerce Engine
+# 5. Backend Architecture — ASP.NET Core MVC E-Commerce Engine
 
 ## 5.1 Project Overview and Architectural Pattern
 
@@ -527,6 +527,12 @@ Users (AspNetUsers)
 
 ## 5.4 Business Logic — Product & Category Management (Admin)
 
+The administration panel provides managers with direct control over catalog categories and coupon/promo code parameters. Below are the administrative screens for managing categories and promotional discount codes:
+
+![ShopHub Admin Category Management Interface](images/admin-catigories.jpeg)
+
+![ShopHub Admin Promo Code Management Interface](images/admin-promocode.jpeg)
+
 ### 5.4.1 Product CRUD with Image Upload
 
 The `AdminController` handles all product management. The `CreateProduct` action demonstrates the pattern:
@@ -838,6 +844,46 @@ The form is pre-populated from the user's profile, reducing friction for returni
 ### 5.7.2 PlaceOrder — The Transaction Kernel
 
 This is the most critical method in the application. It orchestrates: stock deduction, promo code application, order creation, payment record creation, and cart cleanup — all within a single database transaction with concurrency conflict retry.
+
+The flowchart below traces the concurrency-safe transactional checkout workflow, highlighting the database transaction boundaries and retry mechanics:
+
+```mermaid
+graph TD
+    classDef client fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
+    classDef controller fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
+    classDef database fill:#9467bd,stroke:#4a148c,stroke-width:2px,color:#fff;
+
+    Start[PlaceOrder POST Request]:::client --> BeginLoop[For Loop: Attempt 1 to 3]:::controller
+    BeginLoop --> BeginTransaction[Begin DB Transaction]:::controller
+    BeginTransaction --> GetCart[Get Shopping Cart items from database]:::controller
+    GetCart --> VerifyStock{Is stock sufficient for all items?}:::controller
+    
+    VerifyStock -->|No| RollbackStock[Rollback Transaction]:::controller
+    RollbackStock --> AddErrors[Add ModelState errors and return Checkout Index]:::client
+    
+    VerifyStock -->|Yes| DeductStock[Deduct stock from products]:::controller
+    DeductStock --> ApplyPromo[Validate & Apply Promo Code if provided]:::controller
+    ApplyPromo --> InsertOrder[Insert Order, OrderItems, & Payment records]:::controller
+    InsertOrder --> SaveChanges[SaveAsync: Send updates to Database]:::controller
+    SaveChanges --> CommitTransaction{Save succeeded?}:::controller
+    
+    CommitTransaction -->|Yes| CheckMethod{Payment Method?}:::controller
+    CheckMethod -->|CashOnDelivery| DeleteCart[Delete Shopping Cart items]:::controller
+    DeleteCart --> Commit[Commit Transaction]:::controller
+    Commit --> SendEmail[Send confirmation email]:::controller
+    SendEmail --> RedirectConfirm[Redirect to Order Confirmation page]:::client
+    
+    CheckMethod -->|CreditCard| CreateStripe[Create Stripe Checkout Session]:::controller
+    CreateStripe --> DeleteCartStripe[Delete Shopping Cart items]:::controller
+    DeleteCartStripe --> CommitStripe[Commit Transaction]:::controller
+    CommitStripe --> RedirectStripe[Redirect to Stripe Payment gateway]:::client
+    
+    CommitTransaction -->|No: DbUpdateConcurrencyException| RollbackRetry[Rollback Transaction]:::controller
+    RollbackRetry --> Delay{Attempt limit exceeded?}:::controller
+    Delay -->|No| Backoff[Wait 100ms * attempt number]:::controller
+    Backoff --> BeginLoop
+    Delay -->|Yes| ShowConcurrencyMsg[Set Error Message & Redirect to Cart Index]:::client
+```
 
 ```csharp
 [HttpPost]
@@ -1429,6 +1475,10 @@ Each method embeds its own HTML template with inline CSS for maximum email-clien
 Email sending intentionally **does not block the checkout flow** — the order confirmation email is sent in a try/catch after the transaction commits, and failures are logged as warnings rather than errors. The checkout succeeds regardless of email delivery status.
 
 ## 5.11 Analytics Service
+
+The administrative analytics service generates summaries of revenue trends, average order values, and category performance. These figures are visualized on the dashboard, as shown in the screenshot below:
+
+![ShopHub Admin Analytics Dashboard](images/admin-anlyitcs.jpeg)
 
 The `AnalyticsService` provides server-side aggregated data for the admin dashboard:
 

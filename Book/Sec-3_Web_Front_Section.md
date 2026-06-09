@@ -1,4 +1,4 @@
-# Sec-3: Web Front-End — MVC Views, CSS, and Client-Side JavaScript
+# 3. Web Front-End — MVC Views, CSS, and Client-Side JavaScript
 
 ## 3.1 Design Token System (CSS Custom Properties)
 
@@ -98,6 +98,26 @@ The same token system switches via attribute selector — every component automa
 ```
 
 This eliminates the flash of unstyled content that would occur if JavaScript set the theme after page load.
+
+The flowchart below illustrates the detailed logic flow of the FOUC prevention and theme selection process:
+
+```mermaid
+graph TD
+    classDef client fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
+    classDef server fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
+
+    Start[User Visits ShopHub]:::client --> Request[Sends HTTP Request + Theme Cookie]:::client
+    Request --> ReadCookie[Server reads Context.Request.Cookies['theme']]:::server
+    ReadCookie --> DetermineTheme{Is Cookie Value 'light'?}:::server
+    DetermineTheme -->|Yes| SetLight[Set html data-bs-theme='light']:::server
+    DetermineTheme -->|No / Default| SetDark[Set html data-bs-theme='dark']:::server
+    SetLight --> StreamHTML[Stream HTML to Client]:::server
+    SetDark --> StreamHTML
+    StreamHTML --> RenderBrowser[Browser renders page using theme variables]:::client
+    RenderBrowser --> FOUCPrevented[No Visual Flash / FOUC Prevented]:::client
+    RenderBrowser --> UserToggle[User clicks Theme Toggle Button]:::client
+    UserToggle --> JSChange[JavaScript switches html data-bs-theme & updates theme Cookie]:::client
+```
 
 ## 3.3 Layout Architecture
 
@@ -491,7 +511,29 @@ A card containing a horizontal filter form with search, category dropdown, price
 
 ### 3.5.2 AJAX Filtering & Pagination
 
-The product grid is loaded asynchronously via `fetch()` to `/Products/Filter`. The JavaScript collects form data, builds query params, and fetches a partial HTML replacement. On success, it updates the container's innerHTML and pushes the new URL to `history.replaceState` for proper browser back-button support:
+The product grid is loaded asynchronously via `fetch()` to `/Products/Filter`. The JavaScript collects form data, builds query params, and fetches a partial HTML replacement. On success, it updates the container's innerHTML and pushes the new URL to `history.replaceState` for proper browser back-button support.
+
+The flowchart below traces the complete AJAX request/response lifecycle:
+
+```mermaid
+graph TD
+    classDef ui fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
+    classDef js fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
+    classDef controller fill:#2ca02c,stroke:#1b5e20,stroke-width:2px,color:#fff;
+
+    Trigger[User types in Search or changes Category/Sort/Price]:::ui --> Debounce{Debounce Timer active?}:::js
+    Debounce -->|Yes| ResetTimer[Reset and restart timer]:::js
+    Debounce -->|No / Expired| ShowOverlay[Display loadingOverlay block]:::js
+    ShowOverlay --> BuildQuery[Extract form input & build QueryString params]:::js
+    BuildQuery --> FetchRequest[Asynchronous fetch call to /Products/Filter?params]:::js
+    FetchRequest --> Action[ProductsController.Filter handles AJAX request]:::controller
+    Action --> QueryDB[EF Core queries Database with filters & returns Products]:::controller
+    QueryDB --> RenderPartial[Render partial view _ProductGrid.cshtml to HTML string]:::controller
+    RenderPartial --> SendBack[Return HTML partial content]:::controller
+    SendBack --> UpdateDOM[Update productGridContainer.innerHTML with response HTML]:::js
+    UpdateDOM --> UpdateURL[Update Browser address bar via history.replaceState]:::js
+    UpdateURL --> HideOverlay[Hide loadingOverlay]:::js
+```
 
 ```js
 async function loadProducts() {
@@ -734,6 +776,10 @@ The hover media query fallback ensures AI buttons are visible on touch devices w
 
 ## 3.6 Cart Page (`Views/Cart/Index.cshtml`)
 
+The designed shopping cart interface offers users clear summaries of selected items, quantity manipulation, and real-time calculation of taxes (14% VAT) and shipping costs, as shown in the screenshot below:
+
+![ShopHub Shopping Cart Interface](images/cart.jpeg)
+
 ### 3.6.1 Cart Layout
 
 Two-column grid (items list + summary sidebar). The summary uses `position: sticky` with `top: calc(var(--header-h) + var(--space-md))` to follow the user as they scroll:
@@ -858,6 +904,10 @@ Each item is a horizontal flex row with image thumbnail, details (title, variant
 ```
 
 ## 3.7 Checkout Page (`Views/Checkout/Index.cshtml`)
+
+The checkout page provides the final stage of purchase where shipping information is gathered, promotional coupon codes can be applied via AJAX, and the payment method (COD or Stripe) is selected, as illustrated below:
+
+![ShopHub Checkout and Order Summary Interface](images/checkout.jpeg)
 
 Two-column layout: shipping form (left) + order summary (right, sticky). The form uses ASP.NET Core tag helpers for model binding and client-side validation:
 
@@ -1457,6 +1507,10 @@ Radio-button driven selection with checked-state styling via `:has()`:
 ```
 
 ### 3.16.3 Product Detail Layout
+
+Below is the designed UI for the product detail page, showcasing variant selection, the AI product assistant trigger, and related products list:
+
+![ShopHub Product Details Interface](images/product-details.jpeg)
 
 ```css
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2xl); align-items: start; }

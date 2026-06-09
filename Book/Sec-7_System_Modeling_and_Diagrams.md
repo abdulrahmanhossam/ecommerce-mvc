@@ -1,4 +1,4 @@
-# Sec-7: System Modeling & Architectural Diagrams
+# 7. System Modeling & Architectural Diagrams
 
 ## 7.1 Entity-Relationship Diagram (ERD)
 
@@ -364,3 +364,79 @@ The sequence diagram highlights several architectural decisions:
 4. **Payment method branching** — The COD path completes the transaction immediately and sends a confirmation email. The Stripe path delegates payment to the external gateway and handles the callback via two dedicated endpoints (`PaymentSuccess` and `PaymentCancelled`), which update the order and payment statuses accordingly.
 
 5. **Email delivery** — The confirmation email is sent outside the transaction boundary (after commit) and is wrapped in a try/catch so that a transient email failure does not invalidate the completed order.
+
+---
+
+## 7.4 Overall Program Flowchart
+
+The flowchart below maps the entire program execution path, illustrating the visual layout navigation, debounced AJAX searches, OpenAI/Gemini modal fetches, variant validation checks, payment branching (Stripe vs Cash on Delivery), transactional concurrency loop, and order completion processes:
+
+```mermaid
+graph TD
+    classDef client fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
+    classDef step fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
+    classDef decision fill:#2ca02c,stroke:#1b5e20,stroke-width:2px,color:#fff;
+
+    Start[User Opens Application]:::client --> Home[Browse Home Page]:::client
+    Home --> SearchAction{Search/Filter Catalog?}:::decision
+    
+    SearchAction -->|Yes| ApplyFilters[Enter query, select category, sort values]:::client
+    ApplyFilters --> AJAXLoad[Trigger debounced AJAX query]:::client
+    AJAXLoad --> RenderList[Update Product Grid view]:::client
+    RenderList --> SelectProduct[Select Product & Open Details Page]:::client
+    
+    SearchAction -->|No| SelectProduct
+    
+    SelectProduct --> ViewDetails[Read description, view price]:::client
+    ViewDetails --> AskAIAction{Query AI Assistant?}:::decision
+    
+    AskAIAction -->|Yes| OpenAI[Open Modal & ask question]:::client
+    OpenAI --> GeminiFetch[Call api/AIAssistant/ask via fetch]:::client
+    GeminiFetch --> RenderAI[Show response inside modal]:::client
+    RenderAI --> CheckVariant{Select Product Variant?}:::decision
+    
+    AskAIAction -->|No| CheckVariant
+    
+    CheckVariant -->|Yes| SelectVariant[Choose size / color variant option]:::client
+    SelectVariant --> AddCart[Click Add to Cart button]:::client
+    CheckVariant -->|No / Default| AddCart
+    
+    AddCart --> CartStock{Stock available?}:::decision
+    CartStock -->|No| ShowError[Display 'Sold Out' or stock error badge]:::client
+    CartStock -->|Yes| SaveCart[Save item in ShoppingCart table]:::step
+    
+    SaveCart --> ViewCart[Navigate to Shopping Cart view]:::client
+    ViewCart --> Checkout{Proceed to Checkout?}:::decision
+    
+    Checkout -->|Yes| FillCheckout[Fill Shipping Details Form]:::client
+    FillCheckout --> ApplyPromoCode{Apply Coupon?}:::decision
+    
+    ApplyPromoCode -->|Yes| ValidatePromo[AJAX check & calculate new total]:::client
+    ValidatePromo --> SelectPayment{Select Payment Method}:::decision
+    ApplyPromoCode -->|No| SelectPayment
+    
+    SelectPayment -->|Credit Card Stripe| StripeRedirect[Redirect client to Stripe Checkout page]:::client
+    StripeRedirect --> CompleteStripe{Complete Card Payment?}:::decision
+    CompleteStripe -->|Yes| PaymentSuccess[Stripe Callback: PaymentSuccess action]:::step
+    PaymentSuccess --> CreateOrderStripe[Update Order status to Paid & Payment to Completed]:::step
+    CompleteStripe -->|No / Cancel| PaymentCancel[Stripe Callback: PaymentCancelled action]:::step
+    PaymentCancel --> SetFailedOrder[Update Order status to Cancelled & Payment to Failed]:::step
+    SetFailedOrder --> RedirectCartIndex[Show Error & Return user to Cart Page]:::client
+    
+    SelectPayment -->|Cash On Delivery| PlaceCOD[PlaceOrder COD POST Request]:::step
+    PlaceCOD --> RunTransaction[Start Database Transaction Kernel]:::step
+    RunTransaction --> CheckConcurrency{Optimistic Concurrency conflict?}:::decision
+    
+    CheckConcurrency -->|Yes: Attempt < 3| WaitBackoff[Rollback transaction & wait 100ms * attempt]:::step
+    WaitBackoff --> RunTransaction
+    CheckConcurrency -->|Yes: Attempt >= 3| ShowFailCheckout[Rollback & Show 'Items purchased' error]:::client
+    
+    CheckConcurrency -->|No| CommitTransaction[Update Product stocks, save Order & commit transaction]:::step
+    CommitTransaction --> CreatePaymentCOD[Create Order & Payment records with Pending status]:::step
+    CreatePaymentCOD --> DeleteCartItems[Delete items from ShoppingCart database]:::step
+    
+    CreateOrderStripe --> DeleteCartItems
+    DeleteCartItems --> SendEmail[Queue Order Confirmation SMTP email]:::step
+    SendEmail --> ConfirmPage[Display Invoice & OrderConfirmation page]:::client
+```
+

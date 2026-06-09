@@ -1,4 +1,4 @@
-# Sec-4: AI Integration — Google Gemini Product Assistant
+# 4. AI Integration — Google Gemini Product Assistant
 
 ## 4.1 Objective and Architectural Context
 
@@ -183,6 +183,34 @@ The resulting JSON structure sent to the API looks like this:
 
 ### 4.3.5 API Call with Rate-Limit Handling
 
+The flowchart below displays the sequence of steps executed by the `GeminiService` when querying the API, detailing prompt wrapping, HTTP execution, HTTP status checking, rate-limit parsing (429), and safety filtering checks:
+
+```mermaid
+graph TD
+    classDef client fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
+    classDef service fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
+    classDef external fill:#2ca02c,stroke:#1b5e20,stroke-width:2px,color:#fff;
+
+    Start[Ask AI Request Received]:::client --> BuildPrompt[BuildPrompt: Inject product context & instructions]:::service
+    BuildPrompt --> BuildBody[BuildRequestBody: Serialize JSON with maxTokens & temperature]:::service
+    BuildBody --> CreateClient[Create Named HttpClient 'Gemini']:::service
+    CreateClient --> PostRequest[Send POST request to Gemini Endpoint]:::service
+    PostRequest --> Send[API Endpoint processes request]:::external
+    Send --> ResponseReceived[Receive HTTP Response]:::service
+    ResponseReceived --> CheckSuccess{Is Status Code 200 OK?}:::service
+    
+    CheckSuccess -->|Yes| ParseSuccess[ExtractTextFromResponse: Parse JSON candidates]:::service
+    ParseSuccess --> CheckSafety{Did safety filter block prompt?}:::service
+    CheckSafety -->|No| ReturnResponse[Return generated response text]:::service
+    CheckSafety -->|Yes| ReturnSafetyMsg[Return prompt-blocked message]:::service
+    
+    CheckSuccess -->|No| Check429{Is Status Code 429?}:::service
+    Check429 -->|Yes| ExtractDelay[ExtractRetryDelay: Parse retryDelay value]:::service
+    ExtractDelay --> ThrowRateLimit[Throw quota exceeded exception with wait duration]:::service
+    Check429 -->|No| LogErr[Log raw API response and error details]:::service
+    LogErr --> ThrowGeneric[Throw generic AI service exception]:::service
+```
+
 ```csharp
 public async Task<string> GetProductAssistantResponseAsync(
     string productName, string productDescription, string userQuestion)
@@ -220,6 +248,10 @@ public async Task<string> GetProductAssistantResponseAsync(
     return ExtractTextFromResponse(responseContent);
 }
 ```
+
+To illustrate the user interface and how the AI Assistant is triggered in the product detail view, the screenshot below shows the interface with the sparkle button:
+
+![ShopHub AI Assistant Integration on Product Details Page](images/product-details.jpeg)
 
 **Key design decisions:**
 - **API key in header** (`X-goog-api-key`) rather than query parameter — keeps the URL clean and avoids accidental key exposure in server logs.

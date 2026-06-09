@@ -80,25 +80,55 @@ eBay's architecture has evolved from a single monolithic Perl application in the
 
 eBay's auction model is not suitable for a fixed-price retail store. The platform is also known for buyer protection policies that can favor buyers over sellers in disputes. For a small business wanting to build a brand, eBay provides limited branding control and no direct customer relationship.
 
-## 2.5 Technical Gap Analysis
+## 2.5 Technical Gap Analysis and Platform Comparison
 
-Comparing the three platforms to a custom ASP.NET Core solution reveals several gaps that this project addresses.
+Comparing the three major platforms to a custom ASP.NET Core solution highlights how a custom self-hosted system bridges key operational and financial gaps for local merchants.
 
-| Feature | Amazon | Noon | eBay | This Project |
+The flowchart below categorizes the trade-offs between utilizing proprietary global platforms (Amazon, Noon, eBay) and deploying our custom, self-hosted system (ShopHub):
+
+```mermaid
+graph TD
+    classDef global fill:#444,stroke:#111,stroke-width:2px,color:#fff;
+    classDef custom fill:#c9a227,stroke:#a8871f,stroke-width:2px,color:#000;
+    classDef branch fill:#222,stroke:#555,stroke-width:1px,color:#fff;
+
+    Root[E-Commerce Infrastructure Choices] --> Global[Global Proprietary Platforms<br/>Amazon / Noon / eBay]:::global
+    Root --> Custom[Custom Self-Hosted Solution<br/>ShopHub E-Commerce]:::custom
+
+    Global --> G1[High Fees<br/>10-20% Referral Commission]:::branch
+    Global --> G2[Data Siloing<br/>No direct access to customer emails or SQL DB]:::branch
+    Global --> G3[Rigid Templates<br/>Cannot modify checkout or add custom AI integrations]:::branch
+    Global --> G4[Limited Localization<br/>Poor support for local payment rules like Cash on Delivery or 14% VAT]:::branch
+
+    Custom --> C1[Zero Commission Fees<br/>Pay Stripe processing fees only 2.9% + $0.30]:::branch
+    Custom --> C2[Full Data Ownership<br/>Direct access to Microsoft SQL Server DB]:::branch
+    Custom --> C3[Flexible Codebase<br/>Extend models, modify layouts, integrate Gemini API]:::branch
+    Custom --> C4[First-Class Local Support<br/>Built-in Cash on Delivery & 14% Egyptian VAT calculation]:::branch
+```
+
+Below is the comparative table detailing the specific technical and financial metrics of each platform versus our proposed system:
+
+| Feature | Amazon | Noon | eBay | This Project (ShopHub) |
 |---|---|---|---|---|
 | Monthly subscription fee | Professional account $39.99/month | Commission-based | Store subscription $4.95-$27.95/month | None |
 | Per-transaction fee | 15% average referral fee | 10-20% estimated | 10-15% final value fee | Stripe processing fee only (2.9% + $0.30) |
-| COD support | Limited regions | Yes | No | Yes |
+| COD support | Limited regions | Yes | No | Yes (First-class built-in) |
 | Source code access | No | No | No | Full (MIT license) |
 | Database access | No | No | No | Full SQL Server access |
 | Custom checkout flow | No | No | No | Full control |
 | Promo/coupon engine | Yes (seller-funded) | Yes | No | Built-in promo code system |
-| AI assistant | Alexa shopping | No | No | Gemini product Q&A |
+| AI assistant | Alexa shopping | No | No | Gemini product Q&A (Integrated) |
 | Data ownership | Limited | Limited | Limited | Full ownership |
 | Self-hosted | No | No | No | Yes |
 | Technology stack | Proprietary | Proprietary | Proprietary | .NET 10 + SQL Server |
 
 The key differentiator is data ownership and customization. When a business uses Amazon, it does not own the customer relationship — Amazon does. When a business uses this platform, all customer data, order history, and analytics are stored in its own SQL Server database. The business can run custom reports, segment customers based on purchase history, and integrate the data with its own accounting or CRM system.
+
+To illustrate the product listing and filtering experience that our custom system offers, the interface below shows the AJAX-driven product catalog with the sidebar filters and sorting controls:
+
+![ShopHub Product Catalog and Filter Interface](images/products.jpeg)
+
+---
 
 ## 2.6 Architectural Design Decisions
 

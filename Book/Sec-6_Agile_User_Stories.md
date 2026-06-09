@@ -1,4 +1,4 @@
-# Sec-6: Agile User Stories & Requirements Traceability
+# 6. Agile User Stories & Requirements Traceability
 
 ## 6.1 Introduction
 
@@ -105,3 +105,154 @@ This project was developed following **Agile methodologies**, specifically a tai
 | **Total** | **36** | **20** | **13** | **3** |
 
 All **36 user stories** map directly to implemented code across the three-tier architecture — from Entity Framework Core entities and LINQ queries, through service-layer business logic and controller actions, to Razor views, CSS custom properties, and client-side JavaScript. The **20 high-priority stories** represent the core e-commerce workflow (auth → browse → cart → checkout) that was implemented first, with medium and low priorities rounding out the AI assistant, analytics, and SEO features.
+
+---
+
+## 6.10 Proposed System Screens and Interaction Walkthrough
+
+To demonstrate the functioning proposed system and show how the user stories are fully fulfilled, the following walkthrough details the screen transitions, steps of user interaction, and provides illustrative screenshots of the actual designed system interfaces.
+
+### 6.10.1 Interaction Flowcharts
+
+The flowchart below maps out the sequence of steps a Customer takes when interacting with the system:
+
+```mermaid
+graph TD
+    classDef step fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
+    classDef decision fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
+
+    Start[Guest Visitor Lands on Home]:::step --> Auth{Wants to checkout or use cart?}:::decision
+    Auth -->|Yes| Login[Sign In / Register]:::step
+    Auth -->|No| Browse[Browse & Search Catalog]:::step
+    Login --> Browse
+    Browse --> Detail[View Product Details & Ask AI]:::step
+    Detail --> AddCart[Add to Shopping Cart with variant options]:::step
+    AddCart --> ViewCart[View Cart: Adjust quantities / Apply Promo Code]:::step
+    ViewCart --> Checkout[Fill Shipping Form & Choose Payment Method]:::step
+    Checkout --> Payment{Payment Method selected?}:::decision
+    Payment -->|Stripe Credit Card| Stripe[Stripe Checkout Redirect]:::step
+    Payment -->|Cash On Delivery| COD[Direct Transaction Completion]:::step
+    Stripe --> PaymentSuccess[Redirect to Payment Success page]:::step
+    COD --> Confirm[Order Confirmation Page & Email]:::step
+    PaymentSuccess --> Confirm
+    Confirm --> Profile[View Order Details in Profile History]:::step
+```
+
+The flowchart below maps out the sequence of actions an Administrator takes to manage the platform operations:
+
+```mermaid
+graph TD
+    classDef step fill:#9467bd,stroke:#4a148c,stroke-width:2px,color:#fff;
+    classDef opt fill:#2ca02c,stroke:#1b5e20,stroke-width:2px,color:#fff;
+
+    Start[Admin Logs In]:::step --> Dashboard[View Dashboard Metrics & Charts]:::step
+    Dashboard --> SelectAction{Select Action from Sidebar}
+    SelectAction -->|Manage Catalog| Products[Manage Products & Categories CRUD]:::opt
+    SelectAction -->|Manage Accounts| Users[Activate / Deactivate Users List]:::opt
+    SelectAction -->|Manage Discounts| Promos[Create & Monitor Promo Codes]:::opt
+    SelectAction -->|Manage Orders| Orders[Process Order status updates]:::opt
+
+    Products --> SaveDB[Changes persist to SQL Server]:::step
+    Users --> SaveDB
+    Promos --> SaveDB
+    Orders --> SaveDB
+```
+
+---
+
+### 6.10.2 Customer Account Operations
+
+This phase details the user identity steps (Epic 1) including registering, logging in, updating profile details, and changing credentials.
+
+#### Step 1: User Registration
+New visitors submit their email and details using the registration form. Client-side and server-side validation are enforced to meet security policies (e.g., strong password constraints), as shown in the screenshot below:
+
+![Customer Registration Page](images/resgister.jpeg)
+
+#### Step 2: User Login
+Registered customers authenticate via the secure login portal using their credentials, setting a persistent authentication cookie upon success:
+
+![Customer Login Page](images/login.jpeg)
+
+#### Step 3: Account Profile
+Once logged in, the customer has access to a centralized profile dashboard showing their basic details, shipping address, and quick links to update their security settings:
+
+![Customer Profile Page](images/account-profile.jpeg)
+
+#### Step 4: Password Change Settings
+From their profile, users can navigate to the password change form where they must supply their current password to establish a new one:
+
+![Change Password Page](images/account-changepassword.jpeg)
+
+---
+
+### 6.10.3 Customer Shopping & Checkout Journey
+
+This phase covers product browsing, catalog searching, variant selection, AI integration, shopping cart management, checkout form completion, payment selection, and final order confirmation (Epics 2, 3, 4, 5).
+
+#### Step 5: Product Catalog (Home Page & Filtering)
+The default catalog view displays featured products and categories. The user can search or filter products by price and category via debounced AJAX calls that update the product grid asynchronously without a full page refresh:
+
+- **Browse home view:** (Visualized in Section 1.6: `images/home.jpeg`)
+- **Product catalog with sidebar filters:** (Visualized in Section 2.5: `images/products.jpeg`)
+
+#### Step 6: Product Details and AI Q&A Assistant
+Clicking on a product opens its detail page. Users can select variations (such as size/color) and trigger the real-time Google Gemini assistant to ask questions regarding the product:
+
+- **Product details with variant selection & AI modal trigger:** (Visualized in Section 3.16.3 / Section 4.3.5: `images/product-details.jpeg`)
+
+#### Step 7: Cart Management
+Customers review selected items in their cart, change quantities dynamically, or remove items. The system calculates a running total including shipping and a 14% local tax:
+
+- **Shopping cart layout:** (Visualized in Section 3.6: `images/cart.jpeg`)
+
+#### Step 8: Checkout and Promo Coupon Application
+At checkout, the user's shipping details are pre-filled. They can apply active promotional codes to recalculate totals and select cash on delivery or credit card payment options:
+
+- **Checkout forms and promo code application:** (Visualized in Section 3.7: `images/checkout.jpeg`)
+
+#### Step 9: Order Confirmation
+Upon placement of a Cash on Delivery (COD) order, or on successful return from Stripe payment, the customer receives an immediate confirmation showing their invoice summary:
+
+![Order Placement Confirmation View](images/OrderConfirmation.jpeg)
+
+#### Step 10: Personal Order Details and History
+Customers can view their transaction history from their profile to track the payment and delivery status of past orders:
+
+![Customer Order Details View](images/order-details.jpeg)
+
+---
+
+### 6.10.4 Administrator System Management
+
+This phase traces administrative oversight, including dashboard charts, product/category CRUD, promo codes, user roles, and order processing (Epic 6).
+
+#### Step 11: Admin Dashboard and Sales Reports
+Administrators access a comprehensive dashboard showing sales statistics, order status summaries, and inventory warning levels:
+
+![Admin Main Dashboard Overview](images/dashboared.jpeg)
+
+- **Detailed sales analytics with Chart.js visualization:** (Visualized in Section 5.11: `images/admin-anlyitcs.jpeg`)
+
+#### Step 12: Admin Category CRUD
+Admin operators maintain the product catalog. The category creation and modification view allows them to define category names, descriptions, and assign visual badges:
+
+![Admin Edit Category View](images/admin-editcatiory.jpeg)
+
+- **Main category management list:** (Visualized in Section 5.4: `images/admin-catigories.jpeg`)
+
+#### Step 13: Admin Product CRUD
+Admin operators upload product photos and configure description parameters:
+
+![Admin Edit Product View](images/admin-editproduct.jpeg)
+
+#### Step 14: User Accounts Management
+Administrators can activate/deactivate user profiles, change roles, and check customer account statuses:
+
+![Admin User Management View](images/admin-users.jpeg)
+
+#### Step 15: Admin Order Processing and Status Updates
+Administrators track client purchases, check transaction credentials, and trigger delivery progressions (from Pending to Paid, Shipped, and Delivered):
+
+![Admin Order Details & Status Transition Control](images/admin-orderdetails.jpeg)
+
