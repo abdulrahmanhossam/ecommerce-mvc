@@ -21,30 +21,29 @@ namespace ECommerceProject.Services
         {
             try
             {
-                var smtpClient = new SmtpClient(_emailSettings.SMTPServer)
-                {
-                    Port = _emailSettings.SMTPPort,
-                    Credentials = new NetworkCredential(_emailSettings.SenderEmail, _emailSettings.SenderPassword),
-                    EnableSsl = true,
-                };
-
-                var mailMessage = new MailMessage
+                using var mailMessage = new MailMessage
                 {
                     From = new MailAddress(_emailSettings.SenderEmail, _emailSettings.SenderName),
                     Subject = subject,
                     Body = body,
                     IsBodyHtml = true,
                 };
-
                 mailMessage.To.Add(toEmail);
+
+                using var smtpClient = new SmtpClient(_emailSettings.SMTPServer)
+                {
+                    Port = _emailSettings.SMTPPort,
+                    Credentials = new NetworkCredential(_emailSettings.SenderEmail, _emailSettings.SenderPassword),
+                    EnableSsl = true,
+                };
 
                 await smtpClient.SendMailAsync(mailMessage);
 
-                _logger.LogInformation($"Email sent successfully to {toEmail}");
+                _logger.LogInformation("Email sent successfully to {ToEmail}", toEmail);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Failed to send email to {toEmail}. Error: {ex.Message}");
+                _logger.LogError(ex, "Failed to send email to {ToEmail}", toEmail);
                 throw;
             }
         }

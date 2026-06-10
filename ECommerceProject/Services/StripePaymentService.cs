@@ -6,16 +6,29 @@ namespace ECommerceProject.Services
 {
     public class StripePaymentService : IPaymentService
     {
+        private static bool _stripeConfigured;
+        private static readonly object _stripeLock = new();
         private readonly string _secretKey;
         private readonly string _domain;
         private readonly ILogger<StripePaymentService> _logger;
 
         public StripePaymentService(IConfiguration configuration, ILogger<StripePaymentService> logger)
         {
-            _secretKey = configuration["Stripe:SecretKey"] ?? throw new ArgumentNullException("Stripe SecretKey");
-            _domain = configuration["Stripe:Domain"] ?? throw new ArgumentNullException("Stripe Domain");
+            _secretKey = configuration["Stripe:SecretKey"] ?? throw new ArgumentNullException(nameof(configuration), "Stripe SecretKey not configured");
+            _domain = configuration["Stripe:Domain"] ?? throw new ArgumentNullException(nameof(configuration), "Stripe Domain not configured");
             _logger = logger;
-            StripeConfiguration.ApiKey = _secretKey;
+
+            if (!_stripeConfigured)
+            {
+                lock (_stripeLock)
+                {
+                    if (!_stripeConfigured)
+                    {
+                        StripeConfiguration.ApiKey = _secretKey;
+                        _stripeConfigured = true;
+                    }
+                }
+            }
         }
 
         public async Task<string> CreateCheckoutSessionAsync(int orderId, decimal amount, List<string> productNames)
@@ -56,11 +69,11 @@ namespace ECommerceProject.Services
                 var service = new SessionService();
                 var session = await service.CreateAsync(options);
 
-                return session.Url; // URL للدفع
+                return session.Url ?? throw new InvalidOperationException("Stripe returned a session without a checkout URL.");
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Stripe Checkout Error: {ex.Message}");
+                _logger.LogError(ex, "Stripe Checkout Error for order {OrderId}", orderId);
                 throw;
             }
         }

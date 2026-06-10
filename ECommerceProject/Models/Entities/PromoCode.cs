@@ -19,6 +19,7 @@ namespace ECommerceProject.Models.Entities
         public DiscountType DiscountType { get; set; }
 
         [Required]
+        [Range(0, double.MaxValue, ErrorMessage = "Discount value cannot be negative")]
         public decimal DiscountValue { get; set; }
 
         public decimal? MinimumPurchase { get; set; }

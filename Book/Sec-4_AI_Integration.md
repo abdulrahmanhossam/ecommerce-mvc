@@ -186,13 +186,14 @@ The resulting JSON structure sent to the API looks like this:
 The flowchart below displays the sequence of steps executed by the `GeminiService` when querying the API, detailing prompt wrapping, HTTP execution, HTTP status checking, rate-limit parsing (429), and safety filtering checks:
 
 ```mermaid
-graph TD
+%%{init: {'theme': 'dark'}}%%
+graph LR
     classDef client fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
     classDef service fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
     classDef external fill:#2ca02c,stroke:#1b5e20,stroke-width:2px,color:#fff;
 
-    Start[Ask AI Request Received]:::client --> BuildPrompt[BuildPrompt: Inject product context & instructions]:::service
-    BuildPrompt --> BuildBody[BuildRequestBody: Serialize JSON with maxTokens & temperature]:::service
+    Start[Ask AI Request Received]:::client --> BuildPrompt[BuildPrompt: Inject product context and instructions]:::service
+    BuildPrompt --> BuildBody[BuildRequestBody: Serialize JSON with maxTokens and temperature]:::service
     BuildBody --> CreateClient[Create Named HttpClient 'Gemini']:::service
     CreateClient --> PostRequest[Send POST request to Gemini Endpoint]:::service
     PostRequest --> Send[API Endpoint processes request]:::external
@@ -251,7 +252,7 @@ public async Task<string> GetProductAssistantResponseAsync(
 
 To illustrate the user interface and how the AI Assistant is triggered in the product detail view, the screenshot below shows the interface with the sparkle button:
 
-![ShopHub AI Assistant Integration on Product Details Page](images/product-details.jpeg)
+![Ataba AI Assistant Integration on Product Details Page](images/product-details.jpeg)
 
 **Key design decisions:**
 - **API key in header** (`X-goog-api-key`) rather than query parameter — keeps the URL clean and avoids accidental key exposure in server logs.

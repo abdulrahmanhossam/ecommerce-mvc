@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using ECommerceProject.Services.Interfaces;
@@ -25,8 +26,8 @@ public class GeminiService : IGeminiService
 
         _apiKey = _configuration["Gemini:ApiKey"] ?? throw new InvalidOperationException("Gemini API key not configured");
         _model = _configuration["Gemini:Model"] ?? "gemini-flash-latest";
-        _maxTokens = int.Parse(_configuration["Gemini:MaxTokens"] ?? "800");
-        _temperature = double.Parse(_configuration["Gemini:Temperature"] ?? "0.7");
+        _maxTokens = int.TryParse(_configuration["Gemini:MaxTokens"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var tokens) ? tokens : 800;
+        _temperature = double.TryParse(_configuration["Gemini:Temperature"], NumberStyles.Float, CultureInfo.InvariantCulture, out var temp) ? temp : 0.7;
     }
 
     public async Task<string> GetProductAssistantResponseAsync(string productName, string productDescription, string userQuestion)

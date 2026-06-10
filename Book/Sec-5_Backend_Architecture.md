@@ -11,6 +11,7 @@ This project follows the **Model-View-Controller (MVC)** pattern layered on top 
 ├─────────────────────────────────────────────────────┤
 │                    Controllers                        │
 │  Home | Account | Products | Cart | Checkout | Admin │
+│  Wishlist | Orders | Contact | About | FAQ | AI      │
 ├─────────────────────────────────────────────────────┤
 │                   Services Layer                      │
 │  GeminiService | StripePaymentService | EmailService │
@@ -529,9 +530,9 @@ Users (AspNetUsers)
 
 The administration panel provides managers with direct control over catalog categories and coupon/promo code parameters. Below are the administrative screens for managing categories and promotional discount codes:
 
-![ShopHub Admin Category Management Interface](images/admin-catigories.jpeg)
+![Ataba Admin Category Management Interface](images/admin-catigories.jpeg)
 
-![ShopHub Admin Promo Code Management Interface](images/admin-promocode.jpeg)
+![Ataba Admin Promo Code Management Interface](images/admin-promocode.jpeg)
 
 ### 5.4.1 Product CRUD with Image Upload
 
@@ -848,7 +849,8 @@ This is the most critical method in the application. It orchestrates: stock dedu
 The flowchart below traces the concurrency-safe transactional checkout workflow, highlighting the database transaction boundaries and retry mechanics:
 
 ```mermaid
-graph TD
+%%{init: {'theme': 'dark'}}%%
+graph LR
     classDef client fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
     classDef controller fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
     classDef database fill:#9467bd,stroke:#4a148c,stroke-width:2px,color:#fff;
@@ -862,8 +864,8 @@ graph TD
     RollbackStock --> AddErrors[Add ModelState errors and return Checkout Index]:::client
     
     VerifyStock -->|Yes| DeductStock[Deduct stock from products]:::controller
-    DeductStock --> ApplyPromo[Validate & Apply Promo Code if provided]:::controller
-    ApplyPromo --> InsertOrder[Insert Order, OrderItems, & Payment records]:::controller
+    DeductStock --> ApplyPromo[Validate and Apply Promo Code if provided]:::controller
+    ApplyPromo --> InsertOrder[Insert Order, OrderItems, and Payment records]:::controller
     InsertOrder --> SaveChanges[SaveAsync: Send updates to Database]:::controller
     SaveChanges --> CommitTransaction{Save succeeded?}:::controller
     
@@ -1208,6 +1210,22 @@ public class StripePaymentService : IPaymentService
 - The `Metadata` dictionary carries the order ID through the redirect, enabling the `PaymentSuccess` action to identify which order was paid.
 - The `IPaymentService` interface abstracts Stripe-specific code, allowing future payment providers (e.g., PayPal) without changing the controller.
 
+The secure customer-facing checkout portal created dynamically by the `CreateCheckoutSessionAsync` service provides a localized and responsive card-input form:
+
+![Stripe Checkout Portal](images/stripe.jpeg)
+
+All successful payments, subscription events, developer credentials, and webhook deliveries are monitored in real-time within the Stripe Merchant Dashboard:
+
+![Stripe Dashboard Payments Overview](images/Screenshot_9-6-2026_17217_dashboard.stripe.com.jpeg)
+
+Furthermore, the administrator can drill down into specific customer transaction cards to view audit trails, charge fees, and transaction details:
+
+![Stripe Individual Transaction Record](images/Screenshot_9-6-2026_17313_dashboard.stripe.com.jpeg)
+
+Detailed log endpoints and webhook payloads can also be checked to verify server-to-server connectivity and status checks:
+
+![Stripe Event Details and Logs](images/Screenshot_9-6-2026_17332_dashboard.stripe.com.jpeg)
+
 ### 5.7.6 Payment Callback Handling
 
 **PaymentSuccess:** Updates payment status to `Completed`, order status to `Paid`, sends confirmation email.
@@ -1478,7 +1496,7 @@ Email sending intentionally **does not block the checkout flow** — the order c
 
 The administrative analytics service generates summaries of revenue trends, average order values, and category performance. These figures are visualized on the dashboard, as shown in the screenshot below:
 
-![ShopHub Admin Analytics Dashboard](images/admin-anlyitcs.jpeg)
+![Ataba Admin Analytics Dashboard](images/admin-anlyitcs.jpeg)
 
 The `AnalyticsService` provides server-side aggregated data for the admin dashboard:
 

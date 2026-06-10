@@ -7,4 +7,5 @@ Disallow: /Orders/
 Disallow: /Wishlist/
 Disallow: /api/
 
-Sitemap: https://shophub.com/sitemap.xml
+Sitemap: https://ataba.com/sitemap.xml
+

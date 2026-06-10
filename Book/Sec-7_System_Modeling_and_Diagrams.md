@@ -2,9 +2,10 @@
 
 ## 7.1 Entity-Relationship Diagram (ERD)
 
-The database schema of the ShopHub platform is built on **Microsoft SQL Server** and managed through **Entity Framework Core** using the Code-First approach. The schema models ten core entities that collectively support user management, product cataloging, shopping cart operations, order processing, payment tracking, promotional discounts, and customer reviews. The design enforces **referential integrity** through explicit foreign key constraints with carefully chosen cascade and restrict delete behaviours — for instance, deleting a `Product` cascades to its `ProductVariants` but restricts deletion if active `OrderItems` reference it. Monetary columns across all entities use a uniform `decimal(18, 2)` precision to ensure consistency in financial calculations. The following ERD captures the entities, their attributes, and the relationships between them:
+The database schema of the Ataba platform is built on **Microsoft SQL Server** and managed through **Entity Framework Core** using the Code-First approach. The schema models ten core entities that collectively support user management, product cataloging, shopping cart operations, order processing, payment tracking, promotional discounts, and customer reviews. The design enforces **referential integrity** through explicit foreign key constraints with carefully chosen cascade and restrict delete behaviours — for instance, deleting a `Product` cascades to its `ProductVariants` but restricts deletion if active `OrderItems` reference it. Monetary columns across all entities use a uniform `decimal(18, 2)` precision to ensure consistency in financial calculations. The following ERD captures the entities, their attributes, and the relationships between them:
 
 ```mermaid
+%%{init: {'theme': 'dark'}}%%
 erDiagram
     Category {
         int Id PK
@@ -163,7 +164,7 @@ The diagram illustrates seven **one-to-many** (1:N) relationships and one **one-
 
 ## 7.2 System Use Case Diagram
 
-The ShopHub platform defines **two primary actors** with distinct responsibilities and access levels:
+The Ataba platform defines **two primary actors** with distinct responsibilities and access levels:
 
 - **Customer** — An authenticated user who can browse products, manage a shopping cart and wishlist, place orders via Cash on Delivery or Stripe credit card processing, apply promotional codes, submit product reviews, and interact with the AI-powered product assistant. Customers have access to their order history and profile settings.
 
@@ -172,7 +173,8 @@ The ShopHub platform defines **two primary actors** with distinct responsibiliti
 The following use case diagram captures the functional scope of the system from the perspective of each actor:
 
 ```mermaid
-graph TD
+%%{init: {'theme': 'dark'}}%%
+graph LR
     subgraph Actors
         C[Customer]
         A[Administrator]
@@ -186,7 +188,7 @@ graph TD
 
         %% Product Browsing
         UC4[Browse Products]
-        UC5[Filter & Sort Products]
+        UC5[Filter and Sort Products]
         UC6[View Product Details]
 
         %% Customer Actions
@@ -201,7 +203,7 @@ graph TD
         UC15[Edit Profile]
 
         %% Admin Actions
-        UC16[View Dashboard & Analytics]
+        UC16[View Dashboard and Analytics]
         UC17[Manage Products]
         UC18[Manage Categories]
         UC19[Manage Users]
@@ -249,6 +251,7 @@ The diagram uses `include` relationships to show that browsing products inherent
 The checkout process represents the most **architecturally critical transaction** in the system. It must atomically validate inventory levels, deduct stock quantities, apply promotional discounts, create order and payment records, and clear the user's cart — all while handling **concurrent access** from multiple shoppers. The system employs a **database-level transaction** (`BeginTransactionAsync`) wrapped in a **retry loop** of up to three attempts to resolve optimistic concurrency conflicts detected via the `[Timestamp] RowVersion` columns on `Product`, `ProductVariant`, and `PromoCode` entities. The following sequence diagram traces the exact message flow for a Cash on Delivery (COD) order, which represents the simplest payment path while still exercising the full transaction pipeline:
 
 ```mermaid
+%%{init: {'theme': 'dark'}}%%
 sequenceDiagram
     actor Customer
     participant UI as Razor View / Browser
@@ -259,7 +262,7 @@ sequenceDiagram
     participant Email as EmailService
     participant Stripe as Stripe API (if CreditCard)
 
-    Customer->>UI: Fill checkout form & submit
+    Customer->>UI: Fill checkout form and submit
     UI->>Checkout: POST /Checkout/PlaceOrder
     Checkout->>Validation: ModelState.IsValid
     alt Model Invalid
@@ -340,7 +343,7 @@ sequenceDiagram
                                 UI->>Checkout: GET PaymentCancelled(orderId)
                                 Checkout->>UoW: Update Payment Status = Failed
                                 Checkout->>UoW: Update Order Status = Cancelled
-                                Checkout-->>UI: Show error & redirect to cart
+                                Checkout-->>UI: Show error and redirect to cart
                             end
                         end
                     end
@@ -372,7 +375,8 @@ The sequence diagram highlights several architectural decisions:
 The flowchart below maps the entire program execution path, illustrating the visual layout navigation, debounced AJAX searches, OpenAI/Gemini modal fetches, variant validation checks, payment branching (Stripe vs Cash on Delivery), transactional concurrency loop, and order completion processes:
 
 ```mermaid
-graph TD
+%%{init: {'theme': 'dark'}}%%
+graph LR
     classDef client fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
     classDef step fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
     classDef decision fill:#2ca02c,stroke:#1b5e20,stroke-width:2px,color:#fff;
@@ -383,14 +387,14 @@ graph TD
     SearchAction -->|Yes| ApplyFilters[Enter query, select category, sort values]:::client
     ApplyFilters --> AJAXLoad[Trigger debounced AJAX query]:::client
     AJAXLoad --> RenderList[Update Product Grid view]:::client
-    RenderList --> SelectProduct[Select Product & Open Details Page]:::client
+    RenderList --> SelectProduct[Select Product and Open Details Page]:::client
     
     SearchAction -->|No| SelectProduct
     
     SelectProduct --> ViewDetails[Read description, view price]:::client
     ViewDetails --> AskAIAction{Query AI Assistant?}:::decision
     
-    AskAIAction -->|Yes| OpenAI[Open Modal & ask question]:::client
+    AskAIAction -->|Yes| OpenAI[Open Modal and ask question]:::client
     OpenAI --> GeminiFetch[Call api/AIAssistant/ask via fetch]:::client
     GeminiFetch --> RenderAI[Show response inside modal]:::client
     RenderAI --> CheckVariant{Select Product Variant?}:::decision
@@ -411,32 +415,31 @@ graph TD
     Checkout -->|Yes| FillCheckout[Fill Shipping Details Form]:::client
     FillCheckout --> ApplyPromoCode{Apply Coupon?}:::decision
     
-    ApplyPromoCode -->|Yes| ValidatePromo[AJAX check & calculate new total]:::client
+    ApplyPromoCode -->|Yes| ValidatePromo[AJAX check and calculate new total]:::client
     ValidatePromo --> SelectPayment{Select Payment Method}:::decision
     ApplyPromoCode -->|No| SelectPayment
     
     SelectPayment -->|Credit Card Stripe| StripeRedirect[Redirect client to Stripe Checkout page]:::client
     StripeRedirect --> CompleteStripe{Complete Card Payment?}:::decision
     CompleteStripe -->|Yes| PaymentSuccess[Stripe Callback: PaymentSuccess action]:::step
-    PaymentSuccess --> CreateOrderStripe[Update Order status to Paid & Payment to Completed]:::step
+    PaymentSuccess --> CreateOrderStripe[Update Order status to Paid and Payment to Completed]:::step
     CompleteStripe -->|No / Cancel| PaymentCancel[Stripe Callback: PaymentCancelled action]:::step
-    PaymentCancel --> SetFailedOrder[Update Order status to Cancelled & Payment to Failed]:::step
-    SetFailedOrder --> RedirectCartIndex[Show Error & Return user to Cart Page]:::client
+    PaymentCancel --> SetFailedOrder[Update Order status to Cancelled and Payment to Failed]:::step
+    SetFailedOrder --> RedirectCartIndex[Show Error and Return user to Cart Page]:::client
     
     SelectPayment -->|Cash On Delivery| PlaceCOD[PlaceOrder COD POST Request]:::step
     PlaceCOD --> RunTransaction[Start Database Transaction Kernel]:::step
     RunTransaction --> CheckConcurrency{Optimistic Concurrency conflict?}:::decision
     
-    CheckConcurrency -->|Yes: Attempt < 3| WaitBackoff[Rollback transaction & wait 100ms * attempt]:::step
+    CheckConcurrency -->|Yes: Attempt < 3| WaitBackoff[Rollback transaction and wait 100ms * attempt]:::step
     WaitBackoff --> RunTransaction
-    CheckConcurrency -->|Yes: Attempt >= 3| ShowFailCheckout[Rollback & Show 'Items purchased' error]:::client
+    CheckConcurrency -->|Yes: Attempt >= 3| ShowFailCheckout[Rollback and Show 'Items purchased' error]:::client
     
-    CheckConcurrency -->|No| CommitTransaction[Update Product stocks, save Order & commit transaction]:::step
-    CommitTransaction --> CreatePaymentCOD[Create Order & Payment records with Pending status]:::step
+    CheckConcurrency -->|No| CommitTransaction[Update Product stocks, save Order and commit transaction]:::step
+    CommitTransaction --> CreatePaymentCOD[Create Order and Payment records with Pending status]:::step
     CreatePaymentCOD --> DeleteCartItems[Delete items from ShoppingCart database]:::step
     
     CreateOrderStripe --> DeleteCartItems
     DeleteCartItems --> SendEmail[Queue Order Confirmation SMTP email]:::step
-    SendEmail --> ConfirmPage[Display Invoice & OrderConfirmation page]:::client
+    SendEmail --> ConfirmPage[Display Invoice and OrderConfirmation page]:::client
 ```
-

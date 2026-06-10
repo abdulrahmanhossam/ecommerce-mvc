@@ -36,6 +36,7 @@ namespace ECommerceProject.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Add([FromBody] WishlistRequest request)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -75,6 +76,7 @@ namespace ECommerceProject.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Remove([FromBody] WishlistRequest request)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -108,6 +110,7 @@ namespace ECommerceProject.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> CheckIsInWishlist([FromBody] WishlistRequest request)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

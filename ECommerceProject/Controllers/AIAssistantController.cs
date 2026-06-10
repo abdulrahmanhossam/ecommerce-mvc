@@ -53,5 +53,7 @@ public class AskRequest
 {
     public string ProductName { get; set; } = string.Empty;
     public string? ProductDescription { get; set; }
+
+    [System.ComponentModel.DataAnnotations.Required]
     public string Question { get; set; } = string.Empty;
 }

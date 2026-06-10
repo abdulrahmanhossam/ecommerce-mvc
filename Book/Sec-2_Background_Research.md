@@ -84,16 +84,17 @@ eBay's auction model is not suitable for a fixed-price retail store. The platfor
 
 Comparing the three major platforms to a custom ASP.NET Core solution highlights how a custom self-hosted system bridges key operational and financial gaps for local merchants.
 
-The flowchart below categorizes the trade-offs between utilizing proprietary global platforms (Amazon, Noon, eBay) and deploying our custom, self-hosted system (ShopHub):
+The flowchart below categorizes the trade-offs between utilizing proprietary global platforms (Amazon, Noon, eBay) and deploying our custom, self-hosted system (Ataba):
 
 ```mermaid
+%%{init: {'theme': 'dark'}}%%
 graph TD
     classDef global fill:#444,stroke:#111,stroke-width:2px,color:#fff;
     classDef custom fill:#c9a227,stroke:#a8871f,stroke-width:2px,color:#000;
     classDef branch fill:#222,stroke:#555,stroke-width:1px,color:#fff;
 
     Root[E-Commerce Infrastructure Choices] --> Global[Global Proprietary Platforms<br/>Amazon / Noon / eBay]:::global
-    Root --> Custom[Custom Self-Hosted Solution<br/>ShopHub E-Commerce]:::custom
+    Root --> Custom[Custom Self-Hosted Solution<br/>Ataba E-Commerce]:::custom
 
     Global --> G1[High Fees<br/>10-20% Referral Commission]:::branch
     Global --> G2[Data Siloing<br/>No direct access to customer emails or SQL DB]:::branch
@@ -108,7 +109,7 @@ graph TD
 
 Below is the comparative table detailing the specific technical and financial metrics of each platform versus our proposed system:
 
-| Feature | Amazon | Noon | eBay | This Project (ShopHub) |
+| Feature | Amazon | Noon | eBay | This Project (Ataba) |
 |---|---|---|---|---|
 | Monthly subscription fee | Professional account $39.99/month | Commission-based | Store subscription $4.95-$27.95/month | None |
 | Per-transaction fee | 15% average referral fee | 10-20% estimated | 10-15% final value fee | Stripe processing fee only (2.9% + $0.30) |
@@ -126,7 +127,7 @@ The key differentiator is data ownership and customization. When a business uses
 
 To illustrate the product listing and filtering experience that our custom system offers, the interface below shows the AJAX-driven product catalog with the sidebar filters and sorting controls:
 
-![ShopHub Product Catalog and Filter Interface](images/products.jpeg)
+![Ataba Product Catalog and Filter Interface](images/products.jpeg)
 
 ---
 

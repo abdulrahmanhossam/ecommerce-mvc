@@ -102,21 +102,22 @@ This eliminates the flash of unstyled content that would occur if JavaScript set
 The flowchart below illustrates the detailed logic flow of the FOUC prevention and theme selection process:
 
 ```mermaid
-graph TD
+%%{init: {'theme': 'dark'}}%%
+graph LR
     classDef client fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
     classDef server fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
 
-    Start[User Visits ShopHub]:::client --> Request[Sends HTTP Request + Theme Cookie]:::client
-    Request --> ReadCookie[Server reads Context.Request.Cookies['theme']]:::server
-    ReadCookie --> DetermineTheme{Is Cookie Value 'light'?}:::server
-    DetermineTheme -->|Yes| SetLight[Set html data-bs-theme='light']:::server
-    DetermineTheme -->|No / Default| SetDark[Set html data-bs-theme='dark']:::server
+    Start[User Visits Ataba]:::client --> Request[Sends HTTP Request + Theme Cookie]:::client
+    Request --> ReadCookie["Server reads Context.Request.Cookies['theme']"]:::server
+    ReadCookie --> DetermineTheme{"Is Cookie Value 'light'?"}:::server
+    DetermineTheme -->|Yes| SetLight["Set html data-bs-theme='light'"]:::server
+    DetermineTheme -->|No / Default| SetDark["Set html data-bs-theme='dark'"]:::server
     SetLight --> StreamHTML[Stream HTML to Client]:::server
     SetDark --> StreamHTML
-    StreamHTML --> RenderBrowser[Browser renders page using theme variables]:::client
-    RenderBrowser --> FOUCPrevented[No Visual Flash / FOUC Prevented]:::client
-    RenderBrowser --> UserToggle[User clicks Theme Toggle Button]:::client
-    UserToggle --> JSChange[JavaScript switches html data-bs-theme & updates theme Cookie]:::client
+    StreamHTML --> RenderBrowser["Browser renders page using theme variables"]:::client
+    RenderBrowser --> FOUCPrevented["No Visual Flash / FOUC Prevented"]:::client
+    RenderBrowser --> UserToggle["User clicks Theme Toggle Button"]:::client
+    UserToggle --> JSChange["JavaScript switches html data-bs-theme and updates theme Cookie"]:::client
 ```
 
 ## 3.3 Layout Architecture
@@ -516,7 +517,8 @@ The product grid is loaded asynchronously via `fetch()` to `/Products/Filter`. T
 The flowchart below traces the complete AJAX request/response lifecycle:
 
 ```mermaid
-graph TD
+%%{init: {'theme': 'dark'}}%%
+graph LR
     classDef ui fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
     classDef js fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
     classDef controller fill:#2ca02c,stroke:#1b5e20,stroke-width:2px,color:#fff;
@@ -524,10 +526,10 @@ graph TD
     Trigger[User types in Search or changes Category/Sort/Price]:::ui --> Debounce{Debounce Timer active?}:::js
     Debounce -->|Yes| ResetTimer[Reset and restart timer]:::js
     Debounce -->|No / Expired| ShowOverlay[Display loadingOverlay block]:::js
-    ShowOverlay --> BuildQuery[Extract form input & build QueryString params]:::js
+    ShowOverlay --> BuildQuery[Extract form input and build QueryString params]:::js
     BuildQuery --> FetchRequest[Asynchronous fetch call to /Products/Filter?params]:::js
     FetchRequest --> Action[ProductsController.Filter handles AJAX request]:::controller
-    Action --> QueryDB[EF Core queries Database with filters & returns Products]:::controller
+    Action --> QueryDB[EF Core queries Database with filters and returns Products]:::controller
     QueryDB --> RenderPartial[Render partial view _ProductGrid.cshtml to HTML string]:::controller
     RenderPartial --> SendBack[Return HTML partial content]:::controller
     SendBack --> UpdateDOM[Update productGridContainer.innerHTML with response HTML]:::js
@@ -778,7 +780,7 @@ The hover media query fallback ensures AI buttons are visible on touch devices w
 
 The designed shopping cart interface offers users clear summaries of selected items, quantity manipulation, and real-time calculation of taxes (14% VAT) and shipping costs, as shown in the screenshot below:
 
-![ShopHub Shopping Cart Interface](images/cart.jpeg)
+![Ataba Shopping Cart Interface](images/cart.jpeg)
 
 ### 3.6.1 Cart Layout
 
@@ -907,7 +909,7 @@ Each item is a horizontal flex row with image thumbnail, details (title, variant
 
 The checkout page provides the final stage of purchase where shipping information is gathered, promotional coupon codes can be applied via AJAX, and the payment method (COD or Stripe) is selected, as illustrated below:
 
-![ShopHub Checkout and Order Summary Interface](images/checkout.jpeg)
+![Ataba Checkout and Order Summary Interface](images/checkout.jpeg)
 
 Two-column layout: shipping form (left) + order summary (right, sticky). The form uses ASP.NET Core tag helpers for model binding and client-side validation:
 
@@ -1510,7 +1512,7 @@ Radio-button driven selection with checked-state styling via `:has()`:
 
 Below is the designed UI for the product detail page, showcasing variant selection, the AI product assistant trigger, and related products list:
 
-![ShopHub Product Details Interface](images/product-details.jpeg)
+![Ataba Product Details Interface](images/product-details.jpeg)
 
 ```css
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2xl); align-items: start; }

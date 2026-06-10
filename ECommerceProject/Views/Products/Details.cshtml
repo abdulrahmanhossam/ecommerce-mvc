@@ -160,7 +160,9 @@
             <!-- AI Assistant -->
             <button type="button"
                     class="ai-assistant-btn"
-                    onclick="openAIModal('@Html.Raw(Model.Name.Replace("'", "\\'"))', '@Html.Raw(Model.Description?.Replace("'", "\\'").Replace("\n", " ").Replace("\r", ""))')">
+                    data-product-name="@Model.Name"
+                    data-product-description="@Model.Description"
+                    onclick="openAIModal(this.dataset.productName, this.dataset.productDescription)">
                 <i class="bi bi-sparkles" aria-hidden="true"></i>
                 Ask AI Assistant
             </button>
@@ -216,9 +218,9 @@
                 }
 
                 <!-- Write a Review -->
-                @if (User.Identity!.IsAuthenticated)
+                                        @if (User.Identity?.IsAuthenticated == true)
                 {
-                    @if (!ViewBag.HasReviewed)
+                    @if (ViewBag.HasReviewed as bool? != true)
                     {
                         <div class="mb-4">
                             <h5 class="mb-3">Write a Review</h5>
@@ -314,7 +316,7 @@
                                             }
                                         </span>
 
-                                        @if (User.Identity!.IsAuthenticated)
+                @if (User.Identity?.IsAuthenticated == true)
                                         {
                                             <button class="btn btn-ghost btn-sm" onclick="markHelpful(@review.Id, true)" aria-label="Mark as helpful">
                                                 <i class="bi bi-hand-thumbs-up" aria-hidden="true"></i>

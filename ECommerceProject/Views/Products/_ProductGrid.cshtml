@@ -43,7 +43,9 @@
                     </button>
 
                     <button class="ai-card-btn"
-                            onclick="event.preventDefault(); openAIModal('@Html.Raw(product.Name.Replace("'", "\\'"))', '@Html.Raw(product.Description?.Replace("'", "\\'").Replace("\n", " ").Replace("\r", ""))')"
+                            data-product-name="@product.Name"
+                            data-product-description="@product.Description"
+                            onclick="event.preventDefault(); openAIModal(this.dataset.productName, this.dataset.productDescription)"
                             title="Ask AI about this product"
                             aria-label="Ask AI about @product.Name">
                         <i class="bi bi-sparkles" aria-hidden="true"></i>

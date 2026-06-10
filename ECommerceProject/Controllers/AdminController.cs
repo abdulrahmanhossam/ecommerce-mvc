@@ -211,13 +211,31 @@ public class AdminController : Controller
                 return RedirectToAction(nameof(Users));
             }
 
-            // حذف العربة
+            // حذف البيانات المرتبطة
             var cartItems = await _unitOfWork.ShoppingCarts.GetAsync(c => c.UserId == userId);
             if (cartItems.Any())
-            {
                 _unitOfWork.ShoppingCarts.DeleteRange(cartItems);
-                await _unitOfWork.SaveAsync();
+
+            var wishlistItems = await _unitOfWork.Wishlists.GetAsync(w => w.UserId == userId);
+            if (wishlistItems.Any())
+                _unitOfWork.Wishlists.DeleteRange(wishlistItems);
+
+            var reviews = await _unitOfWork.ProductReviews.GetAsync(r => r.UserId == userId);
+            if (reviews.Any())
+                _unitOfWork.ProductReviews.DeleteRange(reviews);
+
+            var orders = await _unitOfWork.Orders.GetAsync(o => o.UserId == userId);
+            if (orders.Any())
+            {
+                var orderIds = orders.Select(o => o.Id).ToList();
+                var payments = await _unitOfWork.Payments.GetAsync(p => orderIds.Contains(p.OrderId));
+                if (payments.Any())
+                    _unitOfWork.Payments.DeleteRange(payments);
+
+                _unitOfWork.Orders.DeleteRange(orders);
             }
+
+            await _unitOfWork.SaveAsync();
 
             await _userManager.DeleteAsync(user);
 
@@ -370,6 +388,7 @@ public class AdminController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> RemoveProductImage(int id)
     {
         try
@@ -572,6 +591,7 @@ public class AdminController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> RemoveCategoryImage(int id)
     {
         try

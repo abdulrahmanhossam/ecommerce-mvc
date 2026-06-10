@@ -75,6 +75,9 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
+// Tax Settings
+builder.Services.Configure<ECommerceProject.Models.TaxSettings>(builder.Configuration.GetSection("TaxSettings"));
+
 // Caching
 builder.Services.AddMemoryCache();
 builder.Services.AddResponseCaching();

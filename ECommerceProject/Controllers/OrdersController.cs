@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using ECommerceProject.Data.Interfaces;
+using ECommerceProject.Models.ViewModels;
 
 namespace ECommerceProject.Controllers
 {
@@ -17,7 +18,7 @@ namespace ECommerceProject.Controllers
         }
 
         // GET: Orders/MyOrders
-        public async Task<IActionResult> MyOrders()
+        public async Task<IActionResult> MyOrders(int page = 1)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -26,10 +27,13 @@ namespace ECommerceProject.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            var orders = await _unitOfWork.Orders.GetAsync(o => o.UserId == userId, asNoTracking: true);
-            var ordersList = orders.OrderByDescending(o => o.OrderDate).ToList();
+            var query = _unitOfWork.Orders.GetQueryable(asNoTracking: true)
+                .Where(o => o.UserId == userId)
+                .OrderByDescending(o => o.OrderDate);
 
-            return View(ordersList);
+            var orders = await PaginatedList<ECommerceProject.Models.Entities.Order>.CreateAsync(query, page, 10);
+
+            return View(orders);
         }
 
         // GET: Orders/Details/5

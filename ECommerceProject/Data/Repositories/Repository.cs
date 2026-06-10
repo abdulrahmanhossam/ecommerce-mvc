@@ -66,7 +66,10 @@ namespace ECommerceProject.Data.Repositories
         {
             var query = GetQueryable(asNoTracking);
             query = ApplyIncludes(query, includes);
-            return await query.FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id);
+            var pkProperty = _context.Model.FindEntityType(typeof(T))?.FindPrimaryKey()?.Properties.FirstOrDefault();
+            if (pkProperty == null)
+                return await query.FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id);
+            return await query.FirstOrDefaultAsync(e => EF.Property<int>(e, pkProperty.Name) == id);
         }
 
         public async Task<T?> GetFirstOrDefaultAsync(Expression<Func<T, bool>> filter)

@@ -45,5 +45,6 @@ namespace ECommerceProject.Models.Entities
         public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public virtual ICollection<ShoppingCart> ShoppingCarts { get; set; } = new List<ShoppingCart>();
         public virtual ICollection<ProductVariant> ProductVariants { get; set; } = new List<ProductVariant>();
+        public virtual ICollection<ProductReview> ProductReviews { get; set; } = new List<ProductReview>();
     }
 }

@@ -225,6 +225,15 @@ namespace ECommerceProject.Controllers
         {
             try
             {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var cookieKey = $"voted_review_{reviewId}";
+                var alreadyVoted = Request.Cookies[cookieKey] == "1";
+
+                if (alreadyVoted)
+                {
+                    return Json(new { success = false, message = "You have already voted on this review." });
+                }
+
                 var review = await _unitOfWork.ProductReviews.GetByIdAsync(reviewId);
 
                 if (review != null)
@@ -240,6 +249,14 @@ namespace ECommerceProject.Controllers
 
                     _unitOfWork.ProductReviews.Update(review);
                     await _unitOfWork.SaveAsync();
+
+                    Response.Cookies.Append(cookieKey, "1", new CookieOptions
+                    {
+                        Expires = DateTimeOffset.UtcNow.AddYears(1),
+                        SameSite = SameSiteMode.Lax,
+                        HttpOnly = true,
+                        Secure = true
+                    });
 
                     return Json(new { success = true, helpfulCount = review.HelpfulCount, notHelpfulCount = review.NotHelpfulCount });
                 }

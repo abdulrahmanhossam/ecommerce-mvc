@@ -100,6 +100,10 @@ The AI assistant is accessible from any product detail page. Users click a butto
 
 The wishlist module lets users save products for later. It supports adding and removing items via AJAX, checking if a product is in the wishlist, and displaying the wishlist count in the navigation bar.
 
+**Order History**
+
+Authenticated users can view all their past orders through the `OrdersController`, which provides a list view (`MyOrders`) and a detailed view (`Details`) for each individual order with its line items and payment status.
+
 ## 1.5 Technology Stack
 
 The following table lists the key technologies used in this project along with the specific version and purpose.
@@ -179,6 +183,7 @@ The middleware pipeline order is important. `UseAuthentication` and `UseAuthoriz
 The following system architecture flowchart illustrates the relationships between the client-side browser, MVC controllers, application business services, the repository/data access layer, SQL Server database, and external APIs (Google Gemini, Stripe, and SMTP).
 
 ```mermaid
+%%{init: {'theme': 'dark'}}%%
 graph TD
     classDef client fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
     classDef controller fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
@@ -190,13 +195,14 @@ graph TD
     Client[Client Browser / Desktop & Mobile]:::client
 
     subgraph "ASP.NET Core 10.0 MVC Monolithic Application"
-        Controllers[MVC Controllers<br/>Home, Products, Cart, Checkout, Admin, AI]:::controller
+        Controllers["MVC Controllers<br/>Home | Account | Products | Cart | Checkout<br/>Admin | Wishlist | Orders | Contact | About | FAQ | AIAssistant"]:::controller
         
         subgraph "Services & Business Logic"
             GeminiService[GeminiService<br/>IGeminiService]:::service
             PaymentService[StripePaymentService<br/>IPaymentService]:::service
             EmailService[EmailService<br/>IEmailService]:::service
             AnalyticsService[AnalyticsService<br/>IAnalyticsService]:::service
+            ImageService[ImageService<br/>IImageService]:::service
         end
         
         subgraph "Data Access Layer"
@@ -211,12 +217,13 @@ graph TD
     GmailSMTP[Gmail SMTP Server]:::external
 
     %% Connections
-    Client <=>|HTTPS Request / HTML & AJAX| Controllers
+    Client <-->|HTTPS Request / HTML and AJAX| Controllers
     
     Controllers --> GeminiService
     Controllers --> PaymentService
     Controllers --> EmailService
     Controllers --> AnalyticsService
+    Controllers --> ImageService
     Controllers --> UoW
     
     GeminiService --> GeminiAPI
@@ -229,19 +236,20 @@ graph TD
 
 To provide an immediate understanding of the visual style and design aesthetics of the developed application, the homepage design is presented below. It features the responsive glassmorphism header, the hero banner with a dynamic visual ring, and the auto-fill grids for categories and featured products:
 
-![ShopHub E-Commerce Homepage](images/home.jpeg)
+![Ataba E-Commerce Homepage](images/home.jpeg)
 
 ---
 
 ## 1.7 Report Organization
 
-This book is divided into seven detailed sections:
+This book is divided into eight detailed sections:
 
 - **Section 1** (this section) introduces the project, defines the problem it solves, lists the objectives, and describes the scope, technology stack, high-level architecture, and the primary user interface.
 - **Section 2** presents background research on existing E-commerce platforms including Amazon, Noon, and eBay. It analyzes their business models, technical architectures, and limitations, compares them to our custom system, and highlights our competitive advantages.
 - **Section 3** describes the frontend implementation. It covers the Razor view structure, Bootstrap 5 layout, AJAX filtering, responsive design, and JavaScript features including the cart, wishlist, and the AI assistant modal.
 - **Section 4** focuses on the AI integration. It explains how the Google Gemini API is called from ASP.NET Core, how the prompt is constructed, how rate limiting and errors are handled, and the security measures around the API.
 - **Section 5** covers the backend architecture in detail. It includes the database schema with all entity models, the repository and unit of work patterns, controller logic for each module, authentication and authorization configuration, payment processing with Stripe and COD, concurrency control with row versioning, and core support services.
-- **Section 6** details the Agile development methodology, including 36 user stories across 7 epics, and presents a complete visual walkthrough of the designed system's screens and step-by-step user interaction steps.
+- **Section 6** details the Agile development methodology, including 38 user stories across 7 epics (covering all implemented controller actions from authentication and checkout through AI assistant, order history, and account deletion), and presents a complete visual walkthrough of the designed system's screens and step-by-step user interaction steps.
 - **Section 7** presents system modeling and diagrams, including the Entity-Relationship Diagram (ERD), System Use Case Diagram, Checkout Sequence Diagram, and the overall System Program Flowchart.
+- **Section 8** concludes the book, summarizes achievements and future developmental scopes, and outlines technical academic references.
 

@@ -298,25 +298,8 @@ namespace ECommerceProject.Controllers
                 MemberSince = user.CreatedDate
             };
 
-            // جلب إحصائيات المستخدم
-            var orders = (await _unitOfWork.Orders.GetAsync(o => o.UserId == userId, asNoTracking: true)).ToList();
-            ViewBag.TotalOrders = orders.Count;
-            ViewBag.TotalSpent = orders.Sum(o => o.TotalAmount);
-            ViewBag.PendingOrders = orders.Count(o => 
-                o.Status == ECommerceProject.Models.Enums.OrderStatus.Pending || 
-                o.Status == ECommerceProject.Models.Enums.OrderStatus.Paid || 
-                o.Status == ECommerceProject.Models.Enums.OrderStatus.Processing);
-            ViewBag.CompletedOrders = orders.Count(o => o.Status == ECommerceProject.Models.Enums.OrderStatus.Delivered);
-
-            // Wishlist count
-            ViewBag.WishlistCount = await _unitOfWork.Wishlists.CountAsync(w => w.UserId == userId);
-
-            // Cart count
-            ViewBag.CartCount = await _unitOfWork.ShoppingCarts.CountAsync(c => c.UserId == userId);
-
-            // Recent orders
-            var recentOrders = orders.OrderByDescending(o => o.OrderDate).Take(3).ToList();
-            ViewBag.RecentOrders = recentOrders;
+            await PopulateProfileViewBagAsync(userId);
+            ViewBag.MemberSince = user.CreatedDate;
 
             return View(model);
         }
@@ -332,17 +315,7 @@ namespace ECommerceProject.Controllers
                 if (string.IsNullOrEmpty(userId))
                     return RedirectToAction(nameof(Login));
 
-                var orders = (await _unitOfWork.Orders.GetAsync(o => o.UserId == userId, asNoTracking: true)).ToList();
-                ViewBag.TotalOrders = orders.Count;
-                ViewBag.TotalSpent = orders.Sum(o => o.TotalAmount);
-                ViewBag.PendingOrders = orders.Count(o => 
-                    o.Status == ECommerceProject.Models.Enums.OrderStatus.Pending || 
-                    o.Status == ECommerceProject.Models.Enums.OrderStatus.Paid || 
-                    o.Status == ECommerceProject.Models.Enums.OrderStatus.Processing);
-                ViewBag.CompletedOrders = orders.Count(o => o.Status == ECommerceProject.Models.Enums.OrderStatus.Delivered);
-                ViewBag.WishlistCount = await _unitOfWork.Wishlists.CountAsync(w => w.UserId == userId);
-                ViewBag.CartCount = await _unitOfWork.ShoppingCarts.CountAsync(c => c.UserId == userId);
-                ViewBag.RecentOrders = orders.OrderByDescending(o => o.OrderDate).Take(3).ToList();
+                await PopulateProfileViewBagAsync(userId);
                 ViewBag.MemberSince = (await _userManager.FindByIdAsync(userId))?.CreatedDate;
 
                 return View(model);
@@ -357,7 +330,6 @@ namespace ECommerceProject.Controllers
             if (user == null)
                 return NotFound();
 
-            // تحديث البيانات
             user.FullName = model.FullName;
             user.PhoneNumber = model.PhoneNumber;
             user.Address = model.Address;
@@ -377,17 +349,26 @@ namespace ECommerceProject.Controllers
                 ModelState.AddModelError(string.Empty, error.Description);
             }
 
-            var orders2 = await _unitOfWork.Orders.GetAsync(o => o.UserId == currentUserId, asNoTracking: true);
-            ViewBag.TotalOrders = orders2.Count();
-            ViewBag.TotalSpent = orders2.Sum(o => o.TotalAmount);
-            ViewBag.PendingOrders = orders2.Count(o => o.Status == ECommerceProject.Models.Enums.OrderStatus.Pending);
-            ViewBag.CompletedOrders = orders2.Count(o => o.Status == ECommerceProject.Models.Enums.OrderStatus.Delivered);
-            ViewBag.WishlistCount = await _unitOfWork.Wishlists.CountAsync(w => w.UserId == currentUserId);
-            ViewBag.CartCount = await _unitOfWork.ShoppingCarts.CountAsync(c => c.UserId == currentUserId);
-            ViewBag.RecentOrders = orders2.OrderByDescending(o => o.OrderDate).Take(3).ToList();
+            await PopulateProfileViewBagAsync(currentUserId);
             ViewBag.MemberSince = user.CreatedDate;
 
             return View(model);
+        }
+
+        private async Task PopulateProfileViewBagAsync(string userId)
+        {
+            var orders = (await _unitOfWork.Orders.GetAsync(o => o.UserId == userId, asNoTracking: true)).ToList();
+            ViewBag.TotalOrders = orders.Count;
+            ViewBag.TotalSpent = orders.Sum(o => o.TotalAmount);
+            ViewBag.PendingOrders = orders.Count(o =>
+                o.Status == ECommerceProject.Models.Enums.OrderStatus.Pending ||
+                o.Status == ECommerceProject.Models.Enums.OrderStatus.Paid ||
+                o.Status == ECommerceProject.Models.Enums.OrderStatus.Processing);
+            ViewBag.CompletedOrders = orders.Count(o => o.Status == ECommerceProject.Models.Enums.OrderStatus.Delivered);
+
+            ViewBag.WishlistCount = await _unitOfWork.Wishlists.CountAsync(w => w.UserId == userId);
+            ViewBag.CartCount = await _unitOfWork.ShoppingCarts.CountAsync(c => c.UserId == userId);
+            ViewBag.RecentOrders = orders.OrderByDescending(o => o.OrderDate).Take(3).ToList();
         }
 
         // ==================== CHANGE PASSWORD ====================
@@ -458,39 +439,59 @@ namespace ECommerceProject.Controllers
             if (user == null)
                 return NotFound();
 
-            // حذف البيانات المرتبطة قبل حذف المستخدم (FK constraints)
-            var cartItems = await _unitOfWork.ShoppingCarts.GetAsync(c => c.UserId == userId);
-            if (cartItems.Any())
-                _unitOfWork.ShoppingCarts.DeleteRange(cartItems);
+            await using var transaction = await _unitOfWork.BeginTransactionAsync();
 
-            var wishlistItems = await _unitOfWork.Wishlists.GetAsync(w => w.UserId == userId);
-            if (wishlistItems.Any())
-                _unitOfWork.Wishlists.DeleteRange(wishlistItems);
-
-            var reviews = await _unitOfWork.ProductReviews.GetAsync(r => r.UserId == userId);
-            if (reviews.Any())
-                _unitOfWork.ProductReviews.DeleteRange(reviews);
-
-            var orders = await _unitOfWork.Orders.GetAsync(o => o.UserId == userId);
-            if (orders.Any())
-                _unitOfWork.Orders.DeleteRange(orders);
-
-            await _unitOfWork.SaveAsync();
-
-            // حذف المستخدم
-            var result = await _userManager.DeleteAsync(user);
-
-            if (result.Succeeded)
+            try
             {
-                await _signInManager.SignOutAsync();
-                _logger.LogInformation($"User {user.Email} deleted their account");
+                // حذف البيانات المرتبطة قبل حذف المستخدم (FK constraints)
+                var cartItems = await _unitOfWork.ShoppingCarts.GetAsync(c => c.UserId == userId);
+                if (cartItems.Any())
+                    _unitOfWork.ShoppingCarts.DeleteRange(cartItems);
 
-                TempData["SuccessMessage"] = "Your account has been deleted.";
-                return RedirectToAction("Index", "Home");
+                var wishlistItems = await _unitOfWork.Wishlists.GetAsync(w => w.UserId == userId);
+                if (wishlistItems.Any())
+                    _unitOfWork.Wishlists.DeleteRange(wishlistItems);
+
+                var reviews = await _unitOfWork.ProductReviews.GetAsync(r => r.UserId == userId);
+                if (reviews.Any())
+                    _unitOfWork.ProductReviews.DeleteRange(reviews);
+
+                // جلب الـ Payments المرتبطة بالأوردرات وحذفها
+                var orders = await _unitOfWork.Orders.GetAsync(o => o.UserId == userId);
+                if (orders.Any())
+                {
+                    var orderIds = orders.Select(o => o.Id).ToList();
+                    var payments = await _unitOfWork.Payments.GetAsync(p => orderIds.Contains(p.OrderId));
+                    if (payments.Any())
+                        _unitOfWork.Payments.DeleteRange(payments);
+
+                    _unitOfWork.Orders.DeleteRange(orders);
+                }
+
+                await _unitOfWork.SaveAsync();
+
+                // حذف المستخدم
+                var result = await _userManager.DeleteAsync(user);
+
+                if (result.Succeeded)
+                {
+                    await transaction.CommitAsync();
+                    await _signInManager.SignOutAsync();
+                    _logger.LogInformation("User {Email} deleted their account", user.Email);
+
+                    TempData["SuccessMessage"] = "Your account has been deleted.";
+                    return RedirectToAction("Index", "Home");
+                }
+
+                await transaction.RollbackAsync();
+                TempData["ErrorMessage"] = "Failed to delete account.";
+                return RedirectToAction(nameof(Profile));
             }
-
-            TempData["ErrorMessage"] = "Failed to delete account.";
-            return RedirectToAction(nameof(Profile));
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         // ==================== ACCESS DENIED ====================

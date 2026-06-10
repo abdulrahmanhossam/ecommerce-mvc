@@ -30,6 +30,7 @@ namespace ECommerceProject.Controllers
         private readonly ILogger<CheckoutController> _logger;
         private readonly IWebHostEnvironment _env;
         private readonly StripeSettings _stripeSettings;
+        private readonly decimal _taxRate;
 
         public CheckoutController(
             IUnitOfWork unitOfWork,
@@ -38,7 +39,8 @@ namespace ECommerceProject.Controllers
             IPaymentService paymentService,
             ILogger<CheckoutController> logger,
             IWebHostEnvironment env,
-            IOptions<StripeSettings> stripeSettings)
+            IOptions<StripeSettings> stripeSettings,
+            IOptions<ECommerceProject.Models.TaxSettings> taxSettings)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
@@ -47,6 +49,7 @@ namespace ECommerceProject.Controllers
             _logger = logger;
             _env = env;
             _stripeSettings = stripeSettings.Value;
+            _taxRate = taxSettings.Value.TaxRate;
         }
 
         // GET: Checkout
@@ -71,7 +74,7 @@ namespace ECommerceProject.Controllers
             }
 
             var subtotal = cartItems.Sum(item => item.Product.Price * item.Quantity);
-            var tax = subtotal * 0.14m;
+            var tax = subtotal * _taxRate;
             var total = subtotal + tax;
 
             ViewBag.Subtotal = subtotal;
@@ -119,8 +122,8 @@ namespace ECommerceProject.Controllers
                         .Sum(item => item.Product!.Price * item.Quantity);
 
                     ViewBag.Subtotal = subtotal;
-                    ViewBag.Tax = subtotal * 0.14m;
-                    ViewBag.Total = subtotal * 1.14m;
+                    ViewBag.Tax = subtotal * _taxRate;
+                    ViewBag.Total = subtotal * (1 + _taxRate);
                 }
                 catch (Exception ex)
                 {
@@ -168,8 +171,8 @@ namespace ECommerceProject.Controllers
                             c => c.Product);
                         var subtotalForView = cartItemsForView.Sum(ci => (ci.Product?.Price ?? 0) * ci.Quantity);
                         ViewBag.Subtotal = subtotalForView;
-                        ViewBag.Tax = subtotalForView * 0.14m;
-                        ViewBag.Total = subtotalForView * 1.14m;
+                        ViewBag.Tax = subtotalForView * _taxRate;
+                        ViewBag.Total = subtotalForView * (1 + _taxRate);
 
                         foreach (var item in outOfStockItems)
                         {
@@ -203,7 +206,7 @@ namespace ECommerceProject.Controllers
                         _unitOfWork.Products.Update(product);
                     }
 
-                    decimal tax = subtotal * 0.14m;
+                    decimal tax = subtotal * _taxRate;
                     decimal totalAmount = subtotal + tax;
 
                     int? promoCodeId = null;
@@ -452,8 +455,9 @@ namespace ECommerceProject.Controllers
         {
             try
             {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
-                if (order == null)
+                if (order == null || order.UserId != userId)
                 {
                     return NotFound();
                 }
@@ -472,7 +476,6 @@ namespace ECommerceProject.Controllers
 
                 TempData["SuccessMessage"] = "Payment successful! Your order has been confirmed.";
 
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (!string.IsNullOrEmpty(userId))
                 {
                     var user = await _userManager.FindByIdAsync(userId);
@@ -508,7 +511,13 @@ namespace ECommerceProject.Controllers
         {
             try
             {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
+                if (order == null || order.UserId != userId)
+                {
+                    return NotFound();
+                }
+
                 if (order != null)
                 {
                     var payment = await _unitOfWork.Payments.GetFirstOrDefaultAsync(p => p.OrderId == orderId);

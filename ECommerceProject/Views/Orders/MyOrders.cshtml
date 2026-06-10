@@ -1,6 +1,7 @@
-@model IEnumerable<ECommerceProject.Models.Entities.Order>
+@model ECommerceProject.Models.ViewModels.PaginatedList<ECommerceProject.Models.Entities.Order>
 @{
     ViewData["Title"] = "My Orders";
+    var pageSize = 10;
 }
 
 <div class="py-4">
@@ -9,10 +10,10 @@
         My Orders
     </h2>
 
-    @if (Model != null && Model.Any())
+    @if (Model != null && Model.Items.Any())
     {
         <div class="flex flex-col gap-md">
-            @foreach (var order in Model)
+            @foreach (var order in Model.Items)
             {
                 <div class="card">
                     <div class="card-body" style="padding: 1.25rem;">
@@ -58,6 +59,44 @@
                 </div>
             }
         </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="pagination mt-4" aria-label="Orders pagination">
+                @if (Model.HasPreviousPage)
+                {
+                    <a class="page-link" asp-action="MyOrders" asp-route-page="@(Model.PageIndex - 1)">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                }
+                else
+                {
+                    <span class="page-link disabled"><i class="bi bi-chevron-left"></i></span>
+                }
+
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <a class="page-link @(i == Model.PageIndex ? "active" : "")"
+                       asp-action="MyOrders" asp-route-page="@i"
+                       aria-label="Page @i">@i</a>
+                }
+
+                @if (Model.HasNextPage)
+                {
+                    <a class="page-link" asp-action="MyOrders" asp-route-page="@(Model.PageIndex + 1)">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                }
+                else
+                {
+                    <span class="page-link disabled"><i class="bi bi-chevron-right"></i></span>
+                }
+            </nav>
+
+            <p class="page-info text-center mt-2">
+                Showing @((Model.PageIndex - 1) * pageSize + 1)-@Math.Min(Model.PageIndex * pageSize, Model.TotalCount) of @Model.TotalCount
+            </p>
+        }
     }
     else
     {
@@ -71,4 +110,4 @@
             </a>
         </div>
     }
-}
+</div>

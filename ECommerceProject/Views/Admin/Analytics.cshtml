@@ -206,7 +206,7 @@
         new Chart(dailySalesCtx, {
         type: 'line',
         data: {
-        labels: [@Html.Raw(string.Join(",", Model.DailySales.Select(d => $"'{d.Date:MMM dd}'")))],
+        labels: @Json.Serialize(Model.DailySales.Select(d => d.Date.ToString("MMM dd")).ToList()),
         datasets: [{
         label: 'Revenue',
         data: [@string.Join(",", Model.DailySales.Select(d => d.Revenue))],
@@ -272,7 +272,7 @@
         new Chart(monthlySalesCtx, {
         type: 'bar',
         data: {
-        labels: [@Html.Raw(string.Join(",", Model.MonthlySales.Select(m => $"'{m.MonthName}'")))],
+        labels: @Json.Serialize(Model.MonthlySales.Select(m => m.MonthName).ToList()),
         datasets: [{
         label: 'Monthly Revenue',
         data: [@string.Join(",", Model.MonthlySales.Select(m => m.Revenue))],
@@ -302,7 +302,7 @@
         new Chart(categoryCtx, {
         type: 'pie',
         data: {
-        labels: [@Html.Raw(string.Join(",", Model.CategorySales.Select(c => $"'{c.CategoryName}'")))],
+        labels: @Json.Serialize(Model.CategorySales.Select(c => c.CategoryName).ToList()),
         datasets: [{
         data: [@string.Join(",", Model.CategorySales.Select(c => c.Revenue))],
         backgroundColor: [

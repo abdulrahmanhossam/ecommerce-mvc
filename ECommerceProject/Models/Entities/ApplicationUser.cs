@@ -1,9 +1,12 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
 
 namespace ECommerceProject.Models.Entities
 {
     public class ApplicationUser : IdentityUser
     {
+        [Required]
+        [StringLength(100)]
         public string FullName { get; set; } = string.Empty;
         public string? Address { get; set; }
         public string? City { get; set; }

@@ -152,9 +152,17 @@ namespace ECommerceProject.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            if (quantity > product.Stock)
+            var availableStock = product.Stock;
+            if (cartItem.ProductVariantId.HasValue)
             {
-                TempData["ErrorMessage"] = $"Only {product.Stock} units available.";
+                var variant = await _unitOfWork.ProductVariants.GetFirstOrDefaultAsync(v => v.Id == cartItem.ProductVariantId.Value);
+                if (variant != null)
+                    availableStock = variant.Stock;
+            }
+
+            if (quantity > availableStock)
+            {
+                TempData["ErrorMessage"] = $"Only {availableStock} units available.";
                 return RedirectToAction(nameof(Index));
             }
 

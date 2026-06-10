@@ -18,8 +18,10 @@ namespace ECommerceProject.Models.Entities
         public string? Color { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
-        public decimal AdditionalPrice { get; set; } = 0; // سعر إضافي للمقاس/اللون
+        [Range(0, double.MaxValue, ErrorMessage = "Additional price cannot be negative")]
+        public decimal AdditionalPrice { get; set; } = 0;
 
+        [Range(0, int.MaxValue, ErrorMessage = "Stock cannot be negative")]
         public int Stock { get; set; } = 0;
 
         [Timestamp]

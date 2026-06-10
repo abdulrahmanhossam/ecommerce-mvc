@@ -1,3 +1,7 @@
+---
+title: Ataba
+---
+
 # Table of Contents
 
 | Section / Chapter | Title | Page |
@@ -73,6 +77,9 @@
 | 7.2 | System Use Case Diagram | 107 |
 | 7.3 | Checkout Sequence Diagram | 109 |
 | 7.4 | Overall Program Flowchart | 112 |
+| **Section 8** | **Conclusion & References** | **115** |
+| 8.1 | Conclusion | 115 |
+| 8.2 | References | 116 |
 
 <div style="page-break-after: always;"></div>
 
@@ -178,6 +185,10 @@ The AI assistant is accessible from any product detail page. Users click a butto
 
 The wishlist module lets users save products for later. It supports adding and removing items via AJAX, checking if a product is in the wishlist, and displaying the wishlist count in the navigation bar.
 
+**Order History**
+
+Authenticated users can view all their past orders through the `OrdersController`, which provides a list view (`MyOrders`) and a detailed view (`Details`) for each individual order with its line items and payment status.
+
 ## 1.5 Technology Stack
 
 The following table lists the key technologies used in this project along with the specific version and purpose.
@@ -257,6 +268,7 @@ The middleware pipeline order is important. `UseAuthentication` and `UseAuthoriz
 The following system architecture flowchart illustrates the relationships between the client-side browser, MVC controllers, application business services, the repository/data access layer, SQL Server database, and external APIs (Google Gemini, Stripe, and SMTP).
 
 ```mermaid
+%%{init: {'theme': 'dark'}}%%
 graph TD
     classDef client fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
     classDef controller fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
@@ -268,13 +280,14 @@ graph TD
     Client[Client Browser / Desktop & Mobile]:::client
 
     subgraph "ASP.NET Core 10.0 MVC Monolithic Application"
-        Controllers[MVC Controllers<br/>Home, Products, Cart, Checkout, Admin, AI]:::controller
+        Controllers["MVC Controllers<br/>Home | Account | Products | Cart | Checkout<br/>Admin | Wishlist | Orders | Contact | About | FAQ | AIAssistant"]:::controller
         
         subgraph "Services & Business Logic"
             GeminiService[GeminiService<br/>IGeminiService]:::service
             PaymentService[StripePaymentService<br/>IPaymentService]:::service
             EmailService[EmailService<br/>IEmailService]:::service
             AnalyticsService[AnalyticsService<br/>IAnalyticsService]:::service
+            ImageService[ImageService<br/>IImageService]:::service
         end
         
         subgraph "Data Access Layer"
@@ -289,12 +302,13 @@ graph TD
     GmailSMTP[Gmail SMTP Server]:::external
 
     %% Connections
-    Client <=>|HTTPS Request / HTML & AJAX| Controllers
+    Client <-->|HTTPS Request / HTML and AJAX| Controllers
     
     Controllers --> GeminiService
     Controllers --> PaymentService
     Controllers --> EmailService
     Controllers --> AnalyticsService
+    Controllers --> ImageService
     Controllers --> UoW
     
     GeminiService --> GeminiAPI
@@ -307,21 +321,22 @@ graph TD
 
 To provide an immediate understanding of the visual style and design aesthetics of the developed application, the homepage design is presented below. It features the responsive glassmorphism header, the hero banner with a dynamic visual ring, and the auto-fill grids for categories and featured products:
 
-![ShopHub E-Commerce Homepage](images/home.jpeg)
+![Ataba E-Commerce Homepage](images/home.jpeg)
 
 ---
 
 ## 1.7 Report Organization
 
-This book is divided into seven detailed sections:
+This book is divided into eight detailed sections:
 
 - **Section 1** (this section) introduces the project, defines the problem it solves, lists the objectives, and describes the scope, technology stack, high-level architecture, and the primary user interface.
 - **Section 2** presents background research on existing E-commerce platforms including Amazon, Noon, and eBay. It analyzes their business models, technical architectures, and limitations, compares them to our custom system, and highlights our competitive advantages.
 - **Section 3** describes the frontend implementation. It covers the Razor view structure, Bootstrap 5 layout, AJAX filtering, responsive design, and JavaScript features including the cart, wishlist, and the AI assistant modal.
 - **Section 4** focuses on the AI integration. It explains how the Google Gemini API is called from ASP.NET Core, how the prompt is constructed, how rate limiting and errors are handled, and the security measures around the API.
 - **Section 5** covers the backend architecture in detail. It includes the database schema with all entity models, the repository and unit of work patterns, controller logic for each module, authentication and authorization configuration, payment processing with Stripe and COD, concurrency control with row versioning, and core support services.
-- **Section 6** details the Agile development methodology, including 36 user stories across 7 epics, and presents a complete visual walkthrough of the designed system's screens and step-by-step user interaction steps.
+- **Section 6** details the Agile development methodology, including 38 user stories across 7 epics (covering all implemented controller actions from authentication and checkout through AI assistant, order history, and account deletion), and presents a complete visual walkthrough of the designed system's screens and step-by-step user interaction steps.
 - **Section 7** presents system modeling and diagrams, including the Entity-Relationship Diagram (ERD), System Use Case Diagram, Checkout Sequence Diagram, and the overall System Program Flowchart.
+- **Section 8** concludes the book, summarizes achievements and future developmental scopes, and outlines technical academic references.
 
 
 
@@ -413,16 +428,17 @@ eBay's auction model is not suitable for a fixed-price retail store. The platfor
 
 Comparing the three major platforms to a custom ASP.NET Core solution highlights how a custom self-hosted system bridges key operational and financial gaps for local merchants.
 
-The flowchart below categorizes the trade-offs between utilizing proprietary global platforms (Amazon, Noon, eBay) and deploying our custom, self-hosted system (ShopHub):
+The flowchart below categorizes the trade-offs between utilizing proprietary global platforms (Amazon, Noon, eBay) and deploying our custom, self-hosted system (Ataba):
 
 ```mermaid
+%%{init: {'theme': 'dark'}}%%
 graph TD
     classDef global fill:#444,stroke:#111,stroke-width:2px,color:#fff;
     classDef custom fill:#c9a227,stroke:#a8871f,stroke-width:2px,color:#000;
     classDef branch fill:#222,stroke:#555,stroke-width:1px,color:#fff;
 
     Root[E-Commerce Infrastructure Choices] --> Global[Global Proprietary Platforms<br/>Amazon / Noon / eBay]:::global
-    Root --> Custom[Custom Self-Hosted Solution<br/>ShopHub E-Commerce]:::custom
+    Root --> Custom[Custom Self-Hosted Solution<br/>Ataba E-Commerce]:::custom
 
     Global --> G1[High Fees<br/>10-20% Referral Commission]:::branch
     Global --> G2[Data Siloing<br/>No direct access to customer emails or SQL DB]:::branch
@@ -437,7 +453,7 @@ graph TD
 
 Below is the comparative table detailing the specific technical and financial metrics of each platform versus our proposed system:
 
-| Feature | Amazon | Noon | eBay | This Project (ShopHub) |
+| Feature | Amazon | Noon | eBay | This Project (Ataba) |
 |---|---|---|---|---|
 | Monthly subscription fee | Professional account $39.99/month | Commission-based | Store subscription $4.95-$27.95/month | None |
 | Per-transaction fee | 15% average referral fee | 10-20% estimated | 10-15% final value fee | Stripe processing fee only (2.9% + $0.30) |
@@ -455,7 +471,7 @@ The key differentiator is data ownership and customization. When a business uses
 
 To illustrate the product listing and filtering experience that our custom system offers, the interface below shows the AJAX-driven product catalog with the sidebar filters and sorting controls:
 
-![ShopHub Product Catalog and Filter Interface](images/products.jpeg)
+![Ataba Product Catalog and Filter Interface](images/products.jpeg)
 
 ---
 
@@ -825,21 +841,22 @@ This eliminates the flash of unstyled content that would occur if JavaScript set
 The flowchart below illustrates the detailed logic flow of the FOUC prevention and theme selection process:
 
 ```mermaid
-graph TD
+%%{init: {'theme': 'dark'}}%%
+graph LR
     classDef client fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
     classDef server fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
 
-    Start[User Visits ShopHub]:::client --> Request[Sends HTTP Request + Theme Cookie]:::client
-    Request --> ReadCookie[Server reads Context.Request.Cookies['theme']]:::server
-    ReadCookie --> DetermineTheme{Is Cookie Value 'light'?}:::server
-    DetermineTheme -->|Yes| SetLight[Set html data-bs-theme='light']:::server
-    DetermineTheme -->|No / Default| SetDark[Set html data-bs-theme='dark']:::server
+    Start[User Visits Ataba]:::client --> Request[Sends HTTP Request + Theme Cookie]:::client
+    Request --> ReadCookie["Server reads Context.Request.Cookies['theme']"]:::server
+    ReadCookie --> DetermineTheme{"Is Cookie Value 'light'?"}:::server
+    DetermineTheme -->|Yes| SetLight["Set html data-bs-theme='light'"]:::server
+    DetermineTheme -->|No / Default| SetDark["Set html data-bs-theme='dark'"]:::server
     SetLight --> StreamHTML[Stream HTML to Client]:::server
     SetDark --> StreamHTML
-    StreamHTML --> RenderBrowser[Browser renders page using theme variables]:::client
-    RenderBrowser --> FOUCPrevented[No Visual Flash / FOUC Prevented]:::client
-    RenderBrowser --> UserToggle[User clicks Theme Toggle Button]:::client
-    UserToggle --> JSChange[JavaScript switches html data-bs-theme & updates theme Cookie]:::client
+    StreamHTML --> RenderBrowser["Browser renders page using theme variables"]:::client
+    RenderBrowser --> FOUCPrevented["No Visual Flash / FOUC Prevented"]:::client
+    RenderBrowser --> UserToggle["User clicks Theme Toggle Button"]:::client
+    UserToggle --> JSChange["JavaScript switches html data-bs-theme and updates theme Cookie"]:::client
 ```
 
 ## 3.3 Layout Architecture
@@ -1239,7 +1256,8 @@ The product grid is loaded asynchronously via `fetch()` to `/Products/Filter`. T
 The flowchart below traces the complete AJAX request/response lifecycle:
 
 ```mermaid
-graph TD
+%%{init: {'theme': 'dark'}}%%
+graph LR
     classDef ui fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
     classDef js fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
     classDef controller fill:#2ca02c,stroke:#1b5e20,stroke-width:2px,color:#fff;
@@ -1247,10 +1265,10 @@ graph TD
     Trigger[User types in Search or changes Category/Sort/Price]:::ui --> Debounce{Debounce Timer active?}:::js
     Debounce -->|Yes| ResetTimer[Reset and restart timer]:::js
     Debounce -->|No / Expired| ShowOverlay[Display loadingOverlay block]:::js
-    ShowOverlay --> BuildQuery[Extract form input & build QueryString params]:::js
+    ShowOverlay --> BuildQuery[Extract form input and build QueryString params]:::js
     BuildQuery --> FetchRequest[Asynchronous fetch call to /Products/Filter?params]:::js
     FetchRequest --> Action[ProductsController.Filter handles AJAX request]:::controller
-    Action --> QueryDB[EF Core queries Database with filters & returns Products]:::controller
+    Action --> QueryDB[EF Core queries Database with filters and returns Products]:::controller
     QueryDB --> RenderPartial[Render partial view _ProductGrid.cshtml to HTML string]:::controller
     RenderPartial --> SendBack[Return HTML partial content]:::controller
     SendBack --> UpdateDOM[Update productGridContainer.innerHTML with response HTML]:::js
@@ -1501,7 +1519,7 @@ The hover media query fallback ensures AI buttons are visible on touch devices w
 
 The designed shopping cart interface offers users clear summaries of selected items, quantity manipulation, and real-time calculation of taxes (14% VAT) and shipping costs, as shown in the screenshot below:
 
-![ShopHub Shopping Cart Interface](images/cart.jpeg)
+![Ataba Shopping Cart Interface](images/cart.jpeg)
 
 ### 3.6.1 Cart Layout
 
@@ -1630,7 +1648,7 @@ Each item is a horizontal flex row with image thumbnail, details (title, variant
 
 The checkout page provides the final stage of purchase where shipping information is gathered, promotional coupon codes can be applied via AJAX, and the payment method (COD or Stripe) is selected, as illustrated below:
 
-![ShopHub Checkout and Order Summary Interface](images/checkout.jpeg)
+![Ataba Checkout and Order Summary Interface](images/checkout.jpeg)
 
 Two-column layout: shipping form (left) + order summary (right, sticky). The form uses ASP.NET Core tag helpers for model binding and client-side validation:
 
@@ -2233,7 +2251,7 @@ Radio-button driven selection with checked-state styling via `:has()`:
 
 Below is the designed UI for the product detail page, showcasing variant selection, the AI product assistant trigger, and related products list:
 
-![ShopHub Product Details Interface](images/product-details.jpeg)
+![Ataba Product Details Interface](images/product-details.jpeg)
 
 ```css
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2xl); align-items: start; }
@@ -2533,13 +2551,14 @@ The resulting JSON structure sent to the API looks like this:
 The flowchart below displays the sequence of steps executed by the `GeminiService` when querying the API, detailing prompt wrapping, HTTP execution, HTTP status checking, rate-limit parsing (429), and safety filtering checks:
 
 ```mermaid
-graph TD
+%%{init: {'theme': 'dark'}}%%
+graph LR
     classDef client fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
     classDef service fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
     classDef external fill:#2ca02c,stroke:#1b5e20,stroke-width:2px,color:#fff;
 
-    Start[Ask AI Request Received]:::client --> BuildPrompt[BuildPrompt: Inject product context & instructions]:::service
-    BuildPrompt --> BuildBody[BuildRequestBody: Serialize JSON with maxTokens & temperature]:::service
+    Start[Ask AI Request Received]:::client --> BuildPrompt[BuildPrompt: Inject product context and instructions]:::service
+    BuildPrompt --> BuildBody[BuildRequestBody: Serialize JSON with maxTokens and temperature]:::service
     BuildBody --> CreateClient[Create Named HttpClient 'Gemini']:::service
     CreateClient --> PostRequest[Send POST request to Gemini Endpoint]:::service
     PostRequest --> Send[API Endpoint processes request]:::external
@@ -2598,7 +2617,7 @@ public async Task<string> GetProductAssistantResponseAsync(
 
 To illustrate the user interface and how the AI Assistant is triggered in the product detail view, the screenshot below shows the interface with the sparkle button:
 
-![ShopHub AI Assistant Integration on Product Details Page](images/product-details.jpeg)
+![Ataba AI Assistant Integration on Product Details Page](images/product-details.jpeg)
 
 **Key design decisions:**
 - **API key in header** (`X-goog-api-key`) rather than query parameter — keeps the URL clean and avoids accidental key exposure in server logs.
@@ -2893,6 +2912,7 @@ This project follows the **Model-View-Controller (MVC)** pattern layered on top 
 ├─────────────────────────────────────────────────────┤
 │                    Controllers                        │
 │  Home | Account | Products | Cart | Checkout | Admin │
+│  Wishlist | Orders | Contact | About | FAQ | AI      │
 ├─────────────────────────────────────────────────────┤
 │                   Services Layer                      │
 │  GeminiService | StripePaymentService | EmailService │
@@ -3411,13 +3431,9 @@ Users (AspNetUsers)
 
 The administration panel provides managers with direct control over catalog categories and coupon/promo code parameters. Below are the administrative screens for managing categories and promotional discount codes:
 
-![ShopHub Admin Category Management Interface](images/admin-catigories.jpeg)
+![Ataba Admin Category Management Interface](images/admin-catigories.jpeg)
 
-![ShopHub Admin Promo Code Management Interface](images/admin-editcatiory.jpeg.jpeg.jpeg)
-
-![ShopHub Admin Promo Code Management Interface](images/admin-editproduct.jpeg.jpeg)
-
-![ShopHub Admin Promo Code Management Interface](images/admin-promocode.jpeg)
+![Ataba Admin Promo Code Management Interface](images/admin-promocode.jpeg)
 
 ### 5.4.1 Product CRUD with Image Upload
 
@@ -3734,7 +3750,8 @@ This is the most critical method in the application. It orchestrates: stock dedu
 The flowchart below traces the concurrency-safe transactional checkout workflow, highlighting the database transaction boundaries and retry mechanics:
 
 ```mermaid
-graph TD
+%%{init: {'theme': 'dark'}}%%
+graph LR
     classDef client fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
     classDef controller fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
     classDef database fill:#9467bd,stroke:#4a148c,stroke-width:2px,color:#fff;
@@ -3748,8 +3765,8 @@ graph TD
     RollbackStock --> AddErrors[Add ModelState errors and return Checkout Index]:::client
     
     VerifyStock -->|Yes| DeductStock[Deduct stock from products]:::controller
-    DeductStock --> ApplyPromo[Validate & Apply Promo Code if provided]:::controller
-    ApplyPromo --> InsertOrder[Insert Order, OrderItems, & Payment records]:::controller
+    DeductStock --> ApplyPromo[Validate and Apply Promo Code if provided]:::controller
+    ApplyPromo --> InsertOrder[Insert Order, OrderItems, and Payment records]:::controller
     InsertOrder --> SaveChanges[SaveAsync: Send updates to Database]:::controller
     SaveChanges --> CommitTransaction{Save succeeded?}:::controller
     
@@ -4094,6 +4111,22 @@ public class StripePaymentService : IPaymentService
 - The `Metadata` dictionary carries the order ID through the redirect, enabling the `PaymentSuccess` action to identify which order was paid.
 - The `IPaymentService` interface abstracts Stripe-specific code, allowing future payment providers (e.g., PayPal) without changing the controller.
 
+The secure customer-facing checkout portal created dynamically by the `CreateCheckoutSessionAsync` service provides a localized and responsive card-input form:
+
+![Stripe Checkout Portal](images/stripe.jpeg)
+
+All successful payments, subscription events, developer credentials, and webhook deliveries are monitored in real-time within the Stripe Merchant Dashboard:
+
+![Stripe Dashboard Payments Overview](images/Screenshot_9-6-2026_17217_dashboard.stripe.com.jpeg)
+
+Furthermore, the administrator can drill down into specific customer transaction cards to view audit trails, charge fees, and transaction details:
+
+![Stripe Individual Transaction Record](images/Screenshot_9-6-2026_17313_dashboard.stripe.com.jpeg)
+
+Detailed log endpoints and webhook payloads can also be checked to verify server-to-server connectivity and status checks:
+
+![Stripe Event Details and Logs](images/Screenshot_9-6-2026_17332_dashboard.stripe.com.jpeg)
+
 ### 5.7.6 Payment Callback Handling
 
 **PaymentSuccess:** Updates payment status to `Completed`, order status to `Paid`, sends confirmation email.
@@ -4364,7 +4397,7 @@ Email sending intentionally **does not block the checkout flow** — the order c
 
 The administrative analytics service generates summaries of revenue trends, average order values, and category performance. These figures are visualized on the dashboard, as shown in the screenshot below:
 
-![ShopHub Admin Analytics Dashboard](images/admin-anlyitcs.jpeg)
+![Ataba Admin Analytics Dashboard](images/admin-anlyitcs.jpeg)
 
 The `AnalyticsService` provides server-side aggregated data for the admin dashboard:
 
@@ -4444,6 +4477,7 @@ This project was developed following **Agile methodologies**, specifically a tai
 | US-004 | **Registered user** | Reset my password if I forget it | I can regain access to my account | • "Forgot Password" link is visible on the Login page<br>• User enters their email and receives a password-reset link<br>• The link contains an Identity-generated token and expires after 1 hour<br>• Token reuse is prevented (single-use)<br>• New password must satisfy the same policy as registration | **Medium** |
 | US-005 | **Authenticated user** | View and edit my profile (name, phone, address, city, country) | I can keep my shipping information up to date | • Profile page pre-fills all fields from the database<br>• Changes are persisted via `UserManager<ApplicationUser>.UpdateAsync()`<br>• Email is read-only (cannot be changed)<br>• Success/failure messages are displayed via TempData | **Medium** |
 | US-006 | **Authenticated user** | Change my password from within my account settings | I can update my credentials without contacting support | • Current password must be provided for verification<br>• New password must satisfy Identity policy<br>• Uses `UserManager.ChangePasswordAsync()` with built-in validation<br>• On success, user is notified and remains logged in | **Medium** |
+| US-007 | **Authenticated user** | Delete my account permanently | I can exercise my right to data removal | • GET `/Account/DeleteAccount` shows a confirmation page with a clear warning<br>• POST `/Account/DeleteAccountConfirmed` deletes cart items, wishlist items, reviews, and orders before calling `UserManager.DeleteAsync()`<br>• The user is signed out immediately after deletion<br>• An admin cannot delete their own account via this endpoint<br>• 404 is returned if the user is not found | **Low** |
 
 ---
 
@@ -4482,7 +4516,8 @@ This project was developed following **Agile methodologies**, specifically a tai
 | US-021 | **Authenticated user** | Place an order with Cash on Delivery | I can pay when the package arrives | • `PlaceOrder` creates: `Order` (status: Pending), `Payment` (status: Pending, method: COD)<br>• Product stock is decremented atomically within a database transaction<br>• Cart items are deleted after successful order creation<br>• Order confirmation email is sent to the user<br>• User is redirected to `OrderConfirmation` page with order details | **High** |
 | US-022 | **Authenticated user** | Pay via credit card through Stripe | I can pay online securely | • Selecting "Credit Card (Stripe)" triggers redirect to Stripe Checkout<br>• Stripe session includes: order ID, total (in cents), product names<br>• On success, Stripe redirects to `/Checkout/PaymentSuccess` which updates status to Paid<br>• On cancellation, Stripe redirects to `/Checkout/PaymentCancelled` which sets status to Cancelled<br>• If Stripe keys are not configured, a mock success path is used for development | **High** |
 | US-023 | **Authenticated user** | View an order confirmation page after placing an order | I have a record of my purchase | • Confirmation page shows: order ID, total, items list, payment status<br>• Items are loaded via `OrderItems` with eager-loaded `Product`<br>• Only the owning user can view the order (authorization check via `UserId`)<br>• 404 returned if the order does not belong to the current user | **High** |
-| US-024 | **System** | Prevent overselling when two users checkout the same product simultaneously | I can maintain inventory accuracy | • `Product` entity has `[Timestamp] byte[] RowVersion` concurrency token<br>• `PlaceOrder` runs in a `for` loop with up to 3 retries<br>• On `DbUpdateConcurrencyException`, the transaction rolls back, waits (100ms × attempt), and retries<br>• After 3 failures, user sees: "Some items were just purchased by another customer"<br>• Promo code `UsageCount` also uses `[Timestamp]` to prevent double-spending | **High** |
+| US-024 | **Authenticated user** | View my complete order history | I can track all past purchases in one place | • `OrdersController.MyOrders` returns all orders for the authenticated user sorted by date descending<br>• `OrdersController.Details(id)` shows full order detail including line items and payment info<br>• Access is restricted: 404 is returned if the order does not belong to the requesting user<br>• Both pages require `[Authorize]` | **Medium** |
+| US-025 | **System** | Prevent overselling when two users checkout the same product simultaneously | I can maintain inventory accuracy | • `Product` entity has `[Timestamp] byte[] RowVersion` concurrency token<br>• `PlaceOrder` runs in a `for` loop with up to 3 retries<br>• On `DbUpdateConcurrencyException`, the transaction rolls back, waits (100ms × attempt), and retries<br>• After 3 failures, user sees: "Some items were just purchased by another customer"<br>• Promo code `UsageCount` also uses `[Timestamp]` to prevent double-spending | **High** |
 
 ---
 
@@ -4490,9 +4525,9 @@ This project was developed following **Agile methodologies**, specifically a tai
 
 | ID | As a... | I want to... | So that... | Acceptance Criteria | Priority |
 |----|---------|-------------|-----------|-------------------|----------|
-| US-025 | **Authenticated user** | Ask a question about a product to an AI assistant | I can get instant answers without contacting support | • Each product card has an AI button (sparkle icon) visible on hover<br>• Clicking opens a global modal with the product name + description pre-loaded<br>• User types a question and presses Enter or clicks Send<br>• A loading spinner with "Thinking..." is shown during API call<br>• The response appears in a styled text box below the question input | **Medium** |
-| US-026 | **Authenticated user** | Receive relevant answers even if my question is vague | I can get helpful information without phrasing perfectly | • The system prompt instructs Gemini to answer concisely and redirect off-topic questions<br>• Product context (name + description) is injected into every prompt<br>• Max output is 800 tokens — responses are concise<br>• Temperature = 0.7 balances creativity with factual accuracy | **Medium** |
-| US-027 | **Authenticated user** | See a friendly error message if the AI service is unavailable | I understand what happened and can try again later | • 429 (rate limit) returns: "AI service quota exceeded. Please try again in N seconds."<br>• Network errors show: "Network error. Please try again."<br>• Prompt blocked by safety filters shows: "I'm sorry, I couldn't process that request."<br>• Unauthenticated users receive a 401 from the `[Authorize]` filter | **Low** |
+| US-026 | **Authenticated user** | Ask a question about a product to an AI assistant | I can get instant answers without contacting support | • Each product card has an AI button (sparkle icon) visible on hover<br>• Clicking opens a global modal with the product name + description pre-loaded<br>• User types a question and presses Enter or clicks Send<br>• A loading spinner with "Thinking..." is shown during API call<br>• The response appears in a styled text box below the question input | **Medium** |
+| US-027 | **Authenticated user** | Receive relevant answers even if my question is vague | I can get helpful information without phrasing perfectly | • The system prompt instructs Gemini to answer concisely and redirect off-topic questions<br>• Product context (name + description) is injected into every prompt<br>• Max output is 800 tokens — responses are concise<br>• Temperature = 0.7 balances creativity with factual accuracy | **Medium** |
+| US-028 | **Authenticated user** | See a friendly error message if the AI service is unavailable | I understand what happened and can try again later | • 429 (rate limit) returns: "AI service quota exceeded. Please try again in N seconds."<br>• Network errors show: "Network error. Please try again."<br>• Prompt blocked by safety filters shows: "I'm sorry, I couldn't process that request."<br>• Unauthenticated users receive a 401 from the `[Authorize]` filter | **Low** |
 
 ---
 
@@ -4500,10 +4535,10 @@ This project was developed following **Agile methodologies**, specifically a tai
 
 | ID | As a... | I want to... | So that... | Acceptance Criteria | Priority |
 |----|---------|-------------|-----------|-------------------|----------|
-| US-028 | **Admin** | View a dashboard with key business metrics | I can monitor store performance at a glance | • Dashboard shows: total revenue, total orders, total products, total users<br>• Statistics for: pending orders, completed orders, low-stock products (< 10)<br>• Top 5 selling products by quantity are displayed<br>• Orders grouped by payment method are shown<br>• Recent 5 orders display with user name and total<br>• All numbers are aggregated server-side via LINQ `Sum()` and `Count()` | **High** |
-| US-029 | **Admin** | Manage products (create, edit, delete, toggle featured) | I can keep the product catalog up to date | • Product list is paginated (15 per page) with search<br>• Create product form includes: name, description, price, stock, category, image upload, featured flag<br>• Image upload generates a GUID filename and stores in `wwwroot/images/products/`<br>• Edit product pre-fills all fields and allows image replacement<br>• Old image is deleted from disk when a new one is uploaded<br>• Delete is confirmed via JavaScript prompt | **High** |
-| US-030 | **Admin** | View and manage registered users | I can activate/deactivate or delete accounts | • User list is paginated with order count per user and assigned roles<br>• Role lookups are batched per role (not per user) to avoid N+1 queries<br>• Admin can toggle account lockout (activate/deactivate)<br>• Admin can delete users (with cascade cleanup of cart items)<br>• Self-deactivation and self-deletion are prevented | **High** |
-| US-031 | **Admin** | View detailed sales analytics with charts | I can track business performance over time | • Analytics include: total orders, total revenue, average order value<br>• Month-over-month order and revenue growth percentages are calculated<br>• Top 10 selling products with quantity and revenue<br>• Top 10 customers by total spent<br>• Category performance (products sold per category)<br>• Daily sales chart data (last 30 days) with zero-fill for inactive days<br>• Monthly sales chart data (last 12 months) | **Medium** |
+| US-029 | **Admin** | View a dashboard with key business metrics | I can monitor store performance at a glance | • Dashboard shows: total revenue, total orders, total products, total users<br>• Statistics for: pending orders, completed orders, low-stock products (< 10)<br>• Top 5 selling products by quantity are displayed<br>• Orders grouped by payment method are shown<br>• Recent 5 orders display with user name and total<br>• All numbers are aggregated server-side via LINQ `Sum()` and `Count()` | **High** |
+| US-030 | **Admin** | Manage products (create, edit, delete, toggle featured) | I can keep the product catalog up to date | • Product list is paginated (15 per page) with search<br>• Create product form includes: name, description, price, stock, category, image upload, featured flag<br>• Image upload generates a GUID filename and stores in `wwwroot/images/products/`<br>• Edit product pre-fills all fields and allows image replacement<br>• Old image is deleted from disk when a new one is uploaded<br>• Delete is confirmed via JavaScript prompt | **High** |
+| US-031 | **Admin** | View and manage registered users | I can activate/deactivate or delete accounts | • User list is paginated with order count per user and assigned roles<br>• Role lookups are batched per role (not per user) to avoid N+1 queries<br>• Admin can toggle account lockout (activate/deactivate)<br>• Admin can delete users (with cascade cleanup of cart items)<br>• Self-deactivation and self-deletion are prevented | **High** |
+| US-032 | **Admin** | View detailed sales analytics with charts | I can track business performance over time | • Analytics include: total orders, total revenue, average order value<br>• Month-over-month order and revenue growth percentages are calculated<br>• Top 10 selling products with quantity and revenue<br>• Top 10 customers by total spent<br>• Category performance (products sold per category)<br>• Daily sales chart data (last 30 days) with zero-fill for inactive days<br>• Monthly sales chart data (last 12 months) | **Medium** |
 
 ---
 
@@ -4511,11 +4546,11 @@ This project was developed following **Agile methodologies**, specifically a tai
 
 | ID | As a... | I want to... | So that... | Acceptance Criteria | Priority |
 |----|---------|-------------|-----------|-------------------|----------|
-| US-032 | **Any visitor** | Toggle between dark and light theme | I can browse in my preferred visual mode | • Theme toggle button in the header switches `data-bs-theme` attribute<br>• Theme preference is persisted via a cookie with 1-year expiry<br>• FOUC is prevented: server reads the cookie and sets the attribute before HTML is sent<br>• All design tokens (backgrounds, text, borders, shadows) switch correctly<br>• Sun/moon icon toggles to reflect the current theme | **Medium** |
-| US-033 | **Any visitor** | Navigate the site on my mobile phone | I can shop from any device | • Header collapses to hamburger menu at 768px<br>• Mobile nav includes: Home, Products, About, Contact, FAQ, and all categories<br>• Product grid collapses to 2 columns at 520px, 1 column at 360px<br>• Cart layout becomes single column below 1000px<br>• Hero section hides the decorative visual ring on mobile<br>• Quantity stepper and buttons remain touch-friendly | **High** |
-| US-034 | **Any visitor** | Receive instant feedback when I perform actions | I know whether my action succeeded or failed | • Toast notifications appear for: add/remove wishlist, add to cart, errors<br>• Toasts slide in from the right and auto-dismiss after 4.2 seconds<br>• Toasts are colour-coded (green for success, red for error)<br>• Each toast has a dismiss button<br>• Multiple toasts stack vertically | **Medium** |
-| US-035 | **Any visitor** | View a sitemap.xml for search engine indexing | The store can be discovered via search engines | • `/Home/Sitemap` returns valid XML with all product and category URLs<br>• Each URL has `<changefreq>weekly</changefreq>` and `<priority>0.8</priority>`<br>• Response is cached for 86400 seconds (24 hours)<br>• Content-Type is `application/xml` | **Low** |
-| US-036 | **Any visitor** | Access privacy policy, terms of service, about, contact, and FAQ pages | I can learn about the store and its policies | • Each page has a dedicated controller action and Razor view<br>• Privacy and Terms are response-cached for 3600 seconds<br>• These pages are linked from the footer in all four columns<br>• All links use `asp-controller` and `asp-action` tag helpers for correct URL generation | **Low** |
+| US-033 | **Any visitor** | Toggle between dark and light theme | I can browse in my preferred visual mode | • Theme toggle button in the header switches `data-bs-theme` attribute<br>• Theme preference is persisted via a cookie with 1-year expiry<br>• FOUC is prevented: server reads the cookie and sets the attribute before HTML is sent<br>• All design tokens (backgrounds, text, borders, shadows) switch correctly<br>• Sun/moon icon toggles to reflect the current theme | **Medium** |
+| US-034 | **Any visitor** | Navigate the site on my mobile phone | I can shop from any device | • Header collapses to hamburger menu at 768px<br>• Mobile nav includes: Home, Products, About, Contact, FAQ, and all categories<br>• Product grid collapses to 2 columns at 520px, 1 column at 360px<br>• Cart layout becomes single column below 1000px<br>• Hero section hides the decorative visual ring on mobile<br>• Quantity stepper and buttons remain touch-friendly | **High** |
+| US-035 | **Any visitor** | Receive instant feedback when I perform actions | I know whether my action succeeded or failed | • Toast notifications appear for: add/remove wishlist, add to cart, errors<br>• Toasts slide in from the right and auto-dismiss after 4.2 seconds<br>• Toasts are colour-coded (green for success, red for error)<br>• Each toast has a dismiss button<br>• Multiple toasts stack vertically | **Medium** |
+| US-036 | **Any visitor** | View a sitemap.xml for search engine indexing | The store can be discovered via search engines | • `/Home/Sitemap` returns valid XML with all product and category URLs<br>• Each URL has `<changefreq>weekly</changefreq>` and `<priority>0.8</priority>`<br>• Response is cached for 86400 seconds (24 hours)<br>• Content-Type is `application/xml` | **Low** |
+| US-037 | **Any visitor** | Access privacy policy, terms of service, about, contact, and FAQ pages | I can learn about the store and its policies | • Each page has a dedicated controller action and Razor view<br>• Privacy and Terms are response-cached for 3600 seconds<br>• These pages are linked from the footer in all four columns<br>• All links use `asp-controller` and `asp-action` tag helpers for correct URL generation | **Low** |
 
 ---
 
@@ -4523,16 +4558,16 @@ This project was developed following **Agile methodologies**, specifically a tai
 
 | Epic | Stories | High | Medium | Low |
 |------|---------|------|--------|-----|
-| 1: User Identity & Security | 6 | 3 | 3 | 0 |
+| 1: User Identity & Security | 7 | 3 | 3 | 1 |
 | 2: Product Browsing & Discovery | 6 | 3 | 3 | 0 |
 | 3: Shopping Cart & Wishlist | 6 | 4 | 1 | 1 |
-| 4: Checkout & Payments | 6 | 5 | 1 | 0 |
+| 4: Checkout & Payments | 7 | 5 | 2 | 0 |
 | 5: AI Assistant | 3 | 0 | 2 | 1 |
 | 6: Admin Dashboard | 4 | 3 | 1 | 0 |
 | 7: Core Infrastructure & UX | 5 | 2 | 2 | 1 |
-| **Total** | **36** | **20** | **13** | **3** |
+| **Total** | **38** | **20** | **14** | **4** |
 
-All **36 user stories** map directly to implemented code across the three-tier architecture — from Entity Framework Core entities and LINQ queries, through service-layer business logic and controller actions, to Razor views, CSS custom properties, and client-side JavaScript. The **20 high-priority stories** represent the core e-commerce workflow (auth → browse → cart → checkout) that was implemented first, with medium and low priorities rounding out the AI assistant, analytics, and SEO features.
+All **38 user stories** map directly to implemented code across the three-tier architecture — from Entity Framework Core entities and LINQ queries, through service-layer business logic and controller actions, to Razor views, CSS custom properties, and client-side JavaScript. The **20 high-priority stories** represent the core e-commerce workflow (auth → browse → cart → checkout) that was implemented first, with medium and low priorities rounding out account management, AI assistant, analytics, and SEO features.
 
 ---
 
@@ -4545,23 +4580,24 @@ To demonstrate the functioning proposed system and show how the user stories are
 The flowchart below maps out the sequence of steps a Customer takes when interacting with the system:
 
 ```mermaid
-graph TD
+%%{init: {'theme': 'dark'}}%%
+graph LR
     classDef step fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
     classDef decision fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
 
     Start[Guest Visitor Lands on Home]:::step --> Auth{Wants to checkout or use cart?}:::decision
     Auth -->|Yes| Login[Sign In / Register]:::step
-    Auth -->|No| Browse[Browse & Search Catalog]:::step
+    Auth -->|No| Browse[Browse and Search Catalog]:::step
     Login --> Browse
-    Browse --> Detail[View Product Details & Ask AI]:::step
+    Browse --> Detail[View Product Details and Ask AI]:::step
     Detail --> AddCart[Add to Shopping Cart with variant options]:::step
     AddCart --> ViewCart[View Cart: Adjust quantities / Apply Promo Code]:::step
-    ViewCart --> Checkout[Fill Shipping Form & Choose Payment Method]:::step
+    ViewCart --> Checkout[Fill Shipping Form and Choose Payment Method]:::step
     Checkout --> Payment{Payment Method selected?}:::decision
     Payment -->|Stripe Credit Card| Stripe[Stripe Checkout Redirect]:::step
     Payment -->|Cash On Delivery| COD[Direct Transaction Completion]:::step
     Stripe --> PaymentSuccess[Redirect to Payment Success page]:::step
-    COD --> Confirm[Order Confirmation Page & Email]:::step
+    COD --> Confirm[Order Confirmation Page and Email]:::step
     PaymentSuccess --> Confirm
     Confirm --> Profile[View Order Details in Profile History]:::step
 ```
@@ -4569,15 +4605,16 @@ graph TD
 The flowchart below maps out the sequence of actions an Administrator takes to manage the platform operations:
 
 ```mermaid
-graph TD
+%%{init: {'theme': 'dark'}}%%
+graph LR
     classDef step fill:#9467bd,stroke:#4a148c,stroke-width:2px,color:#fff;
     classDef opt fill:#2ca02c,stroke:#1b5e20,stroke-width:2px,color:#fff;
 
-    Start[Admin Logs In]:::step --> Dashboard[View Dashboard Metrics & Charts]:::step
+    Start[Admin Logs In]:::step --> Dashboard[View Dashboard Metrics and Charts]:::step
     Dashboard --> SelectAction{Select Action from Sidebar}
-    SelectAction -->|Manage Catalog| Products[Manage Products & Categories CRUD]:::opt
+    SelectAction -->|Manage Catalog| Products[Manage Products and Categories CRUD]:::opt
     SelectAction -->|Manage Accounts| Users[Activate / Deactivate Users List]:::opt
-    SelectAction -->|Manage Discounts| Promos[Create & Monitor Promo Codes]:::opt
+    SelectAction -->|Manage Discounts| Promos[Create and Monitor Promo Codes]:::opt
     SelectAction -->|Manage Orders| Orders[Process Order status updates]:::opt
 
     Products --> SaveDB[Changes persist to SQL Server]:::step
@@ -4639,6 +4676,15 @@ At checkout, the user's shipping details are pre-filled. They can apply active p
 
 - **Checkout forms and promo code application:** (Visualized in Section 3.7: `images/checkout.jpeg`)
 
+#### Step 8b: Stripe Card Checkout & Payment Monitoring
+If the customer selects "Credit Card (Stripe)" as their payment option, they are redirected to a secure, dynamically generated Stripe Checkout portal to enter their payment details:
+
+![Stripe Card Payment Portal](images/stripe.jpeg)
+
+Once payment is processed, the system receives the return callback. Administrators can monitor incoming transactions, webhook logs, and audit histories directly inside the Stripe Merchant Dashboard:
+
+![Stripe Merchant Dashboard Overview](images/Screenshot_9-6-2026_17217_dashboard.stripe.com.jpeg)
+
 #### Step 9: Order Confirmation
 Upon placement of a Cash on Delivery (COD) order, or on successful return from Stripe payment, the customer receives an immediate confirmation showing their invoice summary:
 
@@ -4692,9 +4738,10 @@ Administrators track client purchases, check transaction credentials, and trigge
 
 ## 7.1 Entity-Relationship Diagram (ERD)
 
-The database schema of the ShopHub platform is built on **Microsoft SQL Server** and managed through **Entity Framework Core** using the Code-First approach. The schema models ten core entities that collectively support user management, product cataloging, shopping cart operations, order processing, payment tracking, promotional discounts, and customer reviews. The design enforces **referential integrity** through explicit foreign key constraints with carefully chosen cascade and restrict delete behaviours — for instance, deleting a `Product` cascades to its `ProductVariants` but restricts deletion if active `OrderItems` reference it. Monetary columns across all entities use a uniform `decimal(18, 2)` precision to ensure consistency in financial calculations. The following ERD captures the entities, their attributes, and the relationships between them:
+The database schema of the Ataba platform is built on **Microsoft SQL Server** and managed through **Entity Framework Core** using the Code-First approach. The schema models ten core entities that collectively support user management, product cataloging, shopping cart operations, order processing, payment tracking, promotional discounts, and customer reviews. The design enforces **referential integrity** through explicit foreign key constraints with carefully chosen cascade and restrict delete behaviours — for instance, deleting a `Product` cascades to its `ProductVariants` but restricts deletion if active `OrderItems` reference it. Monetary columns across all entities use a uniform `decimal(18, 2)` precision to ensure consistency in financial calculations. The following ERD captures the entities, their attributes, and the relationships between them:
 
 ```mermaid
+%%{init: {'theme': 'dark'}}%%
 erDiagram
     Category {
         int Id PK
@@ -4853,7 +4900,7 @@ The diagram illustrates seven **one-to-many** (1:N) relationships and one **one-
 
 ## 7.2 System Use Case Diagram
 
-The ShopHub platform defines **two primary actors** with distinct responsibilities and access levels:
+The Ataba platform defines **two primary actors** with distinct responsibilities and access levels:
 
 - **Customer** — An authenticated user who can browse products, manage a shopping cart and wishlist, place orders via Cash on Delivery or Stripe credit card processing, apply promotional codes, submit product reviews, and interact with the AI-powered product assistant. Customers have access to their order history and profile settings.
 
@@ -4862,7 +4909,8 @@ The ShopHub platform defines **two primary actors** with distinct responsibiliti
 The following use case diagram captures the functional scope of the system from the perspective of each actor:
 
 ```mermaid
-graph TD
+%%{init: {'theme': 'dark'}}%%
+graph LR
     subgraph Actors
         C[Customer]
         A[Administrator]
@@ -4876,7 +4924,7 @@ graph TD
 
         %% Product Browsing
         UC4[Browse Products]
-        UC5[Filter & Sort Products]
+        UC5[Filter and Sort Products]
         UC6[View Product Details]
 
         %% Customer Actions
@@ -4891,7 +4939,7 @@ graph TD
         UC15[Edit Profile]
 
         %% Admin Actions
-        UC16[View Dashboard & Analytics]
+        UC16[View Dashboard and Analytics]
         UC17[Manage Products]
         UC18[Manage Categories]
         UC19[Manage Users]
@@ -4939,6 +4987,7 @@ The diagram uses `include` relationships to show that browsing products inherent
 The checkout process represents the most **architecturally critical transaction** in the system. It must atomically validate inventory levels, deduct stock quantities, apply promotional discounts, create order and payment records, and clear the user's cart — all while handling **concurrent access** from multiple shoppers. The system employs a **database-level transaction** (`BeginTransactionAsync`) wrapped in a **retry loop** of up to three attempts to resolve optimistic concurrency conflicts detected via the `[Timestamp] RowVersion` columns on `Product`, `ProductVariant`, and `PromoCode` entities. The following sequence diagram traces the exact message flow for a Cash on Delivery (COD) order, which represents the simplest payment path while still exercising the full transaction pipeline:
 
 ```mermaid
+%%{init: {'theme': 'dark'}}%%
 sequenceDiagram
     actor Customer
     participant UI as Razor View / Browser
@@ -4949,7 +4998,7 @@ sequenceDiagram
     participant Email as EmailService
     participant Stripe as Stripe API (if CreditCard)
 
-    Customer->>UI: Fill checkout form & submit
+    Customer->>UI: Fill checkout form and submit
     UI->>Checkout: POST /Checkout/PlaceOrder
     Checkout->>Validation: ModelState.IsValid
     alt Model Invalid
@@ -5030,7 +5079,7 @@ sequenceDiagram
                                 UI->>Checkout: GET PaymentCancelled(orderId)
                                 Checkout->>UoW: Update Payment Status = Failed
                                 Checkout->>UoW: Update Order Status = Cancelled
-                                Checkout-->>UI: Show error & redirect to cart
+                                Checkout-->>UI: Show error and redirect to cart
                             end
                         end
                     end
@@ -5062,7 +5111,8 @@ The sequence diagram highlights several architectural decisions:
 The flowchart below maps the entire program execution path, illustrating the visual layout navigation, debounced AJAX searches, OpenAI/Gemini modal fetches, variant validation checks, payment branching (Stripe vs Cash on Delivery), transactional concurrency loop, and order completion processes:
 
 ```mermaid
-graph TD
+%%{init: {'theme': 'dark'}}%%
+graph LR
     classDef client fill:#1f77b4,stroke:#0d47a1,stroke-width:2px,color:#fff;
     classDef step fill:#ff7f0e,stroke:#e65100,stroke-width:2px,color:#fff;
     classDef decision fill:#2ca02c,stroke:#1b5e20,stroke-width:2px,color:#fff;
@@ -5073,14 +5123,14 @@ graph TD
     SearchAction -->|Yes| ApplyFilters[Enter query, select category, sort values]:::client
     ApplyFilters --> AJAXLoad[Trigger debounced AJAX query]:::client
     AJAXLoad --> RenderList[Update Product Grid view]:::client
-    RenderList --> SelectProduct[Select Product & Open Details Page]:::client
+    RenderList --> SelectProduct[Select Product and Open Details Page]:::client
     
     SearchAction -->|No| SelectProduct
     
     SelectProduct --> ViewDetails[Read description, view price]:::client
     ViewDetails --> AskAIAction{Query AI Assistant?}:::decision
     
-    AskAIAction -->|Yes| OpenAI[Open Modal & ask question]:::client
+    AskAIAction -->|Yes| OpenAI[Open Modal and ask question]:::client
     OpenAI --> GeminiFetch[Call api/AIAssistant/ask via fetch]:::client
     GeminiFetch --> RenderAI[Show response inside modal]:::client
     RenderAI --> CheckVariant{Select Product Variant?}:::decision
@@ -5101,32 +5151,70 @@ graph TD
     Checkout -->|Yes| FillCheckout[Fill Shipping Details Form]:::client
     FillCheckout --> ApplyPromoCode{Apply Coupon?}:::decision
     
-    ApplyPromoCode -->|Yes| ValidatePromo[AJAX check & calculate new total]:::client
+    ApplyPromoCode -->|Yes| ValidatePromo[AJAX check and calculate new total]:::client
     ValidatePromo --> SelectPayment{Select Payment Method}:::decision
     ApplyPromoCode -->|No| SelectPayment
     
     SelectPayment -->|Credit Card Stripe| StripeRedirect[Redirect client to Stripe Checkout page]:::client
     StripeRedirect --> CompleteStripe{Complete Card Payment?}:::decision
     CompleteStripe -->|Yes| PaymentSuccess[Stripe Callback: PaymentSuccess action]:::step
-    PaymentSuccess --> CreateOrderStripe[Update Order status to Paid & Payment to Completed]:::step
+    PaymentSuccess --> CreateOrderStripe[Update Order status to Paid and Payment to Completed]:::step
     CompleteStripe -->|No / Cancel| PaymentCancel[Stripe Callback: PaymentCancelled action]:::step
-    PaymentCancel --> SetFailedOrder[Update Order status to Cancelled & Payment to Failed]:::step
-    SetFailedOrder --> RedirectCartIndex[Show Error & Return user to Cart Page]:::client
+    PaymentCancel --> SetFailedOrder[Update Order status to Cancelled and Payment to Failed]:::step
+    SetFailedOrder --> RedirectCartIndex[Show Error and Return user to Cart Page]:::client
     
     SelectPayment -->|Cash On Delivery| PlaceCOD[PlaceOrder COD POST Request]:::step
     PlaceCOD --> RunTransaction[Start Database Transaction Kernel]:::step
     RunTransaction --> CheckConcurrency{Optimistic Concurrency conflict?}:::decision
     
-    CheckConcurrency -->|Yes: Attempt < 3| WaitBackoff[Rollback transaction & wait 100ms * attempt]:::step
+    CheckConcurrency -->|Yes: Attempt < 3| WaitBackoff[Rollback transaction and wait 100ms * attempt]:::step
     WaitBackoff --> RunTransaction
-    CheckConcurrency -->|Yes: Attempt >= 3| ShowFailCheckout[Rollback & Show 'Items purchased' error]:::client
+    CheckConcurrency -->|Yes: Attempt >= 3| ShowFailCheckout[Rollback and Show 'Items purchased' error]:::client
     
-    CheckConcurrency -->|No| CommitTransaction[Update Product stocks, save Order & commit transaction]:::step
-    CommitTransaction --> CreatePaymentCOD[Create Order & Payment records with Pending status]:::step
+    CheckConcurrency -->|No| CommitTransaction[Update Product stocks, save Order and commit transaction]:::step
+    CommitTransaction --> CreatePaymentCOD[Create Order and Payment records with Pending status]:::step
     CreatePaymentCOD --> DeleteCartItems[Delete items from ShoppingCart database]:::step
     
     CreateOrderStripe --> DeleteCartItems
     DeleteCartItems --> SendEmail[Queue Order Confirmation SMTP email]:::step
-    SendEmail --> ConfirmPage[Display Invoice & OrderConfirmation page]:::client
+    SendEmail --> ConfirmPage[Display Invoice and OrderConfirmation page]:::client
 ```
 
+
+<div style="page-break-after: always;"></div>
+
+# 8. Conclusion & References
+
+## 8.1 Conclusion
+
+The development of the Ataba E-commerce platform successfully demonstrates the viability of building a custom, full-stack, self-hosted online commerce application tailored to local and regional market requirements. By using a monolithic ASP.NET Core 10.0 MVC architecture combined with Microsoft SQL Server, the project provides a highly cohesive system that balances performance, ease of deployment, and ease of maintenance for small-to-medium enterprises.
+
+Throughout the project lifecycle, several core milestones were reached and validated:
+
+1. **Enterprise Data Access**: The implementation of the Repository and Unit of Work patterns abstracted data access behind clean interfaces, ensuring proper separation of concerns and database independence.
+2. **Concurrency Safety**: By introducing SQL Server row versioning (`[Timestamp] RowVersion`) and EF Core optimistic concurrency tokens, the platform successfully mitigated stock overselling and promo code race conditions under high concurrent demand.
+3. **Responsive Frontend & Modern UX**: Integrating design tokens, cookie-based theme storage (avoiding Flash of Unstyled Content), and debounced AJAX filters created a desktop and mobile UX that rivals global proprietary platforms.
+4. **Secure Payment Processing**: The dual checkout pipeline supported both Cash on Delivery (COD) and Credit Card payments via the Stripe Checkout Session API, catering to low card-penetration markets while offering secure digital payment options.
+5. **AI-Driven Customer Experience**: The context-aware AI assistant, built using Google Gemini API with robust rate-limit retries and exponential backoff, successfully demonstrated how generative AI can be securely and effectively integrated into consumer-facing platforms.
+
+### 8.1.1 Future Work
+
+While the current platform is fully functional and production-ready, several areas are identified for future enhancements:
+
+- **Advanced Search Indexing**: Transitioning from database-level SQL `LIKE` queries to a dedicated search cluster like Elasticsearch to support fuzzy matching, auto-suggestions, and high-performance faceted searches.
+- **Distributed Cache Integration**: Migrating from built-in in-memory caching to a distributed Redis cache, enabling the system to scale horizontally across multiple web nodes.
+- **Automated Testing Suite**: Implementing a testing project containing unit tests for core services (such as `GeminiService` and `StripePaymentService`) and integration tests for controller workflows.
+- **Mobile Native Applications**: Developing native mobile wrappers (using Flutter or React Native) communicating with the backend's ASP.NET Core Web APIs to capture the mobile-first customer base.
+
+---
+
+## 8.2 References
+
+1. **Microsoft Corporation.** (2025). *ASP.NET Core MVC Documentation: Overview of MVC architecture*. Retrieved from [https://learn.microsoft.com/aspnet/core/mvc](https://learn.microsoft.com/aspnet/core/mvc).
+2. **Microsoft Corporation.** (2025). *Entity Framework Core Documentation: Handling Concurrency Conflicts*. Retrieved from [https://learn.microsoft.com/ef/core/saving/concurrency](https://learn.microsoft.com/ef/core/saving/concurrency).
+3. **Stripe Inc.** (2026). *Stripe Checkout API Reference: Creating checkout sessions*. Retrieved from [https://stripe.com/docs/api/checkout/sessions](https://stripe.com/docs/api/checkout/sessions).
+4. **Google Cloud.** (2026). *Gemini API Documentation: Developer Guides & SDK References*. Retrieved from [https://ai.google.dev/gemini-api/docs](https://ai.google.dev/gemini-api/docs).
+5. **Fowler, M.** (2002). *Patterns of Enterprise Application Architecture*. Addison-Wesley Professional. (Details regarding the Repository and Unit of Work patterns).
+6. **Martin, R. C.** (2017). *Clean Architecture: A Craftsman's Guide to Software Structure and Design*. Prentice Hall. (Guidelines on separation of concerns and interface boundaries).
+7. **Fielding, R., & Reschke, J.** (2014). *Hypertext Transfer Protocol (HTTP/1.1): Semantics and Content*. RFC 7231, Internet Engineering Task Force (IETF).
+8. **Barth, A.** (2011). *HTTP State Management Mechanism (Cookies)*. RFC 6265, Internet Engineering Task Force (IETF).

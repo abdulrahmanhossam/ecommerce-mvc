@@ -108,7 +108,7 @@ namespace ECommerceProject.Data.Context
                 entity.HasKey(r => r.Id);
 
                 entity.HasOne(r => r.Product)
-                      .WithMany()
+                      .WithMany(p => p.ProductReviews)
                       .HasForeignKey(r => r.ProductId)
                       .OnDelete(DeleteBehavior.Cascade);
 

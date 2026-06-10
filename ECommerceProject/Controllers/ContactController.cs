@@ -6,10 +6,12 @@ namespace ECommerceProject.Controllers
     public class ContactController : Controller
     {
         private readonly IEmailService _emailService;
+        private readonly string _contactEmail;
 
-        public ContactController(IEmailService emailService)
+        public ContactController(IEmailService emailService, IConfiguration configuration)
         {
             _emailService = emailService;
+            _contactEmail = configuration["EmailSettings:ContactEmail"] ?? "ataba.contact@example.com";
         }
 
         [ResponseCache(Duration = 3600)]
@@ -32,7 +34,7 @@ namespace ECommerceProject.Controllers
             try
             {
                 await _emailService.SendEmailAsync(
-                    "shophub.contact@example.com",
+                    _contactEmail,
                     $"Contact Form: {subject}",
                     $"From: {name} ({email})<br/><br/>{message}");
 

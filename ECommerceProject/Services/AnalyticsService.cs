@@ -173,11 +173,8 @@ namespace ECommerceProject.Services
             var result = new List<DailySalesData>();
             var startDate = DateTime.Now.Date.AddDays(-days);
 
-            var orders = await _unitOfWork.Orders.GetQueryable(asNoTracking: true)
+            var dailyData = await _unitOfWork.Orders.GetQueryable(asNoTracking: true)
                 .Where(o => o.OrderDate >= startDate)
-                .ToListAsync();
-
-            var dailyData = orders
                 .GroupBy(o => o.OrderDate.Date)
                 .Select(g => new DailySalesData
                 {
@@ -186,15 +183,14 @@ namespace ECommerceProject.Services
                     Revenue = g.Sum(o => o.TotalAmount)
                 })
                 .OrderBy(d => d.Date)
-                .ToList();
+                .ToListAsync();
 
-            // Fill missing days with zero
+            var dataByDate = dailyData.ToDictionary(d => d.Date);
+
             for (int i = 0; i < days; i++)
             {
                 var date = startDate.AddDays(i);
-                var existing = dailyData.FirstOrDefault(d => d.Date == date);
-
-                if (existing != null)
+                if (dataByDate.TryGetValue(date, out var existing))
                 {
                     result.Add(existing);
                 }
@@ -214,26 +210,27 @@ namespace ECommerceProject.Services
 
         public async Task<List<MonthlySalesData>> GetMonthlySalesAsync(int months = 12)
         {
-            var result = new List<MonthlySalesData>();
             var startDate = DateTime.Now.AddMonths(-months);
 
-            var orders = await _unitOfWork.Orders.GetQueryable(asNoTracking: true)
+            var monthlyData = await _unitOfWork.Orders.GetQueryable(asNoTracking: true)
                 .Where(o => o.OrderDate >= startDate)
-                .ToListAsync();
-
-            var monthlyData = orders
                 .GroupBy(o => new { o.OrderDate.Year, o.OrderDate.Month })
                 .Select(g => new MonthlySalesData
                 {
                     Year = g.Key.Year,
                     Month = g.Key.Month,
-                    MonthName = new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMM yyyy"),
+                    MonthName = string.Empty,
                     OrderCount = g.Count(),
                     Revenue = g.Sum(o => o.TotalAmount)
                 })
                 .OrderBy(m => m.Year)
                 .ThenBy(m => m.Month)
-                .ToList();
+                .ToListAsync();
+
+            foreach (var item in monthlyData)
+            {
+                item.MonthName = new DateTime(item.Year, item.Month, 1).ToString("MMM yyyy");
+            }
 
             return monthlyData;
         }

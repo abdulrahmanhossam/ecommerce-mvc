@@ -44,6 +44,7 @@ namespace ECommerceProject.Models.Entities
 
         [Required]
         [Phone]
+        [StringLength(20)]
         public string PhoneNumber { get; set; } = string.Empty;
 
         [StringLength(1000)]

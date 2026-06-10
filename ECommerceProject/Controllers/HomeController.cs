@@ -14,13 +14,15 @@ namespace ECommerceProject.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMemoryCache _memoryCache;
         private readonly Services.Interfaces.IEmailService _emailService;
+        private readonly string _contactEmail;
 
-        public HomeController(ILogger<HomeController> logger, IUnitOfWork unitOfWork, IMemoryCache memoryCache, Services.Interfaces.IEmailService emailService)
+        public HomeController(ILogger<HomeController> logger, IUnitOfWork unitOfWork, IMemoryCache memoryCache, Services.Interfaces.IEmailService emailService, IConfiguration configuration)
         {
             _logger = logger;
             _unitOfWork = unitOfWork;
             _memoryCache = memoryCache;
             _emailService = emailService;
+            _contactEmail = configuration.GetSection("EmailSettings:ContactEmail")?.Value ?? "ataba.contact@example.com";
         }
 
         public async Task<IActionResult> Index()
@@ -66,9 +68,10 @@ namespace ECommerceProject.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Subscribe(string email)
         {
-            if (string.IsNullOrWhiteSpace(email))
+            if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
             {
                 TempData["ErrorMessage"] = "Please enter a valid email address.";
                 return RedirectToAction(nameof(Index));
@@ -77,7 +80,7 @@ namespace ECommerceProject.Controllers
             try
             {
                 await _emailService.SendEmailAsync(
-                    "shophub.contact@example.com",
+                    _contactEmail,
                     "New Newsletter Subscription",
                     $"New subscriber: {email}");
 
